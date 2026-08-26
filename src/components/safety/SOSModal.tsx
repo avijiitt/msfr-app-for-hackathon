@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Shield, PhoneCall, HeartPulse, Send, AlertOctagon, Volume2, VolumeX, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Shield, PhoneCall, HeartPulse, Send, AlertOctagon, Volume2, VolumeX, CheckCircle, X } from 'lucide-react';
 import { UserProfile, EmergencyContact } from '../../types/transit';
 import { audioService } from '../../services/audioService';
 import { sosService } from '../../services/sosService';
@@ -60,20 +60,20 @@ export const SOSModal: React.FC<SOSModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
-      <div className="max-w-xl w-full glass-panel-danger rounded-3xl p-5 sm:p-7 text-white space-y-5 border-2 border-rose-500/50 shadow-2xl shadow-rose-900/50">
+    <div className="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in">
+      <div className="max-w-xl w-full bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 text-slate-900 dark:text-white space-y-5 border-2 border-rose-500 shadow-2xl transition-colors">
         {/* Header Title with Pulsing Beacon */}
-        <div className="flex items-center justify-between border-b border-rose-500/30 pb-3">
+        <div className="flex items-center justify-between border-b border-rose-200 dark:border-rose-800/40 pb-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-rose-600 flex items-center justify-center text-white shadow-lg shadow-rose-600/50 animate-pulse">
+            <div className="w-12 h-12 rounded-2xl bg-rose-600 flex items-center justify-center text-white shadow-lg shadow-rose-600/40 animate-pulse">
               <AlertOctagon className="w-7 h-7" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-rose-300 tracking-tight">
-                {t.sosTitle}
+              <h2 className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
+                {t.sosTitle || 'Emergency SOS Network'}
               </h2>
-              <p className="text-xs text-rose-200/80">
-                SIH26198 Instant Emergency Network
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Instant Emergency Dispatch & Live GPS Broadcast
               </p>
             </div>
           </div>
@@ -82,8 +82,8 @@ export const SOSModal: React.FC<SOSModalProps> = ({
             onClick={handleToggleAlarm}
             className={`p-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition ${
               isAlarmPlaying
-                ? 'bg-rose-600 text-white border-rose-400 animate-pulse'
-                : 'bg-slate-800 text-slate-300 border-white/10'
+                ? 'bg-rose-600 text-white border-rose-600 animate-pulse shadow-sm'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
             }`}
           >
             {isAlarmPlaying ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -92,105 +92,88 @@ export const SOSModal: React.FC<SOSModalProps> = ({
         </div>
 
         {/* Live Coordinates & Dispatch Badge */}
-        <div className="bg-rose-950/60 border border-rose-500/40 rounded-2xl p-4 space-y-2">
+        <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-700/50 rounded-2xl p-4 space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-rose-300">Live GPS Coordinates:</span>
-            <span className="font-mono font-bold text-white bg-rose-900/80 px-2 py-0.5 rounded border border-rose-400/30">
+            <span className="font-bold text-rose-800 dark:text-rose-300">Live GPS Coordinates:</span>
+            <span className="font-mono font-bold text-rose-900 dark:text-white bg-rose-100 dark:bg-rose-900/80 px-2 py-0.5 rounded border border-rose-300 dark:border-rose-600">
               {currentCoords[0].toFixed(5)}° N, {currentCoords[1].toFixed(5)}° E
             </span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-rose-300">Nearest Landmark:</span>
-            <span className="font-bold text-white">{nearestStationName}</span>
+            <span className="font-bold text-rose-800 dark:text-rose-300">Nearest Landmark:</span>
+            <span className="font-bold text-slate-900 dark:text-white">{nearestStationName}</span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-rose-300">Dispatch Reference:</span>
-            <span className="font-mono text-cyan-300">{dispatchDetails?.dispatchId || 'SOS-ACTIVE'}</span>
+            <span className="font-bold text-rose-800 dark:text-rose-300">Dispatch Reference:</span>
+            <span className="font-mono font-bold text-blue-600 dark:text-cyan-300">{dispatchDetails?.dispatchId || 'SOS-ACTIVE'}</span>
           </div>
         </div>
 
         {/* Helplines Dispatched List */}
         <div className="space-y-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-rose-300 flex items-center gap-1.5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
             <PhoneCall className="w-3.5 h-3.5" /> Direct Emergency Helplines Alerted
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-            <div className="bg-slate-900/90 border border-white/10 p-2.5 rounded-xl flex items-center justify-between">
+            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="font-bold text-white">Police (112)</div>
-                <div className="text-[10px] text-emerald-400 flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" /> Live GPS Sent
-                </div>
+                <div className="font-bold text-slate-900 dark:text-white">Police (112)</div>
+                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">GPS Transmitted</div>
               </div>
+              <a href="tel:112" className="p-1.5 bg-blue-600 text-white rounded-lg font-bold text-[10px]">Call</a>
             </div>
 
-            <div className="bg-slate-900/90 border border-white/10 p-2.5 rounded-xl flex items-center justify-between">
+            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="font-bold text-pink-300">Women (1091)</div>
-                <div className="text-[10px] text-emerald-400 flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" /> Broadcasted
-                </div>
+                <div className="font-bold text-slate-900 dark:text-white">Ambulance (108)</div>
+                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Medical Ready</div>
               </div>
+              <a href="tel:108" className="p-1.5 bg-blue-600 text-white rounded-lg font-bold text-[10px]">Call</a>
             </div>
 
-            <div className="bg-slate-900/90 border border-white/10 p-2.5 rounded-xl flex items-center justify-between">
+            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl flex items-center justify-between">
               <div>
-                <div className="font-bold text-red-300">Ambulance (108)</div>
-                <div className="text-[10px] text-emerald-400 flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" /> Alert Queued
-                </div>
+                <div className="font-bold text-slate-900 dark:text-white">Women Helpline (1091)</div>
+                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Priority Line</div>
               </div>
+              <a href="tel:1091" className="p-1.5 bg-rose-600 text-white rounded-lg font-bold text-[10px]">Call</a>
             </div>
           </div>
         </div>
 
-        {/* Medical ID Quick Summary */}
-        <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-3.5 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 font-black text-lg">
-            {userProfile.bloodGroup}
-          </div>
-          <div className="flex-1 text-xs">
-            <div className="font-bold text-white flex items-center gap-1.5">
-              <HeartPulse className="w-3.5 h-3.5 text-rose-400" />
-              <span>Medical Emergency Card Attached</span>
-            </div>
-            <p className="text-[11px] text-slate-300 mt-0.5">
-              {userProfile.medicalNotes} • Allergies: {userProfile.allergies}
-            </p>
-          </div>
-        </div>
-
-        {/* Family Contacts SMS Broadcast Preview */}
-        <div className="space-y-1.5">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-            <Send className="w-3.5 h-3.5 text-cyan-400" /> Family SMS Broadcast ({userProfile.emergencyContacts.length} Contacts)
+        {/* Emergency Contacts Alerted */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+            <Send className="w-3.5 h-3.5 text-blue-600" /> Family Emergency Contacts SMS Dispatched
           </h3>
-          <div className="bg-slate-950/80 rounded-xl p-2.5 border border-white/10 text-[11px] text-slate-300 font-mono space-y-1">
-            {userProfile.emergencyContacts.map((c) => (
-              <div key={c.id} className="flex items-center justify-between text-slate-300">
-                <span>{c.name} ({c.phone})</span>
-                <span className="text-emerald-400">● SMS Delivered</span>
+          <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+            {userProfile.emergencyContacts.length === 0 ? (
+              <div className="text-xs text-slate-400 p-2 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                No custom family contacts added. (Configure in Settings)
               </div>
-            ))}
+            ) : (
+              userProfile.emergencyContacts.map((c) => (
+                <div key={c.id} className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-slate-900 dark:text-white">{c.name}</span>
+                    <span className="text-[10px] text-slate-500 font-mono ml-2">{c.phone}</span>
+                  </div>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[10px] flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> SMS Sent
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Action Buttons: Cancel or Direct Call */}
-        <div className="flex items-center gap-3 pt-2 border-t border-white/10">
-          <button
-            onClick={handleCancelSOS}
-            className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-white/20 transition"
-          >
-            I am Safe now (Cancel SOS)
-          </button>
-
-          <a
-            href="tel:112"
-            className="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/30 text-center transition flex items-center justify-center gap-1.5"
-          >
-            <PhoneCall className="w-4 h-4" /> Call 112 Directly
-          </a>
-        </div>
+        {/* Cancel Button */}
+        <button
+          onClick={handleCancelSOS}
+          className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs shadow-md transition"
+        >
+          Cancel SOS Alert & Silence Siren
+        </button>
       </div>
     </div>
   );

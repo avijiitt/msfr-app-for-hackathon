@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { Shield, Sparkles, PhoneCall, CheckCircle, Navigation, MapPin } from 'lucide-react';
+import React from 'react';
+import { Shield, Sparkles, PhoneCall, CheckCircle, Navigation, MapPin, X } from 'lucide-react';
 import { TranslationDictionary } from '../../types/i18n';
 
 interface WomenSafetyHubProps {
@@ -20,102 +20,97 @@ export const WomenSafetyHub: React.FC<WomenSafetyHubProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in">
-      <div className="max-w-lg w-full glass-panel-glow rounded-3xl p-5 sm:p-6 text-white space-y-5 border border-pink-500/40 shadow-2xl">
+    <div className="fixed inset-0 z-[9999] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in">
+      <div className="max-w-lg w-full bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 text-slate-900 dark:text-white space-y-5 border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-pink-500/20 border border-pink-500/30 flex items-center justify-center text-pink-400">
+            <div className="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-900/40 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl">
               🌸
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">
-                {t.womenBooking}
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                {t.womenBooking || 'Women Safety & Pink Transit Hub'}
               </h2>
-              <p className="text-xs text-pink-300">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Safe Multi-Modal Commute & Women Reserved Transit
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm"
+            className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Feature 1: Pink Mo Bus & Reserved Coach */}
-        <div className="bg-pink-950/40 border border-pink-500/30 rounded-2xl p-4 space-y-2.5">
+        {/* Feature 1: Dedicated Women Coaches & Pink Buses */}
+        <div className="bg-pink-50 dark:bg-pink-950/30 border border-pink-200 dark:border-pink-800/50 rounded-2xl p-4 space-y-2.5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-sm text-pink-200 flex items-center gap-2">
-              <span>🌸 Dedicated Women Pink Mo Buses</span>
+            <span className="font-bold text-sm text-pink-900 dark:text-pink-200 flex items-center gap-1.5">
+              🌸 Dedicated Women Pink Transit Coaches
             </span>
-            <span className="text-[10px] bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-full font-mono">
-              ● Active Live Fleet
+            <span className="text-[10px] bg-pink-100 dark:bg-pink-900/60 text-pink-800 dark:text-pink-300 px-2 py-0.5 rounded-full font-mono font-bold">
+              ● Active Fleet
             </span>
           </div>
-          <p className="text-xs text-pink-100/90 leading-relaxed">
-            Staffed with trained women security marshals, active GPS dashcams, and automated SOS panic buttons at every window.
-          </p>
-          <div className="flex items-center gap-2 pt-1">
-            <button
-              onClick={() => {
-                onClose();
-                onOpenPinkPass();
-              }}
-              className="flex-1 py-2 px-3 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs shadow-lg shadow-pink-600/30 transition text-center"
-            >
-              Get Free Women Pink Pass
-            </button>
-          </div>
-        </div>
-
-        {/* Feature 2: High-Lux Night Safe CCTV Corridors */}
-        <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-4 space-y-2">
-          <span className="font-bold text-xs text-slate-200 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-emerald-400" />
-            <span>100% Streetlit & CCTV Patrolled Routes</span>
-          </span>
-          <p className="text-xs text-slate-400">
-            Route optimizer highlights well-lit routes with active police help desks and verified safe bus shelters.
+          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+            Staffed with trained women security marshals, active GPS dashcams, and automated SOS panic buttons at every window seat.
           </p>
           <button
-            onClick={() => {
-              onClose();
-              onPlanNightSafe();
-            }}
-            className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-semibold text-xs border border-cyan-500/30 flex items-center justify-center gap-1.5 transition"
+            onClick={onOpenPinkPass}
+            className="w-full py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl text-xs shadow-sm transition flex items-center justify-center gap-1.5"
           >
-            <Navigation className="w-3.5 h-3.5" />
-            <span>Switch to Night-Safe Route Optimizer</span>
+            <Sparkles className="w-3.5 h-3.5" />
+            Get Free Women Pink Pass (Digital)
           </button>
         </div>
 
-        {/* Feature 3: Helplines */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
+        {/* Feature 2: Night-Safe Well-Lit Routing */}
+        <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+              🌙 Night Safe Mode Routing (CCTV + LED Lit Roads)
+            </span>
+          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            Auto-diverts journey through 100% street-lit corridors with active police kiosks and CCTV monitoring stations.
+          </p>
+          <button
+            onClick={onPlanNightSafe}
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold rounded-xl text-xs shadow-sm transition flex items-center justify-center gap-1.5"
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            Apply Night-Safe Routing Corridor
+          </button>
+        </div>
+
+        {/* Direct Women Safety Helpline */}
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 p-3.5 rounded-2xl flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 flex items-center justify-center">
+              <PhoneCall className="w-4 h-4" />
+            </div>
+            <div>
+              <strong className="text-xs text-slate-900 dark:text-white block">National Women Helpline</strong>
+              <span className="text-[11px] text-slate-500 font-mono">Dial 1091 (Toll-Free 24x7)</span>
+            </div>
+          </div>
           <a
             href="tel:1091"
-            className="bg-slate-900/80 border border-pink-500/30 p-3 rounded-xl flex items-center gap-2 hover:bg-slate-800 transition"
+            className="py-1.5 px-3.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition"
           >
-            <PhoneCall className="w-4 h-4 text-pink-400" />
-            <div>
-              <div className="font-bold text-pink-300">Women Helpline</div>
-              <div className="text-[10px] text-slate-400">Dial 1091 (Toll-Free)</div>
-            </div>
-          </a>
-
-          <a
-            href="tel:112"
-            className="bg-slate-900/80 border border-blue-500/30 p-3 rounded-xl flex items-center gap-2 hover:bg-slate-800 transition"
-          >
-            <PhoneCall className="w-4 h-4 text-blue-400" />
-            <div>
-              <div className="font-bold text-blue-300">Police Emergency</div>
-              <div className="text-[10px] text-slate-400">Dial 112 Direct</div>
-            </div>
+            Call 1091
           </a>
         </div>
+
+        <button
+          onClick={onClose}
+          className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition"
+        >
+          Close Hub
+        </button>
       </div>
     </div>
   );
