@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { 
   Navigation2, 
   MapPin, 
@@ -84,7 +84,7 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   ];
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-4 flex flex-col gap-6 overflow-y-auto min-h-[calc(100vh-65px)]">
+    <aside className="w-full lg:w-64 flex-shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 flex flex-col gap-5 overflow-y-auto max-h-[calc(100vh-130px)] lg:sticky lg:top-24 shadow-sm">
       {/* 1. Main Navigation Items */}
       <nav className="space-y-1">
         {mainNav.map((item) => {

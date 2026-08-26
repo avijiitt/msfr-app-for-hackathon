@@ -14,6 +14,26 @@ if (isGeminiConfigured()) {
   }
 }
 
+export type AIActionType =
+  | 'open_parcel_booking'
+  | 'open_parcel_sync'
+  | 'open_wallet'
+  | 'open_fare'
+  | 'open_rewards'
+  | 'open_refund'
+  | 'open_student'
+  | 'open_schedule'
+  | 'open_support'
+  | 'open_amenities'
+  | 'open_alerts'
+  | 'open_share_location'
+  | 'open_medical_id'
+  | 'open_women_safety'
+  | 'open_my_trips'
+  | 'trigger_sos'
+  | 'open_planner'
+  | 'toggle_theme';
+
 export interface AIMessage {
   id: string;
   sender: 'user' | 'assistant';
@@ -22,37 +42,23 @@ export interface AIMessage {
   isStreaming?: boolean;
   actionButton?: {
     label: string;
-    actionType:
-      | 'navigate_tab'
-      | 'trigger_sos'
-      | 'open_pass'
-      | 'open_planner'
-      | 'open_amenities'
-      | 'open_student'
-      | 'open_schedule'
-      | 'open_support'
-      | 'open_fare'
-      | 'open_rewards'
-      | 'open_refund';
+    actionType: AIActionType;
     payload?: string;
   };
 }
 
 // System prompt — makes Gemini an expert Indian transit assistant
-const MUSAFIR_SYSTEM_PROMPT = `You are Musafir AI, an expert smart transit assistant built specifically for India.
+const MUSAFIR_SYSTEM_PROMPT = `You are Musafir AI, an expert smart transit companion and in-app automated operator built specifically for India.
 
-Your expertise covers:
-- Indian public transport: city buses (Mo Bus, DTC, BMTC, BEST, MTC, KSRTC, WBTC, PMPML), Metro Rail (Delhi, Mumbai, Bengaluru, Hyderabad, Kolkata, Chennai, Kochi, Jaipur, Ahmedabad, Pune, Lucknow, Kanpur, Nagpur), suburban local trains, EV autos, e-rickshaws, shared cabs.
-- Indian transit routes, live fare matrices, and multimodal interchange hubs across all Indian states.
-- Multi-lingual intelligence: fluent in English, Hindi, Odia, Bengali, Tamil, Telugu, Marathi.
-- Musafir app features: 6 smart route modes (Fastest, Cheapest, Eco-Friendly, Senior Citizen, Night Safety, Weather-Aware), Mo-Wallet (₹10,000 max UPI top-up), Parcel Lockers, Automated Ride Scheduling, DigiLocker Student Verification (50% off), Trip Assurance Instant Refunds, and Emergency SOS.
-
-Formatting guidelines:
-- Be concise, direct, and helpful (4-6 lines max for standard queries).
+Your capabilities:
+1. Indian Public Transit: Buses (Mo Bus, DTC, BMTC, BEST, MTC, KSRTC, WBTC, PMPML), Metro Rail (Delhi, Mumbai, Bengaluru, Hyderabad, Kolkata, Chennai, Kochi, Jaipur, Ahmedabad, Pune, Nagpur), Suburban local trains, EV autos, e-rickshaws, shared cabs.
+2. In-App Control: You can trigger and open any feature in the app — Parcel Hub, Mo-Wallet, Schedule Rides, Student Pass Hub (50% off), Live Family Location Sharing, Emergency SOS, Fare Calculator, Refunds, Nearby Amenities, and Night-Safe Routing.
+3. Multi-Lingual: Fluent in English, Hindi (हिन्दी), Odia (ଓଡ଼ିଆ), Bengali (বাংলা), Tamil (தமிழ்), Telugu (తెలుగు), Marathi (मराठी).
+4. Formatting:
+- Keep answers concise, clear, and punchy (3-5 lines max).
 - Always use ₹ for Indian Rupees (e.g. ₹20, ₹45).
-- For route directions, format cleanly: Origin ➔ Waypoint ➔ Destination.
-- For fares, highlight the best value option.
-- Tone: Welcoming, sharp, knowledgeable Indian transit companion.`;
+- For route navigation, format as: Origin ➔ Waypoint ➔ Destination.
+- Be proactive in recommending the exact feature or pass that saves money/time.`;
 
 // Conversation history for context
 let conversationHistory: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
@@ -74,7 +80,7 @@ class AIAssistantService {
 
     // ── 1. Emergency SOS Shortcut ───────────────────────────────────────────
     if (q.includes('sos') || q.includes('emergency') || (q.includes('help') && q.includes('danger'))) {
-      const text = `🚨 **Emergency Alert Triggered!**\nYour live GPS coordinates and blood group are ready to transmit to 112 emergency services and family contacts.\n\n📞 Police: 112 | Ambulance: 108 | Women Helpline: 1091`;
+      const text = `🚨 **Emergency Alert Triggered!**\nLive GPS coordinates and medical telemetry are ready to dispatch to 112 emergency services and family contacts.\n\n📞 Police: 112 | Ambulance: 108 | Women Helpline: 1091`;
       conversationHistory.push({ role: 'model', parts: [{ text }] });
       return {
         id,
@@ -152,57 +158,65 @@ class AIAssistantService {
     return this.fallbackResponse(id, q, now);
   }
 
-  /**
-   * AI Journey Explainer — Generates smart AI summary for selected route
-   */
-  public async getRouteAdvice(origin: string, destination: string, mode: string): Promise<string> {
-    if (isGeminiConfigured()) {
-      try {
-        const prompt = `Give a 1-sentence quick transit tip for traveling from ${origin} to ${destination} using ${mode} in India. Include expected rush hour or fare savings tip.`;
-        if (ai) {
-          const res = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
-            config: { maxOutputTokens: 100, temperature: 0.6 },
-            contents: prompt,
-          });
-          if (res.text) return res.text.trim();
-        }
-      } catch {}
-    }
-    return `✨ AI Tip: Take the primary arterial corridor to save ~12 mins with lowest passenger crowd level.`;
-  }
+  public detectActionButton(query: string, _response: string): AIMessage['actionButton'] | undefined {
+    const q = query.toLowerCase();
 
-  private detectActionButton(query: string, _response: string): AIMessage['actionButton'] | undefined {
-    if (query.includes('fare') || query.includes('price') || query.includes('cost') || query.includes('ticket'))
-      return { label: '📊 Compare Fares', actionType: 'open_fare' };
-    if (query.includes('reward') || query.includes('coin') || query.includes('point') || query.includes('miles'))
-      return { label: '🏆 Open Rewards', actionType: 'open_rewards' };
-    if (query.includes('refund') || query.includes('delay') || query.includes('late') || query.includes('cancel'))
-      return { label: '🛡️ Claim Refund', actionType: 'open_refund' };
-    if (query.includes('student') || query.includes('concession') || query.includes('digilocker'))
-      return { label: '🎓 Student Hub', actionType: 'open_student' };
-    if (query.includes('schedule') || query.includes('book') || query.includes('plan'))
-      return { label: '📅 Schedule Ride', actionType: 'open_schedule' };
-    if (query.includes('support') || query.includes('complaint') || query.includes('help'))
-      return { label: '💬 Customer Support', actionType: 'open_support' };
-    if (query.includes('route') || query.includes('how to reach') || query.includes('directions'))
-      return { label: '🗺️ Plan Trip', actionType: 'open_planner' };
+    if (q.includes('parcel') || q.includes('courier') || q.includes('locker') || q.includes('package') || q.includes('delivery'))
+      return { label: '📦 Open Transit Parcel Hub', actionType: 'open_parcel_booking' };
+    if (q.includes('wallet') || q.includes('recharge') || q.includes('top up') || q.includes('topup') || q.includes('balance') || q.includes('pass'))
+      return { label: '💳 Open Mo-Wallet', actionType: 'open_wallet' };
+    if (q.includes('women') || q.includes('pink') || q.includes('night safe') || q.includes('lady'))
+      return { label: '🌸 Women Safety & Pink Hub', actionType: 'open_women_safety' };
+    if (q.includes('family') || q.includes('share location') || q.includes('track me') || q.includes('telemetry'))
+      return { label: '📡 Share Live Location', actionType: 'open_share_location' };
+    if (q.includes('medical') || q.includes('blood') || q.includes('allergies') || q.includes('doctor') || q.includes('hospital'))
+      return { label: '🏥 Open Medical Card', actionType: 'open_medical_id' };
+    if (q.includes('amenit') || q.includes('nearby') || q.includes('atm') || q.includes('charging') || q.includes('restroom') || q.includes('stop'))
+      return { label: '📍 View Nearby Amenities', actionType: 'open_amenities' };
+    if (q.includes('alert') || q.includes('incident') || q.includes('strike') || q.includes('flood') || q.includes('traffic delay'))
+      return { label: '🔔 View Live Transit Alerts', actionType: 'open_alerts' };
+    if (q.includes('trip') || q.includes('history') || q.includes('my trips') || q.includes('record'))
+      return { label: '📋 View My Trips History', actionType: 'open_my_trips' };
+    if (q.includes('fare') || q.includes('price') || q.includes('cost') || q.includes('ticket') || q.includes('calculator'))
+      return { label: '📊 Open Fare Calculator', actionType: 'open_fare' };
+    if (q.includes('reward') || q.includes('coin') || q.includes('point') || q.includes('miles'))
+      return { label: '🏆 Open Rewards & Miles', actionType: 'open_rewards' };
+    if (q.includes('refund') || q.includes('delay') || q.includes('late') || q.includes('assurance'))
+      return { label: '🛡️ Claim Instant Refund', actionType: 'open_refund' };
+    if (q.includes('student') || q.includes('concession') || q.includes('digilocker') || q.includes('college'))
+      return { label: '🎓 Student Concession Hub', actionType: 'open_student' };
+    if (q.includes('schedule') || q.includes('commute') || q.includes('daily ride') || q.includes('pre-book'))
+      return { label: '📅 Schedule Automated Ride', actionType: 'open_schedule' };
+    if (q.includes('support') || q.includes('complaint') || q.includes('lost') || q.includes('helpline'))
+      return { label: '💬 Customer Support & Help', actionType: 'open_support' };
+    if (q.includes('dark mode') || q.includes('light mode') || q.includes('theme'))
+      return { label: '🌓 Toggle Day / Night Theme', actionType: 'toggle_theme' };
+    if (q.includes('route') || q.includes('how to reach') || q.includes('directions') || q.includes('travel') || q.includes('bus'))
+      return { label: '🗺️ Plan Journey', actionType: 'open_planner' };
+
     return undefined;
   }
 
   private fallbackResponse(id: string, q: string, now: string): AIMessage {
+    if (q.includes('parcel') || q.includes('locker')) {
+      return {
+        id, sender: 'assistant', timestamp: now,
+        text: `📦 **Transit Parcel Locker Hub:**\nDeliver and pick up packages securely at transit stations across India with OTP locker access and live SMS alerts.`,
+        actionButton: { label: '📦 Open Parcel Hub', actionType: 'open_parcel_booking' },
+      };
+    }
     if (q.includes('fare') || q.includes('price') || q.includes('cost')) {
       return {
         id, sender: 'assistant', timestamp: now,
-        text: `💳 **Fares Overview (Corridor ~8km):**\n• City Bus (Non-AC): ₹10–₹20\n• City Bus (AC): ₹20–₹35\n• Metro Rail: ₹20–₹45\n• Shared Auto: ₹30–₹50\n• Prime Cab: ₹80–₹160\n\n*Tip: Use Mo-Wallet for auto-discount passes!*`,
-        actionButton: { label: '📊 Compare Fares', actionType: 'open_fare' },
+        text: `💳 **Fares Overview (City Corridor ~8km):**\n• City Bus (Non-AC): ₹10–₹20\n• City Bus (AC): ₹20–₹35\n• Metro Rail: ₹20–₹45\n• Shared Auto: ₹30–₹50\n• Prime Cab: ₹80–₹160\n\n*Tip: Use Mo-Wallet for auto-discount passes!*`,
+        actionButton: { label: '📊 Open Fare Calculator', actionType: 'open_fare' },
       };
     }
     if (q.includes('metro')) {
       return {
         id, sender: 'assistant', timestamp: now,
         text: `🚇 **Metro Transit Networks:**\nDelhi (395km), Mumbai (80km), Bengaluru (73km), Hyderabad (72km), Kolkata (45km), Chennai (54km), Kochi (26km), Ahmedabad (40km), Pune (12km).\n\n*All lines integrated with QR passes in Musafir!*`,
-        actionButton: { label: '🗺️ Plan Metro Trip', actionType: 'open_planner' },
+        actionButton: { label: '🗺️ Plan Journey', actionType: 'open_planner' },
       };
     }
     if (q.includes('reward') || q.includes('coin') || q.includes('miles')) {
@@ -228,8 +242,8 @@ class AIAssistantService {
     }
     return {
       id, sender: 'assistant', timestamp: now,
-      text: `Namaste! 🙏 I'm **Musafir AI**, your intelligent India transit companion.\n\nI can assist you with:\n• 🗺️ Smart multi-modal routes across India\n• 💳 Real fare comparisons (Bus vs Metro vs Cab)\n• 🎓 Student concession passes (50% off)\n• 🛡️ Instant trip delay refunds\n• 🌙 Night-safe & weather-resilient journeys`,
-      actionButton: { label: '🗺️ Plan a Trip', actionType: 'open_planner' },
+      text: `Namaste! 🙏 I'm **Musafir AI**, your smart India transit companion.\n\nI can do everything within the app for you:\n• 🗺️ Plan journeys & find fastest routes\n• 💳 Open Mo-Wallet & UPI recharge\n• 📦 Book transit parcel lockers\n• 🎓 DigiLocker student 50% concession\n• 🛡️ Claim delay refunds\n• 🌸 Women safety & night-safe routing\n• 🚨 Instant SOS dispatch`,
+      actionButton: { label: '🗺️ Plan Journey', actionType: 'open_planner' },
     };
   }
 

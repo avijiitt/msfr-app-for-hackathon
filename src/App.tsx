@@ -16,6 +16,7 @@ import { MusafirMap } from './components/map/MusafirMap';
 import { BestRoutesCarousel } from './components/planner/BestRoutesCarousel';
 import { JourneyDetailPanel } from './components/journey/JourneyDetailPanel';
 import { PopupAIAssistant } from './components/ai/PopupAIAssistant';
+import { AIActionType } from './services/aiAssistantService';
 
 // Modals
 import { FareCalculatorModal } from './components/fare/FareCalculatorModal';
@@ -224,6 +225,68 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleExecuteAIAction = (actionType: AIActionType, payload?: string) => {
+    switch (actionType) {
+      case 'open_parcel_booking':
+      case 'open_parcel_sync':
+        setIsParcelOpen(true);
+        break;
+      case 'open_wallet':
+        setIsWalletOpen(true);
+        break;
+      case 'open_fare':
+        setIsFareCalcOpen(true);
+        break;
+      case 'open_rewards':
+        setIsRewardsOpen(true);
+        break;
+      case 'open_refund':
+        setIsTripAssuranceOpen(true);
+        break;
+      case 'open_student':
+        setIsStudentOpen(true);
+        break;
+      case 'open_schedule':
+        setIsScheduleOpen(true);
+        break;
+      case 'open_support':
+        setIsSupportOpen(true);
+        break;
+      case 'open_amenities':
+        setIsAmenitiesOpen(true);
+        break;
+      case 'open_alerts':
+        setIsAlertsOpen(true);
+        break;
+      case 'open_share_location':
+        setIsFamilyShareOpen(true);
+        break;
+      case 'open_medical_id':
+        setIsMedicalIdOpen(true);
+        break;
+      case 'open_women_safety':
+        setIsWomenSafetyOpen(true);
+        break;
+      case 'open_my_trips':
+        setIsProfileOpen(true);
+        break;
+      case 'trigger_sos':
+        setIsSosOpen(true);
+        break;
+      case 'toggle_theme':
+        handleToggleTheme();
+        break;
+      case 'open_planner':
+        if (payload) {
+          setDestQuery(payload);
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        break;
+      default:
+        break;
+    }
+  };
+
   const handleStartNavigation = async () => {
     const recorded = await tripService.recordTrip({
       origin: originQuery,
@@ -324,10 +387,7 @@ export const App: React.FC = () => {
 
       {/* 3. Floating Popup AI Assistant (Bottom Right) */}
       <PopupAIAssistant
-        onOpenFareMatrix={() => setIsFareCalcOpen(true)}
-        onOpenRewards={() => setIsRewardsOpen(true)}
-        onOpenTripAssurance={() => setIsTripAssuranceOpen(true)}
-        onOpenSOS={() => setIsSosOpen(true)}
+        onExecuteAction={handleExecuteAIAction}
       />
 
       {/* 4. Modals */}
