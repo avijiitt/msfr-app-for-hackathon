@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import {
-  Bus, Train, LocateFixed, Plus, Minus, Footprints,
+  Bus, Train, LocateFixed, Plus, Minus,
   AlertTriangle, Clock, Eye, WifiOff, Zap, Navigation, ShieldCheck
 } from 'lucide-react';
 import { Vehicle } from '../../types/transit';
@@ -52,7 +52,6 @@ const createVehicleIcon = (vehicle: Vehicle) => {
         justify-content: center;
         font-size: 16px;
         cursor: pointer;
-        transition: transform 0.2s ease;
       ">
         ${label}
       </div>
@@ -121,7 +120,6 @@ function MapViewController({
   const prevCenterRef = useRef<string>('');
 
   useEffect(() => {
-    // Invalidate size once mounted to ensure container fills correctly
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 150);
@@ -130,7 +128,6 @@ function MapViewController({
 
   useEffect(() => {
     if (bounds && bounds.length >= 2) {
-      // Fit both origin and destination with comfortable padding
       try {
         const leafletBounds = L.latLngBounds(bounds.map(([lat, lng]) => [lat, lng]));
         map.fitBounds(leafletBounds, {
@@ -164,24 +161,24 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
 function ZoomControls({ onLocate }: { onLocate: () => void }) {
   const map = useMap();
   return (
-    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-[1000] flex flex-col gap-2 shadow-lg">
+    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-[400] flex flex-col gap-2 shadow-lg">
       <button
         onClick={onLocate}
-        className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-blue-50 dark:hover:bg-slate-700 transition active:scale-95"
+        className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-blue-50 dark:hover:bg-slate-700 transition active:scale-95 shadow-sm"
         title="Locate My GPS Position"
       >
         <LocateFixed className="w-5 h-5 text-blue-600 dark:text-blue-400" />
       </button>
       <button
         onClick={() => map.zoomIn()}
-        className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95"
+        className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95 shadow-sm"
         title="Zoom In"
       >
         <Plus className="w-5 h-5" />
       </button>
       <button
         onClick={() => map.zoomOut()}
-        className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95"
+        className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-95 shadow-sm"
         title="Zoom Out"
       >
         <Minus className="w-5 h-5" />
@@ -200,6 +197,7 @@ interface MusafirMapProps {
   originCoords?: [number, number] | null;
   destCoords?: [number, number] | null;
   originName?: string;
+  isAnyModalOpen?: boolean;
 }
 
 export const MusafirMap: React.FC<MusafirMapProps> = ({
@@ -212,6 +210,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   originCoords = null,
   destCoords = null,
   originName = 'Departure',
+  isAnyModalOpen = false,
 }) => {
   const [isOptionsOpen, setIsOptionsOpen] = useState(true);
   const [showBuses, setShowBuses] = useState(true);
@@ -305,19 +304,19 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   return (
     <div className="relative w-full h-[480px] sm:h-[520px] lg:h-[560px] rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md bg-slate-100 dark:bg-slate-900 transition-all">
       {/* Offline Banner */}
-      {isOffline && (
-        <div className="absolute top-0 left-0 right-0 z-[1001] bg-amber-500 text-white px-4 py-1.5 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-md">
+      {isOffline && !isAnyModalOpen && (
+        <div className="absolute top-0 left-0 right-0 z-[400] bg-amber-500 text-white px-4 py-1.5 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-md">
           <WifiOff className="w-4 h-4" />
           <span>Offline Navigation Mode — Preloaded India Transit Corridor Active</span>
         </div>
       )}
 
-      {/* Top Left: Route Summary Badge (When Origin & Destination are Set) */}
-      {originCoords && destCoords && (
+      {/* Top Left: Route Summary Badge (Hidden when any modal/drawer is open) */}
+      {!isAnyModalOpen && originCoords && destCoords && (
         <div
           className={`absolute ${
             isOffline ? 'top-10' : 'top-3'
-          } left-3 sm:left-4 z-[1000] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md px-3.5 py-2.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex items-center gap-3 transition animate-in fade-in`}
+          } left-3 sm:left-4 z-[400] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md px-3.5 py-2.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex items-center gap-3 transition animate-in fade-in`}
         >
           <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
             <Navigation className="w-5 h-5" />
@@ -338,63 +337,67 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         </div>
       )}
 
-      {/* Top Right: Live Clock HUD */}
-      <div
-        className={`absolute ${
-          isOffline ? 'top-10' : 'top-3'
-        } right-3 sm:right-4 z-[1000] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md px-3 py-1.5 rounded-2xl flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100 shadow-md border border-slate-200 dark:border-slate-700`}
-      >
-        <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 animate-pulse" />
-        <span className="font-mono text-[11px] sm:text-xs">{currentTimeStr}</span>
-      </div>
+      {/* Top Right: Live Clock HUD (Hidden when any modal/drawer is open) */}
+      {!isAnyModalOpen && (
+        <div
+          className={`absolute ${
+            isOffline ? 'top-10' : 'top-3'
+          } right-3 sm:right-4 z-[400] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md px-3 py-1.5 rounded-2xl flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100 shadow-md border border-slate-200 dark:border-slate-700`}
+        >
+          <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 animate-pulse" />
+          <span className="font-mono text-[11px] sm:text-xs">{currentTimeStr}</span>
+        </div>
+      )}
 
-      {/* Floating Map Layers (Bottom Left) */}
-      <div className="absolute bottom-4 left-4 z-[1000] transition-all">
-        {isOptionsOpen ? (
-          <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-2xl p-3 space-y-2 w-48 text-xs font-semibold shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-1.5">
-              <span className="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                Active Rides
-              </span>
-              <button
-                onClick={() => setIsOptionsOpen(false)}
-                className="text-[10px] text-slate-400 hover:text-blue-600 font-bold"
-              >
-                Hide ▲
-              </button>
+      {/* Floating Map Layers (Bottom Left) — Hidden when any modal/drawer is open */}
+      {!isAnyModalOpen && (
+        <div className="absolute bottom-4 left-4 z-[400] transition-all">
+          {isOptionsOpen ? (
+            <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-2xl p-3 space-y-2 w-48 text-xs font-semibold shadow-xl">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-1.5">
+                <span className="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                  Active Rides
+                </span>
+                <button
+                  onClick={() => setIsOptionsOpen(false)}
+                  className="text-[10px] text-slate-400 hover:text-blue-600 font-bold"
+                >
+                  Hide ▲
+                </button>
+              </div>
+              {[
+                { state: showBuses, setter: setShowBuses, icon: <Bus className="w-3.5 h-3.5 text-emerald-500" />, label: 'City Buses' },
+                { state: showMetro, setter: setShowMetro, icon: <Train className="w-3.5 h-3.5 text-blue-600" />, label: 'Metro Lines' },
+                { state: showAutos, setter: setShowAutos, icon: <Zap className="w-3.5 h-3.5 text-amber-500" />, label: 'EV Autos & Cabs' },
+                { state: showTraffic, setter: setShowTraffic, icon: <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />, label: 'Traffic Alerts' },
+              ].map(({ state, setter, icon, label }) => (
+                <label
+                  key={label}
+                  className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 hover:text-blue-600 transition select-none"
+                >
+                  <input
+                    type="checkbox"
+                    checked={state}
+                    onChange={(e) => setter(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-blue-600 focus:ring-0 cursor-pointer"
+                  />
+                  {icon}
+                  <span className="text-[11px]">{label}</span>
+                </label>
+              ))}
             </div>
-            {[
-              { state: showBuses, setter: setShowBuses, icon: <Bus className="w-3.5 h-3.5 text-emerald-500" />, label: 'City Buses' },
-              { state: showMetro, setter: setShowMetro, icon: <Train className="w-3.5 h-3.5 text-blue-600" />, label: 'Metro Lines' },
-              { state: showAutos, setter: setShowAutos, icon: <Zap className="w-3.5 h-3.5 text-amber-500" />, label: 'EV Autos & Cabs' },
-              { state: showTraffic, setter: setShowTraffic, icon: <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />, label: 'Traffic Alerts' },
-            ].map(({ state, setter, icon, label }) => (
-              <label
-                key={label}
-                className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 hover:text-blue-600 transition select-none"
-              >
-                <input
-                  type="checkbox"
-                  checked={state}
-                  onChange={(e) => setter(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded text-blue-600 focus:ring-0 cursor-pointer"
-                />
-                {icon}
-                <span className="text-[11px]">{label}</span>
-              </label>
-            ))}
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsOptionsOpen(true)}
-            className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 shadow-md flex items-center gap-1.5 transition active:scale-95"
-          >
-            <Eye className="w-3.5 h-3.5 text-blue-600" />
-            <span>Map Layers</span>
-          </button>
-        )}
-      </div>
+          ) : (
+            <button
+              onClick={() => setIsOptionsOpen(true)}
+              className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 shadow-md flex items-center gap-1.5 transition active:scale-95"
+            >
+              <Eye className="w-3.5 h-3.5 text-blue-600" />
+              <span>Map Layers</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Main Leaflet Map */}
       <MapContainer
@@ -412,22 +415,20 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           bounds={activeBounds}
         />
 
-        <ZoomControls
-          onLocate={() => {
-            onSelectLocationOnMap(userLocation.lat, userLocation.lng);
-          }}
-        />
+        {!isAnyModalOpen && (
+          <ZoomControls
+            onLocate={() => {
+              onSelectLocationOnMap(userLocation.lat, userLocation.lng);
+            }}
+          />
+        )}
 
         <MapClickHandler onMapClick={onSelectLocationOnMap} />
 
-        {/* Stable Map Tiles */}
+        {/* 100% Free, Reliable OpenStreetMap Tiles — Never requires an API key */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
-          url={
-            themeMode === 'dark'
-              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-              : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-          }
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={19}
         />
 

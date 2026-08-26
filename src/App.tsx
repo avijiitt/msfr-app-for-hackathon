@@ -96,6 +96,28 @@ export const App: React.FC = () => {
 
   const t = translations[currentLang] || translations.en;
 
+  // Track if any modal or drawer is currently open to hide floating map badges
+  const isAnyModalOpen = Boolean(
+    isLoginOpen ||
+    isPermissionsOpen ||
+    isFareCalcOpen ||
+    isRewardsOpen ||
+    isTripAssuranceOpen ||
+    isFeedbackOpen ||
+    isAlertsOpen ||
+    isAmenitiesOpen ||
+    isSosOpen ||
+    isFamilyShareOpen ||
+    isMedicalIdOpen ||
+    isWomenSafetyOpen ||
+    isWalletOpen ||
+    isStudentOpen ||
+    isParcelOpen ||
+    isScheduleOpen ||
+    isSupportOpen ||
+    isProfileOpen
+  );
+
   // Simulator Lifecycle
   useEffect(() => {
     transitSimulator.start();
@@ -258,6 +280,7 @@ export const App: React.FC = () => {
             originName={originQuery}
             originCoords={originCoords}
             destCoords={destCoords}
+            isAnyModalOpen={isAnyModalOpen}
           />
 
           {/* Best Routes for You Section (with 6 Smart Optimization Modes) */}
