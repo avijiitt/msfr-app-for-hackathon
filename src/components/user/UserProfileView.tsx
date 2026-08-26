@@ -1,9 +1,10 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { User, Mail, Phone, MapPin, HeartPulse, Droplet, Users, Cloud, RefreshCw, CheckCircle2, ShieldCheck, QrCode, Plus, Trash2, GraduationCap, Headphones, Award, Leaf, Zap, Flame } from 'lucide-react';
 import { UserProfile, EmergencyContact } from '../../types/transit';
 import { sosService } from '../../services/sosService';
-import { supabaseService } from '../../services/supabaseClient';
+import { authService } from '../../services/supabaseClient';
 import { TranslationDictionary } from '../../types/i18n';
+
 
 interface UserProfileViewProps {
   userProfile: UserProfile;
@@ -32,11 +33,13 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
     sosService.saveProfile(profile);
     onUpdateProfile(profile);
 
-    const res = await supabaseService.syncUserProfile(profile);
+    // Sync to Supabase if configured
+    const res = await authService.updateProfile({ full_name: profile.name });
     setIsSyncing(false);
-    setSyncMessage(res.message);
+    setSyncMessage(res.success ? 'Profile saved successfully! ✅' : 'Saved locally (connect Supabase for cloud sync)');
     setTimeout(() => setSyncMessage(null), 3500);
   };
+
 
   const handleAddContact = () => {
     if (!newContactName || !newContactPhone) return;

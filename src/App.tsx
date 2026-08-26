@@ -34,14 +34,22 @@ import { ParcelBookingModal } from './components/parcel/ParcelBookingModal';
 import { ScheduleRideModal } from './components/schedule/ScheduleRideModal';
 import { CustomerSupportModal } from './components/support/CustomerSupportModal';
 import { UserProfileView } from './components/user/UserProfileView';
+import { LoginModal } from './components/auth/LoginModal';
+import { authService, AuthUser } from './services/supabaseClient';
+
 
 export const App: React.FC = () => {
   // Theme & Language
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
   const [currentLang, setCurrentLang] = useState<LanguageCode>('en');
 
+  // Auth State
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(authService.getCurrentUser());
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+
   // Sidebar & Navigation
   const [activeTab, setActiveTab] = useState<MusafirSidebarTab>('plan');
+
 
   // Search Origin, Destination & 6 Optimization Modes
   const [originQuery, setOriginQuery] = useState('Jayadev Vihar');
@@ -398,8 +406,19 @@ export const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Login / Sign Up Modal */}
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        onSuccess={() => {
+          setCurrentUser(authService.getCurrentUser());
+          setIsLoginOpen(false);
+        }}
+      />
     </div>
   );
 };
 
 export default App;
+

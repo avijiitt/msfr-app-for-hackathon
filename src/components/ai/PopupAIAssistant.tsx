@@ -1,5 +1,5 @@
-﻿import React, { useState } from 'react';
-import { Bot, Send, Mic, MicOff, Sparkles, X, ChevronDown, MessageSquare, Zap } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Bot, Send, Sparkles, X, Loader2, Zap } from 'lucide-react';
 import { aiAssistantService, AIMessage } from '../../services/aiAssistantService';
 
 interface PopupAIAssistantProps {
@@ -20,52 +20,85 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
     {
       id: 'init-msg',
       sender: 'assistant',
-      text: 'Namaste! I am Musafir AI, your personal multi-modal travel assistant across India. How can I help you navigate today?',
+      text: 'Namaste! 🙏 I\'m **Musafir AI** — your smart India transit companion.\n\nAsk me anything:\n• Best route from A to B in any city\n• Metro & bus fare comparison\n• Student concession, refunds, rewards\n• Night-safe or weather-aware routes',
       timestamp: 'Just now',
     },
   ]);
   const [inputText, setInputText] = useState('');
-  const [isListening, setIsListening] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = (overrideText?: string) => {
-    const query = overrideText || inputText;
-    if (!query.trim()) return;
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isThinking]);
+
+  const handleSend = async (overrideText?: string) => {
+    const query = (overrideText || inputText).trim();
+    if (!query || isThinking) return;
 
     const userMsg: AIMessage = {
-      id: 'msg-' + Date.now(),
+      id: 'msg-u-' + Date.now(),
       sender: 'user',
       text: query,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    const updated = [...messages, userMsg];
-    setMessages(updated);
+    setMessages(prev => [...prev, userMsg]);
     setInputText('');
+    setIsThinking(true);
 
-    setTimeout(() => {
-      const botResponse = aiAssistantService.generateResponse(query, 'en');
-      setMessages([...updated, botResponse]);
-    }, 450);
-  };
+    // Streaming placeholder message
+    const streamId = 'msg-s-' + Date.now();
+    let streamingText = '';
 
-  const handleVoice = () => {
-    if (!isListening) {
-      setIsListening(true);
-      setTimeout(() => {
-        setIsListening(false);
-        handleSend('What is the fastest route to KIIT Square right now?');
-      }, 1800);
-    } else {
-      setIsListening(false);
+    try {
+      const result = await aiAssistantService.generateResponse(
+        query,
+        'en',
+        (chunk: string) => {
+          streamingText = chunk;
+          setMessages(prev => {
+            const existing = prev.find(m => m.id === streamId);
+            if (existing) {
+              return prev.map(m => m.id === streamId ? { ...m, text: chunk } : m);
+            } else {
+              return [...prev, {
+                id: streamId,
+                sender: 'assistant' as const,
+                text: chunk,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isStreaming: true,
+              }];
+            }
+          });
+        }
+      );
+
+      // Final message (with action button if any)
+      setMessages(prev => {
+        const withoutStream = prev.filter(m => m.id !== streamId);
+        return [...withoutStream, { ...result, text: result.text || streamingText }];
+      });
+    } catch {
+      setMessages(prev => [...prev, {
+        id: 'err-' + Date.now(),
+        sender: 'assistant',
+        text: 'Sorry, I had trouble connecting. Please try again.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }]);
+    } finally {
+      setIsThinking(false);
     }
   };
 
+
   const quickPrompts = [
-    'Fastest route to KIIT Square?',
-    'Compare bus vs metro fare',
+    'Best route from Connaught Place to AIIMS Delhi?',
+    'Compare bus vs metro fare in Mumbai',
     'How to claim delayed refund?',
-    'Redeem Musafir Coins',
+    'Show student concession passes',
   ];
+
 
   return (
     <>
@@ -157,34 +190,20 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
               </div>
             ))}
 
-            {isListening && (
-              <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 text-xs font-bold flex items-center gap-2 animate-pulse">
-                <Mic className="w-4 h-4" />
-                <span>Listening in Hindi / Odia / English...</span>
+            {isThinking && (
+              <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 text-xs font-bold flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Musafir AI is thinking...</span>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Chat Input Bar */}
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSend();
-            }}
+            onSubmit={(e) => { e.preventDefault(); handleSend(); }}
             className="p-3 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 bg-white dark:bg-slate-900"
           >
-            <button
-              type="button"
-              onClick={handleVoice}
-              className={`p-2.5 rounded-full border transition ${
-                isListening
-                  ? 'bg-red-500 text-white border-red-500 animate-pulse'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-              }`}
-              title="Voice assistant"
-            >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            </button>
 
             <input
               type="text"

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Bot, Send, Sparkles, Mic, MicOff, Volume2 } from 'lucide-react';
 import { aiAssistantService, AIMessage } from '../../services/aiAssistantService';
 import { TranslationDictionary } from '../../types/i18n';
@@ -25,14 +25,19 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   onOpenAmenities,
 }) => {
   const [messages, setMessages] = useState<AIMessage[]>([
-    aiAssistantService.generateResponse('hello', language),
+    {
+      id: 'init',
+      sender: 'assistant',
+      text: 'Namaste! 🙏 I\'m Musafir AI. How can I help you navigate India today?',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    },
   ]);
   const [inputQuery, setInputQuery] = useState('');
   const [isListening, setIsListening] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSendMessage = (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const q = textToSend || inputQuery;
     if (!q.trim()) return;
 
@@ -47,11 +52,10 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
     setMessages(newMsgs);
     setInputQuery('');
 
-    setTimeout(() => {
-      const botMsg = aiAssistantService.generateResponse(q, language);
-      setMessages([...newMsgs, botMsg]);
-    }, 450);
+    const botMsg = await aiAssistantService.generateResponse(q, language);
+    setMessages([...newMsgs, botMsg]);
   };
+
 
   const handleToggleVoice = () => {
     if (!isListening) {
