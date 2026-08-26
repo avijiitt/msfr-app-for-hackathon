@@ -12,6 +12,8 @@ import { IndiaLocationResult } from './services/indiaGeocodingService';
 // Redesigned Musafir Layout & Core Components
 import { MusafirHeader } from './components/layout/MusafirHeader';
 import { MusafirSidebar, MusafirSidebarTab } from './components/layout/MusafirSidebar';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
+import { MobileMenuDrawer } from './components/layout/MobileMenuDrawer';
 import { MusafirMap } from './components/map/MusafirMap';
 import { BestRoutesCarousel } from './components/planner/BestRoutesCarousel';
 import { JourneyDetailPanel } from './components/journey/JourneyDetailPanel';
@@ -95,6 +97,7 @@ export const App: React.FC = () => {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const t = translations[currentLang] || translations.en;
 
@@ -102,6 +105,7 @@ export const App: React.FC = () => {
   const isAnyModalOpen = Boolean(
     isLoginOpen ||
     isPermissionsOpen ||
+    isMobileMenuOpen ||
     isFareCalcOpen ||
     isRewardsOpen ||
     isTripAssuranceOpen ||
@@ -330,20 +334,23 @@ export const App: React.FC = () => {
         onOpenProfile={() => setIsProfileOpen(true)}
         onOriginSelected={handleOriginSelected}
         onDestSelected={handleDestSelected}
+        onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
       />
 
-      {/* 2. Main 3-Column Dashboard Body */}
-      <div className="flex-1 max-w-[1600px] w-full mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 p-3 sm:p-6">
-        {/* Column 1: Left Aligned Sidebar (Not bulky) */}
-        <MusafirSidebar
-          activeTab={activeTab}
-          onTabChange={handleSidebarTabChange}
-          onOpenNearbyStops={() => setIsAmenitiesOpen(true)}
-          onOpenShareLocation={() => setIsFamilyShareOpen(true)}
-          onOpenSOS={() => setIsSosOpen(true)}
-          onOpenStudent={() => setIsStudentOpen(true)}
-          onSelectSavedPlace={(place) => setDestQuery(place)}
-        />
+      {/* 2. Main 3-Column Dashboard Body (Mobile Optimized with pb-24 for bottom bar) */}
+      <div className="flex-1 max-w-[1600px] w-full mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 p-3 sm:p-6 pb-24 lg:pb-6">
+        {/* Column 1: Left Aligned Sidebar (Visible on Desktop / Tablets, Hidden on Phones) */}
+        <div className="hidden lg:block flex-shrink-0">
+          <MusafirSidebar
+            activeTab={activeTab}
+            onTabChange={handleSidebarTabChange}
+            onOpenNearbyStops={() => setIsAmenitiesOpen(true)}
+            onOpenShareLocation={() => setIsFamilyShareOpen(true)}
+            onOpenSOS={() => setIsSosOpen(true)}
+            onOpenStudent={() => setIsStudentOpen(true)}
+            onSelectSavedPlace={(place) => setDestQuery(place)}
+          />
+        </div>
 
         {/* Column 2: Center Main Content (Large Map + Best Routes Cards + Highlight Badges) */}
         <main className="flex-1 flex flex-col gap-6 min-w-0">
@@ -541,6 +548,33 @@ export const App: React.FC = () => {
       <PermissionsModal
         isOpen={isPermissionsOpen}
         onComplete={() => setIsPermissionsOpen(false)}
+      />
+
+      {/* 5. Mobile Native Bottom Navigation Bar (Visible on phones) */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        onTabChange={handleSidebarTabChange}
+        walletBalance={walletBalance}
+        onOpenWallet={() => setIsWalletOpen(true)}
+        onOpenAI={() => handleExecuteAIAction('open_planner')}
+        onOpenMenuDrawer={() => setIsMobileMenuOpen(true)}
+      />
+
+      {/* 6. Mobile Slide-Over Navigation Drawer */}
+      <MobileMenuDrawer
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        activeTab={activeTab}
+        onTabChange={handleSidebarTabChange}
+        walletBalance={walletBalance}
+        onOpenNearbyStops={() => setIsAmenitiesOpen(true)}
+        onOpenShareLocation={() => setIsFamilyShareOpen(true)}
+        onOpenSOS={() => setIsSosOpen(true)}
+        onOpenStudent={() => setIsStudentOpen(true)}
+        onOpenWomenSafety={() => setIsWomenSafetyOpen(true)}
+        onOpenProfile={() => setIsProfileOpen(true)}
+        themeMode={themeMode}
+        onToggleTheme={handleToggleTheme}
       />
     </div>
   );

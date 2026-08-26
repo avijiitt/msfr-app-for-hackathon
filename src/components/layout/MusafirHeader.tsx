@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2 } from 'lucide-react';
+import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu } from 'lucide-react';
 import { indiaGeocodingService, geocodeAddressIndia, IndiaLocationResult, POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
 import { ThemeMode } from '../../types/transit';
 
@@ -23,6 +23,7 @@ interface MusafirHeaderProps {
   // NEW: emit real lat/lng when a location is selected
   onOriginSelected?: (result: IndiaLocationResult) => void;
   onDestSelected?: (result: IndiaLocationResult) => void;
+  onOpenMobileMenu?: () => void;
 }
 
 export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
@@ -44,6 +45,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   onOpenProfile,
   onOriginSelected,
   onDestSelected,
+  onOpenMobileMenu,
 }) => {
   const [originSuggestions, setOriginSuggestions] = useState<IndiaLocationResult[]>([]);
   const [destSuggestions, setDestSuggestions] = useState<IndiaLocationResult[]>([]);
@@ -148,14 +150,29 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-2.5 transition-colors">
       <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-3 sm:gap-6">
 
-        {/* Brand Name ONLY */}
-        <div className="flex items-center gap-2.5 flex-shrink-0 cursor-pointer" onClick={() => onSearch('Current Location', 'KIIT Square, Bhubaneswar')}>
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/30">
-            <Navigation2 className="w-5 h-5" />
+        {/* Brand Name + Mobile Hamburger */}
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+          {onOpenMobileMenu && (
+            <button
+              onClick={onOpenMobileMenu}
+              className="lg:hidden p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 transition"
+              title="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
+
+          <div
+            className="flex items-center gap-2 sm:gap-2.5 cursor-pointer"
+            onClick={() => onSearch('Current Location', 'KIIT Square, Bhubaneswar')}
+          >
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/30">
+              <Navigation2 className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-slate-900 dark:text-white">
+              musafir
+            </span>
           </div>
-          <span className="font-extrabold text-2xl tracking-tight text-slate-900 dark:text-white">
-            musafir
-          </span>
         </div>
 
         {/* Search Bar */}
