@@ -37,6 +37,7 @@ import { UserProfileView } from './components/user/UserProfileView';
 import { LoginModal } from './components/auth/LoginModal';
 import { authService, AuthUser } from './services/supabaseClient';
 import { PermissionsModal } from './components/auth/PermissionsModal';
+import { tripService } from './services/tripService';
 
 
 export const App: React.FC = () => {
@@ -223,8 +224,22 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleStartNavigation = () => {
-    alert('🚀 Real-time navigation started! Turn-by-turn guidance and live vehicle GPS updates active.');
+  const handleStartNavigation = async () => {
+    const recorded = await tripService.recordTrip({
+      origin: originQuery,
+      destination: destQuery,
+      originCoords,
+      destCoords,
+      distanceKm: 8.5,
+      durationMins: 24,
+      fareAmount: 25,
+      mode: 'bus',
+      routeName: 'Smart Transit Corridor',
+      status: 'in_progress',
+    });
+
+    alert(`🚀 Real-time navigation started!\n\n📍 Trip Recorded in Database:\n• Route: ${originQuery} ➔ ${destQuery}\n• Booking Ref: ${recorded.booking_reference}\n• Estimated Fare: ₹${recorded.fare_amount}\n\nLive GPS tracking & turn-by-turn guidance active.`);
+
     setTimeout(() => {
       setIsFeedbackOpen(true);
     }, 4000);
