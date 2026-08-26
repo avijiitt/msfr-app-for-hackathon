@@ -36,6 +36,7 @@ import { CustomerSupportModal } from './components/support/CustomerSupportModal'
 import { UserProfileView } from './components/user/UserProfileView';
 import { LoginModal } from './components/auth/LoginModal';
 import { authService, AuthUser } from './services/supabaseClient';
+import { PermissionsModal } from './components/auth/PermissionsModal';
 
 
 export const App: React.FC = () => {
@@ -43,9 +44,10 @@ export const App: React.FC = () => {
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
   const [currentLang, setCurrentLang] = useState<LanguageCode>('en');
 
-  // Auth State
+  // Auth State — show login on first load if not authenticated
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(authService.getCurrentUser());
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(() => !authService.getCurrentUser());
+  const [isPermissionsOpen, setIsPermissionsOpen] = useState(false);
 
   // Sidebar & Navigation
   const [activeTab, setActiveTab] = useState<MusafirSidebarTab>('plan');
@@ -414,11 +416,22 @@ export const App: React.FC = () => {
         onSuccess={() => {
           setCurrentUser(authService.getCurrentUser());
           setIsLoginOpen(false);
+          // Show permissions modal after successful login (only once)
+          const hasAskedPerms = localStorage.getItem('musafir_perms_asked');
+          if (!hasAskedPerms) {
+            setIsPermissionsOpen(true);
+            localStorage.setItem('musafir_perms_asked', '1');
+          }
         }}
+      />
+
+      {/* Permissions Request Modal (location, notifications) */}
+      <PermissionsModal
+        isOpen={isPermissionsOpen}
+        onComplete={() => setIsPermissionsOpen(false)}
       />
     </div>
   );
 };
 
 export default App;
-
