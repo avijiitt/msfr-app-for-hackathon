@@ -108,6 +108,19 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  // Update simulator region when origin or dest coords change
+  useEffect(() => {
+    if (originCoords && destCoords) {
+      const centerLat = (originCoords[0] + destCoords[0]) / 2;
+      const centerLng = (originCoords[1] + destCoords[1]) / 2;
+      transitSimulator.updateRegion(centerLat, centerLng, [originCoords, destCoords]);
+    } else if (destCoords) {
+      transitSimulator.updateRegion(destCoords[0], destCoords[1]);
+    } else if (originCoords) {
+      transitSimulator.updateRegion(originCoords[0], originCoords[1]);
+    }
+  }, [originCoords, destCoords]);
+
   // GPS Geolocation Subscription
   useEffect(() => {
     const unsub = geolocationService.subscribe((loc) => {
@@ -242,6 +255,7 @@ export const App: React.FC = () => {
             themeMode={themeMode}
             isOffline={isOffline}
             destinationName={destQuery}
+            originName={originQuery}
             originCoords={originCoords}
             destCoords={destCoords}
           />

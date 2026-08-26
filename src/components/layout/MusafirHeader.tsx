@@ -111,7 +111,16 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
     setIsOriginFocused(false);
     setIsDestFocused(false);
 
-    // If user typed something not yet selected, try geocoding it
+    // If user typed something not yet selected, geocode both origin and destination
+    const localOrig = indiaGeocodingService.searchLocations(originQuery)[0];
+    if (localOrig) {
+      onOriginSelected?.(localOrig);
+    } else if (originQuery.length > 2 && !originQuery.includes('Current Location')) {
+      geocodeAddressIndia(originQuery).then(results => {
+        if (results[0]) onOriginSelected?.(results[0]);
+      });
+    }
+
     const localDest = indiaGeocodingService.searchLocations(destQuery)[0];
     if (localDest) {
       onDestSelected?.(localDest);
