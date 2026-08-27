@@ -386,6 +386,9 @@ app.post('/api/sos/trigger', (req: Request, res: Response) => {
     status: 'dispatched_and_active',
   };
 
+  res.json({ success: true, sos: sosPayload });
+});
+
 // ── 8. User Auth & Login Notification API ─────────────────────────────────
 app.post('/api/auth/login-notification', async (req: Request, res: Response) => {
   try {
