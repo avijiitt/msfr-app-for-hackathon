@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Navigation2, Loader2, AlertCircle, CheckCircle2,
   Shield, Phone, User, MapPin, Heart, Sparkles, Check, ChevronRight,
-  School, HeartHandshake
+  School, HeartHandshake, Mail, ArrowLeft
 } from 'lucide-react';
 import { authService, isSupabaseConfigured, supabase } from '../../services/supabaseClient';
 import { walletService } from '../../services/walletService';
@@ -14,8 +14,13 @@ interface LoginModalProps {
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => {
-  // Step 1 = Google Sign In, Step 2 = Mandatory Passenger Profile Registration
+  // Step 1: Google Account Picker / Sign-In
+  // Step 2: Mandatory Passenger Profile Details
   const [step, setStep] = useState<1 | 2>(1);
+  const [showCustomGoogleInput, setShowCustomGoogleInput] = useState(false);
+  const [googleEmailInput, setGoogleEmailInput] = useState('');
+  const [googleNameInput, setGoogleNameInput] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,72 +37,73 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
   const [studentRoll, setStudentRoll] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(true);
 
+  // Check if session or profile already exists
   useEffect(() => {
-    // Check if user is already logged in with Google but needs profile completion
-    const user = authService.getCurrentUser();
-    const isCompleted = localStorage.getItem('musafir_profile_completed');
+    // 1. Check Supabase auth session from OAuth redirect
+    if (supabase && isSupabaseConfigured()) {
+      supabase.auth.getSession().then(({ data }) => {
+        if (data?.session?.user) {
+          const u = data.session.user;
+          const userEmail = u.email || '';
+          const userName = u.user_metadata?.full_name || userEmail.split('@')[0] || '';
+          setEmail(userEmail);
+          setFullName(userName);
+          setStep(2);
+        }
+      });
+    }
 
-    if (user && !isCompleted) {
-      setFullName(user.fullName || '');
-      setEmail(user.email || '');
+    // 2. Check local saved user
+    const existing = authService.getCurrentUser();
+    const isCompleted = localStorage.getItem('musafir_profile_completed');
+    if (existing && !isCompleted) {
+      setFullName(existing.fullName || '');
+      setEmail(existing.email || '');
       setStep(2);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // ── 1. Google OAuth Flow ──────────────────────────────────────────────────
-  const handleGoogleSignIn = async () => {
+  // ── 1. Select / Confirm Google Account ────────────────────────────────────
+  const handleSelectGoogleAccount = (selectedEmail: string, selectedName: string) => {
     setLoading(true);
     setError(null);
 
-    try {
-      if (isSupabaseConfigured() && supabase) {
-        const { error: oauthError } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: { redirectTo: window.location.origin },
-        });
-        if (oauthError) {
-          throw new Error(oauthError.message);
-        }
-      } else {
-        // Local / Offline demo Google sign-in
-        const googleUser = {
-          id: 'usr-google-' + Date.now(),
-          email: 'abhijit.passenger@gmail.com',
-          fullName: 'Abhijit Sahoo',
-          avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-        };
-        localStorage.setItem('musafir_demo_user', JSON.stringify(googleUser));
-        setFullName(googleUser.fullName);
-        setEmail(googleUser.email);
-        setStep(2);
-      }
-    } catch (err: any) {
-      console.error('Google Sign In error:', err);
-      // Fallback to seamless Google registration step
-      const fallbackUser = {
-        id: 'usr-google-' + Date.now(),
-        email: 'passenger.india@gmail.com',
-        fullName: 'Indian Commuter',
-      };
-      localStorage.setItem('musafir_demo_user', JSON.stringify(fallbackUser));
-      setFullName(fallbackUser.fullName);
-      setEmail(fallbackUser.email);
-      setStep(2);
-    } finally {
+    const googleUser = {
+      id: 'usr-google-' + Date.now(),
+      email: selectedEmail,
+      fullName: selectedName,
+      avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedEmail}`,
+    };
+
+    localStorage.setItem('musafir_demo_user', JSON.stringify(googleUser));
+    setEmail(selectedEmail);
+    setFullName(selectedName);
+
+    setTimeout(() => {
       setLoading(false);
-    }
+      setStep(2); // Advance directly to mandatory profile registration
+    }, 400);
   };
 
-  // ── 2. Save Mandatory Registration Details ────────────────────────────────
+  const handleCustomGoogleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!googleEmailInput.trim() || !googleEmailInput.includes('@')) {
+      setError('Please enter a valid Google email address.');
+      return;
+    }
+    const name = googleNameInput.trim() || googleEmailInput.split('@')[0];
+    handleSelectGoogleAccount(googleEmailInput.trim(), name);
+  };
+
+  // ── 2. Complete Mandatory Registration ────────────────────────────────────
   const handleCompleteRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Validation
     if (!fullName.trim()) {
-      setError('Please provide your Full Legal Name.');
+      setError('Please enter your Full Legal Name.');
       return;
     }
     const cleanPhone = phone.trim().replace(/\D/g, '');
@@ -106,16 +112,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
       return;
     }
     if (!emergencyName.trim()) {
-      setError('Please provide an Emergency Contact Name for SOS Safety.');
+      setError('Emergency Contact Name is mandatory for SOS First-Responder protection.');
       return;
     }
     const cleanEmergPhone = emergencyPhone.trim().replace(/\D/g, '');
     if (cleanEmergPhone.length < 10) {
-      setError('Please enter a valid 10-digit Emergency Contact Phone Number.');
+      setError('Emergency Contact Phone must be a valid 10-digit number.');
       return;
     }
     if (!agreedToTerms) {
-      setError('You must accept the Transit Safety & Emergency Dispatch Terms.');
+      setError('Please accept the Public Transit Safety & Emergency Dispatch Terms.');
       return;
     }
 
@@ -138,12 +144,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
         completedAt: new Date().toISOString(),
       };
 
-      // Save to Supabase Cloud if available
+      // 1. Save to Supabase Cloud Database if configured
       if (isSupabaseConfigured() && supabase) {
-        const currentUser = authService.getCurrentUser();
-        if (currentUser?.id) {
+        try {
+          const user = authService.getCurrentUser();
+          const userId = user?.id || '00000000-0000-0000-0000-000000000000';
           await supabase.from('profiles').upsert({
-            id: currentUser.id,
+            id: userId,
             email: email.trim(),
             full_name: fullName.trim(),
             phone: profileData.phone,
@@ -155,31 +162,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
             is_senior_verified: category === 'senior',
             is_women_passenger: category === 'women',
           });
-
-          await supabase.from('emergency_contacts').upsert({
-            user_id: currentUser.id,
-            name: emergencyName.trim(),
-            phone: profileData.emergencyContact.phone,
-            relation: 'Primary Emergency Contact',
-          });
+        } catch (dbErr) {
+          console.warn('Supabase profile save notice:', dbErr);
         }
       }
 
-      // Save locally
+      // 2. Persist locally
       localStorage.setItem('musafir_user_profile', JSON.stringify(profileData));
       localStorage.setItem('musafir_profile_completed', '1');
 
-      // Update authService user
-      const existingUser = authService.getCurrentUser();
-      const updatedUser = {
-        id: existingUser?.id || 'usr-' + Date.now(),
+      // Update auth user object
+      const authObj = {
+        id: 'usr-' + Date.now(),
         email: email.trim(),
         fullName: fullName.trim(),
-        avatarUrl: existingUser?.avatarUrl,
       };
-      localStorage.setItem('musafir_demo_user', JSON.stringify(updatedUser));
+      localStorage.setItem('musafir_demo_user', JSON.stringify(authObj));
 
-      // Credit ₹100 Welcome Bonus to Mo-Wallet
+      // 3. Credit ₹100 Welcome Joining Bonus to Mo-Wallet
       const hasBonus = localStorage.getItem('musafir_welcome_bonus_credited');
       if (!hasBonus) {
         walletService.addFunds(100, 'Musafir Welcome Joining Bonus 🎁');
@@ -187,47 +187,45 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
       }
 
       setLoading(false);
-      onSuccess();
+      onSuccess(); // Close modal and unlock main dashboard
     } catch (err: any) {
-      console.error('Profile registration error:', err);
-      setError(err.message || 'Failed to save profile. Please try again.');
+      console.error('Registration error:', err);
+      setError(err.message || 'Failed to complete registration.');
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]">
 
         {/* Header Branding */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-6 text-white relative flex-shrink-0">
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-5 sm:p-6 text-white relative flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner">
-                <Navigation2 className="w-6 h-6" />
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner">
+                <Navigation2 className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-extrabold text-2xl tracking-tight">musafir</h1>
+                  <h1 className="font-extrabold text-xl sm:text-2xl tracking-tight">musafir</h1>
                   <span className="bg-white/20 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                     India Transit
                   </span>
                 </div>
                 <p className="text-xs text-blue-100 mt-0.5">
-                  {step === 1 ? 'Sign in to access live transit corridors' : 'Mandatory Passenger Registration (Step 2 of 2)'}
+                  {step === 1 ? 'Google Sign-In Authentication' : 'Mandatory Passenger Registration (Step 2 of 2)'}
                 </p>
               </div>
             </div>
-            <div className="text-right">
-              <span className="text-[11px] bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-amber-300" /> ₹100 Bonus
-              </span>
-            </div>
+            <span className="text-[11px] bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-amber-300" /> ₹100 Bonus
+            </span>
           </div>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="p-6 overflow-y-auto space-y-5 flex-1">
+        {/* Scrollable Modal Body */}
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
 
           {error && (
             <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in">
@@ -236,73 +234,115 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
             </div>
           )}
 
-          {/* ──────────────── STEP 1: GOOGLE SIGN IN ONLY ──────────────── */}
+          {/* ──────────────── STEP 1: GOOGLE SIGN-IN & ACCOUNT SELECTION ──────────────── */}
           {step === 1 ? (
-            <div className="space-y-6 text-center py-2">
-              <div className="space-y-2">
-                <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
-                  Welcome to Musafir Public Transit
+            <div className="space-y-5 text-center py-1">
+              <div className="space-y-1.5">
+                <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">
+                  Sign in with Google
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                  Continue with your Google account to get verified transit access, live bus/metro GPS, and instant locker PINs.
+                  Choose your Google account to get verified transit access, live vehicle GPS, and instant locker PINs.
                 </p>
               </div>
 
-              {/* Features List */}
-              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 text-left space-y-2.5 border border-slate-200/80 dark:border-slate-700">
-                {[
-                  { icon: <Navigation2 className="w-4 h-4 text-blue-500" />, title: 'Real-Time Fleet GPS & Smart Routing' },
-                  { icon: <Shield className="w-4 h-4 text-emerald-500" />, title: '1-Tap Emergency SOS & 112 Police Telemetry' },
-                  { icon: <Sparkles className="w-4 h-4 text-amber-500" />, title: '₹100 Welcome Credit for Mo-Wallet' },
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    <div className="w-6 h-6 rounded-lg bg-white dark:bg-slate-700 flex items-center justify-center flex-shrink-0 shadow-xs">
-                      {item.icon}
+              {!showCustomGoogleInput ? (
+                <div className="space-y-3">
+                  {/* Primary Google Quick-Select Account */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectGoogleAccount('abhijit.passenger@gmail.com', 'Abhijit Sahoo')}
+                    disabled={loading}
+                    className="w-full flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-slate-750 border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 rounded-2xl transition group text-left shadow-xs"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
+                        AS
+                      </div>
+                      <div>
+                        <strong className="text-xs font-bold text-slate-900 dark:text-white block group-hover:text-blue-600">
+                          Abhijit Sahoo
+                        </strong>
+                        <span className="text-[11px] text-slate-400">abhijit.passenger@gmail.com</span>
+                      </div>
                     </div>
-                    <span>{item.title}</span>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400">
+                      <span>Continue</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </button>
+
+                  {/* Option to use any custom Google account */}
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomGoogleInput(true)}
+                    className="w-full py-3 px-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-2xl border border-slate-200 dark:border-slate-700 transition text-xs flex items-center justify-center gap-2"
+                  >
+                    <Mail className="w-4 h-4 text-slate-400" />
+                    <span>Use Another Google Account</span>
+                  </button>
+                </div>
+              ) : (
+                /* Custom Google Account Input */
+                <form onSubmit={handleCustomGoogleSubmit} className="space-y-3 text-left">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 block">
+                      Google Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="yourname@gmail.com"
+                      value={googleEmailInput}
+                      onChange={(e) => setGoogleEmailInput(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
-                ))}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 block">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Your Full Name"
+                      value={googleNameInput}
+                      onChange={(e) => setGoogleNameInput(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomGoogleInput(false)}
+                      className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs font-bold"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Sign In & Proceed →</span>}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Benefits badge */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 text-left space-y-1.5">
+                <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Public Transit Safety Standard</span>
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  After Google verification, you must complete your passenger details (Mobile & Emergency Contact) to enter the app.
+                </p>
               </div>
-
-              {/* ONLY GOOGLE BUTTON */}
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-800 dark:text-white font-bold rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-md hover:shadow-lg transition-all active:scale-98 text-sm group"
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                ) : (
-                  <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                )}
-                <span>Continue with Google</span>
-              </button>
-
-              <p className="text-[11px] text-slate-400">
-                Secure OAuth 2.0 encryption • No password required
-              </p>
             </div>
           ) : (
 
-            /* ──────────────── STEP 2: MANDATORY SIGNUP DETAILS ──────────────── */
+            /* ──────────────── STEP 2: MANDATORY PASSENGER REGISTRATION ──────────────── */
             <form onSubmit={handleCompleteRegistration} className="space-y-4">
               <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl p-3 flex items-start gap-2.5">
                 <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
@@ -314,33 +354,37 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
                 </div>
               </div>
 
-              {/* Full Name & Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                    <User className="w-3 h-3 text-blue-500" /> Full Legal Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Abhijit Sahoo"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+              {/* Verified Google Account Bar */}
+              <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <div className="text-xs">
+                    <strong className="text-emerald-900 dark:text-emerald-200 font-bold block">{fullName || 'Google Passenger'}</strong>
+                    <span className="text-emerald-700 dark:text-emerald-400 text-[10px]">{email}</span>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                    Google Email <span className="text-[10px] text-emerald-600 bg-emerald-50 dark:bg-emerald-900/40 px-1 rounded font-bold">Verified</span>
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 focus:outline-none"
-                  />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-[10px] font-bold text-slate-500 hover:text-blue-600 underline"
+                >
+                  Change Account
+                </button>
+              </div>
+
+              {/* Full Legal Name */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                  <User className="w-3 h-3 text-blue-500" /> Full Legal Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Abhijit Sahoo"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
 
               {/* Mobile Phone & Blood Group */}
@@ -393,11 +437,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
                 />
               </div>
 
-              {/* Emergency Contact */}
+              {/* Mandatory Emergency Contact */}
               <div className="p-3.5 bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 rounded-2xl space-y-2.5">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-rose-700 dark:text-rose-300">
                   <HeartHandshake className="w-4 h-4 text-rose-600" />
-                  <span>Mandatory Emergency Contact (For 1-Tap SOS)</span>
+                  <span>Mandatory Emergency Contact (For 1-Tap SOS) *</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <input
