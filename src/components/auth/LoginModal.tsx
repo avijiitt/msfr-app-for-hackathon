@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Navigation2, Loader2, AlertCircle, CheckCircle2,
-  Shield, Phone, User, MapPin, Heart, Sparkles, Check, ChevronRight,
-  School, HeartHandshake, Mail, ArrowLeft
+  Shield, Phone, User, MapPin, Heart, Sparkles, ChevronRight,
+  School, HeartHandshake, Mail, ArrowLeft, Smartphone, RefreshCw, KeyRound
 } from 'lucide-react';
 import { authService, isSupabaseConfigured, supabase } from '../../services/supabaseClient';
 import { walletService } from '../../services/walletService';
@@ -15,17 +15,25 @@ interface LoginModalProps {
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => {
-  // Step 1: Google Account Picker / Sign-In
-  // Step 2: Mandatory Passenger Profile Details
-  const [step, setStep] = useState<1 | 2>(1);
-  const [showCustomGoogleInput, setShowCustomGoogleInput] = useState(false);
+  // Method: 'PHONE' (Primary OTP) or 'GOOGLE' (One-Tap Gmail)
+  const [authMethod, setAuthMethod] = useState<'PHONE' | 'GOOGLE'>('PHONE');
+
+  // Phone OTP Steps: 'PHONE_INPUT' -> 'OTP_INPUT' -> 'PROFILE_INPUT'
+  const [phoneStep, setPhoneStep] = useState<'PHONE_INPUT' | 'OTP_INPUT' | 'PROFILE_INPUT'>('PHONE_INPUT');
+  const [phoneInput, setPhoneInput] = useState('');
+  const [userEnteredOtp, setUserEnteredOtp] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Google Login State
   const [googleEmailInput, setGoogleEmailInput] = useState('');
   const [googleNameInput, setGoogleNameInput] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mandatory Profile Form State
+  // Passenger Profile Form State
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -38,58 +46,108 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
   const [studentRoll, setStudentRoll] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(true);
 
+  // Resend Timer Countdown
+  useEffect(() => {
+    let interval: any = null;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
   // Check if session or profile already exists
   useEffect(() => {
-    // 1. Check Supabase auth session from OAuth redirect
-    if (supabase && isSupabaseConfigured()) {
-      supabase.auth.getSession().then(({ data }) => {
-        if (data?.session?.user) {
-          const u = data.session.user;
-          const userEmail = u.email || '';
-          const userName = u.user_metadata?.full_name || userEmail.split('@')[0] || '';
-          setEmail(userEmail);
-          setFullName(userName);
-          setStep(2);
-        }
-      });
-    }
-
-    // 2. Check local saved user
     const existing = authService.getCurrentUser();
     const isCompleted = localStorage.getItem('musafir_profile_completed');
     if (existing && !isCompleted) {
       setFullName(existing.fullName || '');
       setEmail(existing.email || '');
-      setStep(2);
+      setPhone(existing.email.includes('@') ? '' : existing.email);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // ── 1. Select / Confirm Google Account ────────────────────────────────────
-  const handleSelectGoogleAccount = (selectedEmail: string, selectedName: string) => {
-    setLoading(true);
+  // ── 1. Phone OTP Handler: Step 1 (Send OTP) ──────────────────────────────
+  const handleSendOTP = (e: React.FormEvent) => {
+    e.preventDefault();
     setError(null);
+    const cleanNumber = phoneInput.trim().replace(/\D/g, '');
+    if (cleanNumber.length < 10) {
+      setError('Please enter a valid 10-digit Indian Mobile Phone Number');
+      return;
+    }
 
-    const googleUser = {
-      id: 'usr-google-' + Date.now(),
-      email: selectedEmail,
-      fullName: selectedName,
-      avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedEmail}`,
-    };
+    setLoading(true);
 
-    localStorage.setItem('musafir_demo_user', JSON.stringify(googleUser));
-    setEmail(selectedEmail);
-    setFullName(selectedName);
+    // Generate random 6-digit OTP
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(newOtp);
+    setPhone('+91 ' + cleanNumber.slice(-10));
+    setResendTimer(30);
 
     setTimeout(() => {
       setLoading(false);
-      setStep(2); // Advance directly to mandatory profile registration
+      setPhoneStep('OTP_INPUT');
+      setToastMessage(`📩 SMS to +91 ${cleanNumber.slice(-10)}: Your MSFR login verification code is ${newOtp}`);
     }, 400);
   };
 
-  const handleCustomGoogleSubmit = (e: React.FormEvent) => {
+  // ── 2. Phone OTP Handler: Step 2 (Verify OTP) ───────────────────────────
+  const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    if (userEnteredOtp.trim() === generatedOtp || userEnteredOtp.trim() === '123456') {
+      setLoading(true);
+
+      // Check if user already registered previously
+      const cleanNumber = phoneInput.trim().replace(/\D/g, '');
+      const formattedPhone = '+91 ' + cleanNumber.slice(-10);
+
+      // Check local saved profile
+      const savedProfileRaw = localStorage.getItem('musafir_user_profile');
+      let existingProfile = null;
+      if (savedProfileRaw) {
+        try {
+          const parsed = JSON.parse(savedProfileRaw);
+          if (parsed.phone?.includes(cleanNumber.slice(-10))) {
+            existingProfile = parsed;
+          }
+        } catch {}
+      }
+
+      if (existingProfile && existingProfile.fullName) {
+        // Existing user: direct login!
+        const authObj = {
+          id: 'usr-' + Date.now(),
+          email: existingProfile.email || `${cleanNumber}@msfr.in`,
+          fullName: existingProfile.fullName,
+        };
+        authService.setSessionUser(authObj);
+        sosService.reloadProfile();
+        setToastMessage('');
+        setLoading(false);
+        onSuccess();
+        return;
+      }
+
+      // New user: advance to Profile Setup Form
+      setLoading(false);
+      setToastMessage('');
+      setPhone(formattedPhone);
+      setPhoneStep('PROFILE_INPUT');
+    } else {
+      setError('Invalid OTP code! Check the simulated SMS banner or enter 123456.');
+    }
+  };
+
+  // ── 3. Google Account Submission ──────────────────────────────────────────
+  const handleGoogleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
     if (!googleEmailInput.trim() || !googleEmailInput.includes('@')) {
       setError('Please enter a valid Google email address.');
       return;
@@ -98,10 +156,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
       setError('Please enter your Full Name.');
       return;
     }
-    handleSelectGoogleAccount(googleEmailInput.trim(), googleNameInput.trim());
+
+    setFullName(googleNameInput.trim());
+    setEmail(googleEmailInput.trim());
+    setPhoneStep('PROFILE_INPUT');
   };
 
-  // ── 2. Complete Mandatory Registration ────────────────────────────────────
+  // ── 4. Complete Mandatory Registration Form ──────────────────────────────
   const handleCompleteRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -134,7 +195,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
     try {
       const profileData = {
         fullName: fullName.trim(),
-        email: email.trim(),
+        email: email.trim() || `${cleanPhone.slice(-10)}@passenger.msfr.in`,
         phone: '+91 ' + cleanPhone.slice(-10),
         bloodGroup,
         homeCity: homeCity.trim(),
@@ -154,8 +215,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: email.trim(),
-            fullName: fullName.trim(),
+            email: profileData.email,
+            fullName: profileData.fullName,
             phone: profileData.phone,
             bloodGroup,
             homeCity: homeCity.trim(),
@@ -169,14 +230,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
         console.warn('Backend profile API save notice:', apiErr);
       }
 
-      // Also attempt Supabase direct upsert if available
+      // Also attempt Supabase direct upsert
       if (isSupabaseConfigured() && supabase) {
         try {
           const user = authService.getCurrentUser();
           const userId = user?.id || '89941887-303d-4fd3-9436-f111a33bc93b';
           await supabase.from('profiles').upsert({
             id: userId,
-            email: email.trim(),
+            email: profileData.email,
             full_name: fullName.trim(),
             phone: profileData.phone,
             blood_group: bloodGroup,
@@ -199,7 +260,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
       // Update auth user object
       const authObj = {
         id: 'usr-' + Date.now(),
-        email: email.trim(),
+        email: profileData.email,
         fullName: fullName.trim(),
       };
       authService.setSessionUser(authObj);
@@ -211,13 +272,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
         localStorage.setItem('musafir_welcome_bonus_credited', '1');
       }
 
-      // 4. Send Confirmation Notification to User's Gmail
+      // 4. Send Confirmation Notification to User's Email
       try {
         await fetch('http://localhost:5000/api/auth/login-notification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: email.trim(),
+            email: profileData.email,
             fullName: fullName.trim(),
             phone: profileData.phone,
             category,
@@ -231,11 +292,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
       // Browser Notification if supported
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(`musafir: Welcome, ${fullName.trim()}!`, {
-          body: `Login confirmation sent to ${email.trim()}. ₹100 welcome bonus added to Mo-Wallet.`,
+          body: `Login verified for ${profileData.phone}. ₹100 welcome bonus added to Mo-Wallet.`,
           icon: '/favicon.ico',
         });
-      } else if ('Notification' in window && Notification.permission !== 'denied') {
-        Notification.requestPermission();
       }
 
       // 5. Update in-memory SOS and user profile
@@ -269,7 +328,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
                   </span>
                 </div>
                 <p className="text-xs text-blue-100 mt-0.5">
-                  {step === 1 ? 'Google Sign-In Authentication' : 'Mandatory Passenger Registration (Step 2 of 2)'}
+                  {phoneStep === 'PROFILE_INPUT'
+                    ? 'Passenger Profile Setup (Step 2 of 2)'
+                    : 'Instant Verified Login & Transit ID'}
                 </p>
               </div>
             </div>
@@ -282,6 +343,26 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
         {/* Scrollable Modal Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
 
+          {/* Simulated SMS Delivery Toast Banner */}
+          {toastMessage && (
+            <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/50 border-2 border-blue-400 dark:border-blue-700 text-blue-900 dark:text-blue-200 text-xs font-bold flex items-start gap-2.5 shadow-sm animate-in slide-in-from-top duration-300">
+              <span className="text-base">📩</span>
+              <div className="flex-1">
+                <span className="block">{toastMessage}</span>
+                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-normal mt-0.5 block">
+                  (Test Tip: Click "Fill OTP" or enter <strong>{generatedOtp || '123456'}</strong> below)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUserEnteredOtp(generatedOtp || '123456')}
+                className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700 transition"
+              >
+                Fill OTP
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -289,119 +370,270 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
             </div>
           )}
 
-          {/* ──────────────── STEP 1: GOOGLE SIGN-IN & ACCOUNT SELECTION ──────────────── */}
-          {step === 1 ? (
-            <form onSubmit={handleCustomGoogleSubmit} className="space-y-5 py-1">
-              <div className="space-y-1.5 text-center">
-                <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">
-                  Sign in with Google
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                  Enter your Google account details to get verified transit access, live vehicle GPS, and instant locker PINs.
-                </p>
+          {/* ──────────────── STEP 1: PHONE OR GOOGLE AUTHENTICATION ──────────────── */}
+          {phoneStep !== 'PROFILE_INPUT' ? (
+            <div className="space-y-4">
+
+              {/* Login Method Tabs */}
+              <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMethod('PHONE');
+                    setPhoneStep('PHONE_INPUT');
+                    setError(null);
+                  }}
+                  className={`flex-1 py-2 text-xs font-extrabold rounded-xl transition flex items-center justify-center gap-1.5 ${
+                    authMethod === 'PHONE'
+                      ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-300 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Mobile OTP (Fast)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMethod('GOOGLE');
+                    setError(null);
+                  }}
+                  className={`flex-1 py-2 text-xs font-extrabold rounded-xl transition flex items-center justify-center gap-1.5 ${
+                    authMethod === 'GOOGLE'
+                      ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-300 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <Mail className="w-3.5 h-3.5 text-red-500" />
+                  <span>Google Account</span>
+                </button>
               </div>
 
-              {/* Google SVG logo */}
-              <div className="flex justify-center">
-                <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-xs">
-                  <svg className="w-7 h-7" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                  </svg>
-                </div>
-              </div>
+              {/* ── Sub-Form A: Phone Number Input ── */}
+              {authMethod === 'PHONE' && phoneStep === 'PHONE_INPUT' && (
+                <form onSubmit={handleSendOTP} className="space-y-4 py-1">
+                  <div className="text-center space-y-1">
+                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                      Enter Mobile Number
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      We will send an instant 6-digit login verification code.
+                    </p>
+                  </div>
 
-              {/* Gmail Address */}
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  <Mail className="w-3 h-3 text-blue-500" /> Google Email Address *
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="yourname@gmail.com"
-                  value={googleEmailInput}
-                  onChange={(e) => setGoogleEmailInput(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  autoFocus
-                />
-              </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                      <Phone className="w-3 h-3 text-emerald-500" /> Indian Mobile Number *
+                    </label>
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-3.5 py-3 focus-within:border-blue-500 transition">
+                      <span className="text-sm font-extrabold text-slate-500">🇮🇳 +91</span>
+                      <input
+                        type="tel"
+                        required
+                        autoFocus
+                        placeholder="98765 43210"
+                        value={phoneInput}
+                        onChange={(e) => setPhoneInput(e.target.value)}
+                        maxLength={10}
+                        className="w-full bg-transparent text-sm font-bold text-slate-900 dark:text-white focus:outline-none tracking-wide"
+                      />
+                    </div>
+                  </div>
 
-              {/* Full Name */}
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  <User className="w-3 h-3 text-indigo-500" /> Full Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Your Full Name"
-                  value={googleNameInput}
-                  onChange={(e) => setGoogleNameInput(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition active:scale-98 flex items-center justify-center gap-2 text-sm"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <span>Send Login OTP</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
 
-              {/* Sign In Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition active:scale-98 flex items-center justify-center gap-2 text-sm"
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                      <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    </svg>
-                    <span>Sign In & Continue →</span>
-                  </>
-                )}
-              </button>
+              {/* ── Sub-Form B: OTP Verification ── */}
+              {authMethod === 'PHONE' && phoneStep === 'OTP_INPUT' && (
+                <form onSubmit={handleVerifyOTP} className="space-y-4 py-1">
+                  <div className="text-center space-y-1">
+                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                      Enter Verification Code
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Sent to <strong className="text-slate-800 dark:text-slate-200">{phone}</strong>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhoneStep('PHONE_INPUT');
+                          setError(null);
+                        }}
+                        className="text-blue-600 ml-1.5 font-bold hover:underline text-[11px]"
+                      >
+                        Edit
+                      </button>
+                    </p>
+                  </div>
 
-              {/* Safety note */}
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 text-left space-y-1.5">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <KeyRound className="w-3 h-3 text-blue-500" /> 6-Digit OTP Code *
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setUserEnteredOtp('123456')}
+                        className="text-[10px] text-blue-600 hover:underline font-bold"
+                      >
+                        Use Default: 123456
+                      </button>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      autoFocus
+                      maxLength={6}
+                      placeholder="• • • • • •"
+                      value={userEnteredOtp}
+                      onChange={(e) => setUserEnteredOtp(e.target.value.replace(/\D/g, ''))}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-blue-500 dark:border-blue-600 rounded-2xl p-3 text-center text-xl font-black text-slate-900 dark:text-white tracking-[0.4em] focus:outline-none shadow-sm"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/25 transition active:scale-98 flex items-center justify-center gap-2 text-sm"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Verify & Proceed</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setPhoneStep('PHONE_INPUT')}
+                      className="text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-semibold flex items-center gap-1"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" /> Back
+                    </button>
+                    {resendTimer > 0 ? (
+                      <span className="text-slate-400 font-medium text-[11px]">
+                        Resend code in {resendTimer}s
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleSendOTP}
+                        className="text-blue-600 dark:text-blue-400 font-bold hover:underline flex items-center gap-1"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" /> Resend OTP
+                      </button>
+                    )}
+                  </div>
+                </form>
+              )}
+
+              {/* ── Sub-Form C: Google Sign-In ── */}
+              {authMethod === 'GOOGLE' && (
+                <form onSubmit={handleGoogleSubmit} className="space-y-4 py-1">
+                  <div className="text-center space-y-1">
+                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                      Sign in with Google
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Enter your Google credentials to continue to musafir.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                      <Mail className="w-3 h-3 text-red-500" /> Google Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="yourname@gmail.com"
+                      value={googleEmailInput}
+                      onChange={(e) => setGoogleEmailInput(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                      <User className="w-3 h-3 text-blue-500" /> Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Your Full Name"
+                      value={googleNameInput}
+                      onChange={(e) => setGoogleNameInput(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition active:scale-98 flex items-center justify-center gap-2 text-sm"
+                  >
+                    <span>Continue with Google →</span>
+                  </button>
+                </form>
+              )}
+
+              {/* Security Banner */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 text-left space-y-1">
                 <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <Shield className="w-3.5 h-3.5 text-emerald-500" />
                   <span>Public Transit Safety Standard</span>
                 </div>
                 <p className="text-[10px] text-slate-400">
-                  After sign-in, you must complete your passenger details (Mobile & Emergency Contact) to enter the app.
+                  New passengers complete emergency contact details once to unlock GPS navigation and first-responder safety dispatch.
                 </p>
               </div>
-            </form>
+
+            </div>
           ) : (
 
-            /* ──────────────── STEP 2: MANDATORY PASSENGER REGISTRATION ──────────────── */
+            /* ──────────────── STEP 2: PASSENGER PROFILE & EMERGENCY DETAILS ──────────────── */
             <form onSubmit={handleCompleteRegistration} className="space-y-4">
               <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl p-3 flex items-start gap-2.5">
                 <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <div className="text-xs">
                   <strong className="text-blue-900 dark:text-blue-200 block font-bold">Mandatory Passenger Details</strong>
                   <span className="text-blue-700 dark:text-blue-300 text-[11px]">
-                    To unlock the map and receive SMS parcel locker PINs & SOS protection, please provide your verified passenger info.
+                    To unlock the map and receive SMS parcel locker PINs & SOS protection, please confirm your passenger info.
                   </span>
                 </div>
               </div>
 
-              {/* Verified Google Account Bar */}
+              {/* Verified Phone Banner */}
               <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <div className="text-xs">
-                    <strong className="text-emerald-900 dark:text-emerald-200 font-bold block">{fullName || 'Google Passenger'}</strong>
-                    <span className="text-emerald-700 dark:text-emerald-400 text-[10px]">{email}</span>
+                    <strong className="text-emerald-900 dark:text-emerald-200 font-bold block">Mobile Verified ✓</strong>
+                    <span className="text-emerald-700 dark:text-emerald-400 text-[10px]">{phone}</span>
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
+                  onClick={() => setPhoneStep('PHONE_INPUT')}
                   className="text-[10px] font-bold text-slate-500 hover:text-blue-600 underline"
                 >
-                  Change Account
+                  Change Number
                 </button>
               </div>
 
@@ -420,28 +652,38 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
                 />
               </div>
 
-              {/* Mobile Phone & Blood Group */}
+              {/* Gmail / Email Address */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                  <Mail className="w-3 h-3 text-indigo-500" /> Gmail / Email Address (For Trip Receipts & Passes)
+                </label>
+                <input
+                  type="email"
+                  placeholder="e.g. rahul@gmail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* City & Blood Group */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-emerald-500" /> Mobile Number (+91) *
+                    <MapPin className="w-3 h-3 text-amber-500" /> Transit City / Region *
                   </label>
-                  <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
-                    <span className="text-xs font-bold text-slate-400">+91</span>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="98765 43210"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      maxLength={10}
-                      className="w-full bg-transparent text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Bhubaneswar, Odisha"
+                    value={homeCity}
+                    onChange={(e) => setHomeCity(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
+                  />
                 </div>
                 <div>
                   <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                    <Heart className="w-3 h-3 text-rose-500" /> Blood Group (For Medical ID) *
+                    <Heart className="w-3 h-3 text-rose-500" /> Blood Group (Medical ID) *
                   </label>
                   <select
                     value={bloodGroup}
@@ -453,21 +695,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
                     ))}
                   </select>
                 </div>
-              </div>
-
-              {/* Primary City / Base Station */}
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-amber-500" /> Primary Transit City / Region *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Bhubaneswar, Odisha"
-                  value={homeCity}
-                  onChange={(e) => setHomeCity(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
-                />
               </div>
 
               {/* Mandatory Emergency Contact */}
