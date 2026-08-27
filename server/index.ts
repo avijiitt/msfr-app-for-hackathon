@@ -1,10 +1,17 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from '@google/genai';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -12,6 +19,32 @@ const PORT = process.env.PORT || 5000;
 // Enable CORS and JSON body parser
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
+
+// Persistent database file
+const DATA_DIR = path.join(__dirname, 'data');
+const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function loadSavedProfiles(): any[] {
+  try {
+    if (fs.existsSync(PROFILES_FILE)) {
+      return JSON.parse(fs.readFileSync(PROFILES_FILE, 'utf-8'));
+    }
+  } catch (e) {
+    console.warn('Error reading profiles.json:', e);
+  }
+  return [];
+}
+
+function saveProfiles(profiles: any[]) {
+  try {
+    fs.writeFileSync(PROFILES_FILE, JSON.stringify(profiles, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn('Error saving profiles.json:', e);
+  }
+}
 
 // ── Environment Variables ──────────────────────────────────────────────────
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://chxhqifhtqlntslvrqyv.supabase.co';
@@ -34,7 +67,7 @@ if (GEMINI_API_KEY && GEMINI_API_KEY.length > 10) {
 
 // ── In-Memory Simulation Storage (Fallback if offline) ────────────────────
 const memoryStore = {
-  profiles: [] as any[],
+  profiles: loadSavedProfiles(),
   trips: [] as any[],
   parcels: [
     {
@@ -91,6 +124,74 @@ app.get('/api/users', async (_req: Request, res: Response) => {
       }
     }
     res.json({ success: true, count: profiles.length, profiles });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Register / Save User Profile API
+app.post('/api/users/profile', async (req: Request, res: Response) => {
+  try {
+    const {
+      email,
+      fullName,
+      phone,
+      bloodGroup,
+      homeCity,
+      category,
+      studentCollege,
+      studentRoll,
+      emergencyContact,
+    } = req.body;
+
+    if (!email || !fullName) {
+      return res.status(400).json({ success: false, error: 'Email and Full Name are required' });
+    }
+
+    const userId = crypto.randomUUID();
+    const newProfile = {
+      id: userId,
+      email: email.trim(),
+      full_name: fullName.trim(),
+      phone: phone || '',
+      blood_group: bloodGroup || 'B+',
+      home_address: homeCity || 'Bhubaneswar, Odisha',
+      emergency_contact: emergencyContact || null,
+      is_student: category === 'student',
+      student_college_name: studentCollege || null,
+      student_roll_no: studentRoll || null,
+      is_senior_verified: category === 'senior',
+      is_women_passenger: category === 'women',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // 1. Save to local persistent JSON file
+    const currentProfiles = loadSavedProfiles();
+    const existingIndex = currentProfiles.findIndex((p: any) => p.email.toLowerCase() === email.trim().toLowerCase());
+    if (existingIndex >= 0) {
+      currentProfiles[existingIndex] = { ...currentProfiles[existingIndex], ...newProfile, id: currentProfiles[existingIndex].id || userId };
+    } else {
+      currentProfiles.unshift(newProfile);
+    }
+    saveProfiles(currentProfiles);
+    memoryStore.profiles = currentProfiles;
+
+    // 2. Also attempt Supabase upsert
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      try {
+        await supabase.from('profiles').upsert(newProfile);
+      } catch (dbErr) {
+        console.warn('Supabase upsert notice:', dbErr);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'User profile stored successfully in database',
+      profile: newProfile,
+      totalUsers: currentProfiles.length,
+    });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

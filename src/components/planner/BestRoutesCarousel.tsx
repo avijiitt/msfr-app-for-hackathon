@@ -72,58 +72,234 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Exactly 3 Optimized Route Options for Bhubaneswar & Indian Transit Corridors
-  const routeCards: RouteCardOption[] = [
-    {
-      id: 'route-rec',
-      badge: '⚡ Fastest AC Mo Bus',
-      badgeColor: 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
-      isStar: true,
-      modeType: 'fastest',
-      serviceType: 'Mo Bus AC Electric (CRUT)',
-      routeNumber: 'Route 10 / 24 Express',
-      lineTitle: `Mo Bus 10 / 24 AC Electric Trunk`,
-      durationMins: Math.max(12, Math.round(distanceKm * 2.4)),
-      transfersCount: 0,
-      fareInr: Math.max(15, Math.min(35, Math.round(10 + distanceKm * 1.5))),
-      fareNote: 'AC Stage Fare (₹15–₹35)',
-      arrivalTime: getArrivalTime(Math.max(12, Math.round(distanceKm * 2.4))),
-      co2SavedGrams: Math.round(distanceKm * 55),
-      safetyScore: 98,
-    },
-    {
-      id: 'route-cheap',
-      badge: '💰 Cheapest Non-AC',
-      badgeColor: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
-      modeType: 'cheapest',
-      serviceType: 'Mo Bus Ordinary Non-AC (CRUT)',
-      routeNumber: 'Route 11 / 20 / 33',
-      lineTitle: `Mo Bus 11 / 20 Ordinary Green Line`,
-      durationMins: Math.max(18, Math.round(distanceKm * 3.2)),
-      transfersCount: 0,
-      fareInr: Math.max(10, Math.min(20, Math.round(5 + distanceKm * 1.0))),
-      fareNote: 'Ordinary Fare (₹5 with Student Pass)',
-      arrivalTime: getArrivalTime(Math.max(18, Math.round(distanceKm * 3.2))),
-      co2SavedGrams: Math.round(distanceKm * 42),
-      safetyScore: 90,
-    },
-    {
-      id: 'route-eco',
-      badge: '🌿 Eco Mo E-Ride / Pink',
-      badgeColor: 'bg-pink-50 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300 border border-pink-200 dark:border-pink-800',
-      modeType: 'eco',
-      serviceType: 'Mo E-Ride EV Feeder + Pink Bus',
-      routeNumber: 'Mo E-Ride + Pink 1',
-      lineTitle: `Mo E-Ride Electric Auto + Pink Shuttle`,
-      durationMins: Math.max(14, Math.round(distanceKm * 2.1)),
-      transfersCount: 1,
-      fareInr: Math.max(25, Math.min(45, Math.round(15 + distanceKm * 2.0))),
-      fareNote: 'Shared EV Auto & Pink Safe Feeder',
-      arrivalTime: getArrivalTime(Math.max(14, Math.round(distanceKm * 2.1))),
-      co2SavedGrams: Math.round(distanceKm * 78),
-      safetyScore: 99,
-    },
+  const filterTabs: { id: RouteMode; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'fastest', label: '⚡ Fastest AC', icon: Zap },
+    { id: 'cheapest', label: '💰 Lowest Fare', icon: Coins },
+    { id: 'eco', label: '🌿 Eco E-Ride', icon: Leaf },
+    { id: 'senior', label: '🧓 Senior Friendly', icon: Accessibility },
+    { id: 'weather', label: '🌧️ Weather-Aware', icon: CloudRain },
+    { id: 'night', label: '🌙 Night Travel', icon: Moon },
   ];
+
+  // Dynamic Route Generation for All Modes (3 Optimized Options per Mode)
+  const getRoutesForMode = (): RouteCardOption[] => {
+    if (activeFilterMode === 'senior') {
+      return [
+        {
+          id: 'route-senior-1',
+          badge: '🧓 Top Senior Pick',
+          badgeColor: 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800',
+          isStar: true,
+          modeType: 'senior',
+          serviceType: 'Low-Floor Kneeling Mo Bus 20 (CRUT)',
+          routeNumber: 'Route 20 Low-Floor',
+          lineTitle: 'Low-Floor Kneeling Mo Bus 20 • Level Boarding',
+          durationMins: Math.max(14, Math.round(distanceKm * 2.6)),
+          transfersCount: 0,
+          fareInr: 0,
+          fareNote: 'Free with Senior Citizen Pass (or ₹15)',
+          arrivalTime: getArrivalTime(Math.max(14, Math.round(distanceKm * 2.6))),
+          co2SavedGrams: Math.round(distanceKm * 50),
+          safetyScore: 99,
+        },
+        {
+          id: 'route-senior-2',
+          badge: '💺 Priority Seating',
+          badgeColor: 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
+          modeType: 'senior',
+          serviceType: 'Mo Bus AC Electric Express 10',
+          routeNumber: 'Route 10 AC',
+          lineTitle: 'Mo Bus 10 AC • Step-Free Direct Entry',
+          durationMins: Math.max(12, Math.round(distanceKm * 2.4)),
+          transfersCount: 0,
+          fareInr: Math.max(10, Math.min(20, Math.round(5 + distanceKm * 1.0))),
+          fareNote: '50% Concession with Senior ID',
+          arrivalTime: getArrivalTime(Math.max(12, Math.round(distanceKm * 2.4))),
+          co2SavedGrams: Math.round(distanceKm * 55),
+          safetyScore: 97,
+        },
+        {
+          id: 'route-senior-3',
+          badge: '🚪 Doorstep E-Ride',
+          badgeColor: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
+          modeType: 'senior',
+          serviceType: 'Mo E-Ride Assisted Auto Feeder',
+          routeNumber: 'Mo E-Ride Assisted',
+          lineTitle: 'Mo E-Ride Assisted Electric Auto',
+          durationMins: Math.max(13, Math.round(distanceKm * 2.2)),
+          transfersCount: 0,
+          fareInr: Math.max(20, Math.min(35, Math.round(15 + distanceKm * 1.5))),
+          fareNote: 'Direct Pickup & Drop',
+          arrivalTime: getArrivalTime(Math.max(13, Math.round(distanceKm * 2.2))),
+          co2SavedGrams: Math.round(distanceKm * 60),
+          safetyScore: 98,
+        },
+      ];
+    }
+
+    if (activeFilterMode === 'weather') {
+      return [
+        {
+          id: 'route-weather-1',
+          badge: '🌧️ Monsoon Shield',
+          badgeColor: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800',
+          isStar: true,
+          modeType: 'weather',
+          serviceType: 'Monsoon Resilient Mo Bus 10 AC',
+          routeNumber: 'Route 10 Rain Shield',
+          lineTitle: 'Mo Bus 10 AC • Elevated Drainage Corridor',
+          durationMins: Math.max(13, Math.round(distanceKm * 2.5)),
+          transfersCount: 0,
+          fareInr: Math.max(15, Math.min(35, Math.round(10 + distanceKm * 1.5))),
+          fareNote: '100% Covered Walkways & Stops',
+          arrivalTime: getArrivalTime(Math.max(13, Math.round(distanceKm * 2.5))),
+          co2SavedGrams: Math.round(distanceKm * 52),
+          safetyScore: 98,
+        },
+        {
+          id: 'route-weather-2',
+          badge: '🛡️ Flood Safe Trunk',
+          badgeColor: 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
+          modeType: 'weather',
+          serviceType: 'All-Weather Mo Bus 24 Express',
+          routeNumber: 'Route 24 Weather Trunk',
+          lineTitle: 'Mo Bus 24 • High-Clearance Fleet',
+          durationMins: Math.max(15, Math.round(distanceKm * 2.7)),
+          transfersCount: 0,
+          fareInr: Math.max(15, Math.min(30, Math.round(10 + distanceKm * 1.3))),
+          fareNote: 'Bypasses Waterlogged Areas',
+          arrivalTime: getArrivalTime(Math.max(15, Math.round(distanceKm * 2.7))),
+          co2SavedGrams: Math.round(distanceKm * 48),
+          safetyScore: 96,
+        },
+        {
+          id: 'route-weather-3',
+          badge: '☂️ Covered Feeder',
+          badgeColor: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
+          modeType: 'weather',
+          serviceType: 'Weather-Protected Mo E-Ride Feeder',
+          routeNumber: 'Mo E-Ride Raincover',
+          lineTitle: 'Mo E-Ride Auto with Rain Shield Canopy',
+          durationMins: Math.max(16, Math.round(distanceKm * 2.3)),
+          transfersCount: 1,
+          fareInr: Math.max(25, Math.min(40, Math.round(15 + distanceKm * 1.8))),
+          fareNote: 'Full Rain Shield Protection',
+          arrivalTime: getArrivalTime(Math.max(16, Math.round(distanceKm * 2.3))),
+          co2SavedGrams: Math.round(distanceKm * 65),
+          safetyScore: 95,
+        },
+      ];
+    }
+
+    if (activeFilterMode === 'night') {
+      return [
+        {
+          id: 'route-night-1',
+          badge: '🌙 24x7 Night Owl',
+          badgeColor: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800',
+          isStar: true,
+          modeType: 'night',
+          serviceType: 'Night Owl Mo Bus Express (CRUT)',
+          routeNumber: 'Route 10N / 24N Owl',
+          lineTitle: 'Night Owl Mo Bus • Well-Lit CCTV Corridor',
+          durationMins: Math.max(12, Math.round(distanceKm * 2.3)),
+          transfersCount: 0,
+          fareInr: Math.max(20, Math.min(40, Math.round(15 + distanceKm * 1.8))),
+          fareNote: '24x7 GPS Tracked & Police Linked',
+          arrivalTime: getArrivalTime(Math.max(12, Math.round(distanceKm * 2.3))),
+          co2SavedGrams: Math.round(distanceKm * 50),
+          safetyScore: 99,
+        },
+        {
+          id: 'route-night-2',
+          badge: '🌸 Pink Safe Night',
+          badgeColor: 'bg-pink-50 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300 border border-pink-200 dark:border-pink-800',
+          modeType: 'night',
+          serviceType: 'Women Pink Mo Bus Night Shuttle',
+          routeNumber: 'Pink Safe Night',
+          lineTitle: 'Pink Mo Bus • On-Board Safety Marshal',
+          durationMins: Math.max(14, Math.round(distanceKm * 2.5)),
+          transfersCount: 0,
+          fareInr: Math.max(15, Math.min(30, Math.round(10 + distanceKm * 1.4))),
+          fareNote: 'Dedicated Female Safety Marshals',
+          arrivalTime: getArrivalTime(Math.max(14, Math.round(distanceKm * 2.5))),
+          co2SavedGrams: Math.round(distanceKm * 60),
+          safetyScore: 100,
+        },
+        {
+          id: 'route-night-3',
+          badge: '🚨 SOS-Linked Auto',
+          badgeColor: 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
+          modeType: 'night',
+          serviceType: 'Night Mo E-Ride Shared Feeder',
+          routeNumber: 'Mo E-Ride Night',
+          lineTitle: 'Night Mo E-Ride • Live Telemetry Active',
+          durationMins: Math.max(13, Math.round(distanceKm * 2.0)),
+          transfersCount: 0,
+          fareInr: Math.max(25, Math.min(45, Math.round(15 + distanceKm * 2.0))),
+          fareNote: '1-Tap SOS Helpline 112 Linked',
+          arrivalTime: getArrivalTime(Math.max(13, Math.round(distanceKm * 2.0))),
+          co2SavedGrams: Math.round(distanceKm * 70),
+          safetyScore: 98,
+        },
+      ];
+    }
+
+    // Default / Fastest / Cheapest / Eco
+    return [
+      {
+        id: 'route-rec',
+        badge: '⚡ Fastest AC Mo Bus',
+        badgeColor: 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
+        isStar: true,
+        modeType: 'fastest',
+        serviceType: 'Mo Bus AC Electric (CRUT)',
+        routeNumber: 'Route 10 / 24 Express',
+        lineTitle: `Mo Bus 10 / 24 AC Electric Trunk`,
+        durationMins: Math.max(12, Math.round(distanceKm * 2.4)),
+        transfersCount: 0,
+        fareInr: Math.max(15, Math.min(35, Math.round(10 + distanceKm * 1.5))),
+        fareNote: 'AC Stage Fare (₹15–₹35)',
+        arrivalTime: getArrivalTime(Math.max(12, Math.round(distanceKm * 2.4))),
+        co2SavedGrams: Math.round(distanceKm * 55),
+        safetyScore: 98,
+      },
+      {
+        id: 'route-cheap',
+        badge: '💰 Cheapest Non-AC',
+        badgeColor: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
+        modeType: 'cheapest',
+        serviceType: 'Mo Bus Ordinary Non-AC (CRUT)',
+        routeNumber: 'Route 11 / 20 / 33',
+        lineTitle: `Mo Bus 11 / 20 Ordinary Green Line`,
+        durationMins: Math.max(18, Math.round(distanceKm * 3.2)),
+        transfersCount: 0,
+        fareInr: Math.max(10, Math.min(20, Math.round(5 + distanceKm * 1.0))),
+        fareNote: 'Ordinary Fare (₹5 with Student Pass)',
+        arrivalTime: getArrivalTime(Math.max(18, Math.round(distanceKm * 3.2))),
+        co2SavedGrams: Math.round(distanceKm * 42),
+        safetyScore: 90,
+      },
+      {
+        id: 'route-eco',
+        badge: '🌿 Eco Mo E-Ride / Pink',
+        badgeColor: 'bg-pink-50 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300 border border-pink-200 dark:border-pink-800',
+        modeType: 'eco',
+        serviceType: 'Mo E-Ride EV Feeder + Pink Bus',
+        routeNumber: 'Mo E-Ride + Pink 1',
+        lineTitle: `Mo E-Ride Electric Auto + Pink Shuttle`,
+        durationMins: Math.max(14, Math.round(distanceKm * 2.1)),
+        transfersCount: 1,
+        fareInr: Math.max(25, Math.min(45, Math.round(15 + distanceKm * 2.0))),
+        fareNote: 'Shared EV Auto & Pink Safe Feeder',
+        arrivalTime: getArrivalTime(Math.max(14, Math.round(distanceKm * 2.1))),
+        co2SavedGrams: Math.round(distanceKm * 78),
+        safetyScore: 99,
+      },
+    ];
+  };
+
+  const routeCards = getRoutesForMode();
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -132,6 +308,32 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* 6 Smart Mode Optimization Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+        {filterTabs.map((tab) => {
+          const Icon = tab.icon;
+          const isSelected = activeFilterMode === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                onFilterModeChange(tab.id);
+                const firstCard = getRoutesForMode()[0];
+                if (firstCard) onSelectRoute(firstCard.id);
+              }}
+              className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap transition flex items-center gap-1.5 border shadow-sm ${
+                isSelected
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-[1.02]'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-300'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Section Header with Route Corridor */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>

@@ -148,11 +148,32 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
         completedAt: new Date().toISOString(),
       };
 
-      // 1. Save to Supabase Cloud Database if configured
+      // 1. Save to Backend Database API & Supabase
+      try {
+        await fetch('http://localhost:5000/api/users/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email.trim(),
+            fullName: fullName.trim(),
+            phone: profileData.phone,
+            bloodGroup,
+            homeCity: homeCity.trim(),
+            emergencyContact: profileData.emergencyContact,
+            category,
+            studentCollege,
+            studentRoll,
+          }),
+        });
+      } catch (apiErr) {
+        console.warn('Backend profile API save notice:', apiErr);
+      }
+
+      // Also attempt Supabase direct upsert if available
       if (isSupabaseConfigured() && supabase) {
         try {
           const user = authService.getCurrentUser();
-          const userId = user?.id || '00000000-0000-0000-0000-000000000000';
+          const userId = user?.id || '89941887-303d-4fd3-9436-f111a33bc93b';
           await supabase.from('profiles').upsert({
             id: userId,
             email: email.trim(),
