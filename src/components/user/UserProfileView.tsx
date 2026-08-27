@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   User, Mail, Phone, MapPin, HeartPulse, Droplet, Users, Cloud,
   CheckCircle2, ShieldCheck, Plus, Trash2, GraduationCap, Headphones,
-  Leaf, Zap, Navigation, History, Clock, ArrowRight
+  Leaf, Zap, Navigation, History, Clock, ArrowRight, LogOut
 } from 'lucide-react';
 import { UserProfile, EmergencyContact } from '../../types/transit';
 import { sosService } from '../../services/sosService';
@@ -15,6 +15,7 @@ interface UserProfileViewProps {
   onUpdateProfile: (p: UserProfile) => void;
   onOpenStudent: () => void;
   onOpenSupport: () => void;
+  onLogout?: () => void;
   t: TranslationDictionary;
 }
 
@@ -23,6 +24,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   onUpdateProfile,
   onOpenStudent,
   onOpenSupport,
+  onLogout,
   t,
 }) => {
   const [profile, setProfile] = useState<UserProfile>(userProfile);
@@ -32,6 +34,10 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [trips, setTrips] = useState<TripRecord[]>(tripService.getTrips());
+
+  useEffect(() => {
+    setProfile(userProfile);
+  }, [userProfile]);
 
   useEffect(() => {
     tripService.fetchUserTrips().then(setTrips);
@@ -101,15 +107,28 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
           </div>
         </div>
 
-        {/* Supabase Cloud Sync Action */}
-        <button
-          onClick={handleSaveAndSync}
-          disabled={isSyncing}
-          className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-2"
-        >
-          <Cloud className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-          <span>{isSyncing ? 'Syncing to Supabase...' : 'Save & Sync Cloud'}</span>
-        </button>
+        {/* Profile Actions: Sync & Log Out */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={handleSaveAndSync}
+            disabled={isSyncing}
+            className="flex-1 sm:flex-initial py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-2"
+          >
+            <Cloud className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>{isSyncing ? 'Syncing...' : 'Save & Sync'}</span>
+          </button>
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="py-2.5 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 font-bold text-xs transition flex items-center justify-center gap-1.5"
+              title="Log out of Musafir"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Log Out</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {syncMessage && (

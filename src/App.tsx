@@ -231,6 +231,23 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('musafir_demo_user');
+    localStorage.removeItem('musafir_user_profile');
+    localStorage.removeItem('musafir_profile_completed');
+    localStorage.removeItem('transitsync_user_profile');
+    localStorage.removeItem('msfr_trips_history');
+    localStorage.removeItem('msfr_active_passes');
+    localStorage.removeItem('musafir_welcome_bonus_credited');
+    authService.setSessionUser(null);
+    setCurrentUser(null);
+    sosService.reloadProfile();
+    setUserProfile(sosService.getProfile());
+    setIsProfileOpen(false);
+    setIsMobileMenuOpen(false);
+    setIsLoginOpen(true);
+  };
+
   const handleExecuteAIAction = (actionType: AIActionType, payload?: string) => {
     switch (actionType) {
       case 'open_parcel_booking':
@@ -334,6 +351,8 @@ export const App: React.FC = () => {
         unreadAlertsCount={3}
         onOpenAlerts={() => setIsAlertsOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
+        userInitial={userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
+        userName={userProfile.name}
         onOriginSelected={handleOriginSelected}
         onDestSelected={handleDestSelected}
         onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
@@ -525,6 +544,7 @@ export const App: React.FC = () => {
                 setIsProfileOpen(false);
                 setIsSupportOpen(true);
               }}
+              onLogout={handleLogout}
               t={t}
             />
           </div>
@@ -578,6 +598,7 @@ export const App: React.FC = () => {
         onOpenStudent={() => setIsStudentOpen(true)}
         onOpenWomenSafety={() => setIsWomenSafetyOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
+        onLogout={handleLogout}
         themeMode={themeMode}
         onToggleTheme={handleToggleTheme}
       />

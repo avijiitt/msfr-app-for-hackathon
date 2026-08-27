@@ -82,19 +82,38 @@ class SOSService {
 
   constructor() {
     const saved = localStorage.getItem(STORAGE_KEY_PROFILE);
+    const defaultProf = getDefaultProfile();
     if (saved) {
       try {
-        this.profile = { ...getDefaultProfile(), ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        // If parsed has stale dummy email, ignore it
+        if (parsed.email === 'abhijit.sahoo@example.com' || !parsed.name || parsed.name === 'Abhijit Sahoo') {
+          this.profile = defaultProf;
+        } else {
+          this.profile = { ...defaultProf, ...parsed, name: defaultProf.name !== 'Traveller' ? defaultProf.name : parsed.name, email: defaultProf.email || parsed.email, phone: defaultProf.phone || parsed.phone };
+        }
       } catch {
-        this.profile = getDefaultProfile();
+        this.profile = defaultProf;
       }
     } else {
-      this.profile = getDefaultProfile();
+      this.profile = defaultProf;
       this.saveProfile(this.profile);
     }
   }
 
   public getProfile(): UserProfile {
+    const active = getDefaultProfile();
+    if (active.name !== 'Traveller' || active.email) {
+      return {
+        ...this.profile,
+        name: active.name !== 'Traveller' ? active.name : this.profile.name,
+        email: active.email || this.profile.email,
+        phone: active.phone || this.profile.phone,
+        bloodGroup: active.bloodGroup || this.profile.bloodGroup,
+        homeAddress: active.homeAddress || this.profile.homeAddress,
+        emergencyContacts: active.emergencyContacts.length > 0 ? active.emergencyContacts : this.profile.emergencyContacts,
+      };
+    }
     return { ...this.profile };
   }
 

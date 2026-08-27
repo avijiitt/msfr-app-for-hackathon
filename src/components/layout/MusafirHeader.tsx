@@ -20,6 +20,8 @@ interface MusafirHeaderProps {
   unreadAlertsCount: number;
   onOpenAlerts: () => void;
   onOpenProfile: () => void;
+  userInitial?: string;
+  userName?: string;
   // NEW: emit real lat/lng when a location is selected
   onOriginSelected?: (result: IndiaLocationResult) => void;
   onDestSelected?: (result: IndiaLocationResult) => void;
@@ -44,6 +46,8 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   unreadAlertsCount,
   onOpenAlerts,
   onOpenProfile,
+  userInitial,
+  userName,
   onOriginSelected,
   onDestSelected,
   onOpenMobileMenu,
@@ -391,9 +395,9 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
           <div
             onClick={onOpenProfile}
             className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center cursor-pointer shadow-sm shadow-blue-500/20 hover:ring-2 hover:ring-blue-500 transition text-sm"
-            title="User Profile"
+            title={userName ? `Profile (${userName})` : 'User Profile'}
           >
-            A
+            {userInitial || (userName ? userName.charAt(0).toUpperCase() : 'U')}
           </div>
         </div>
       </div>

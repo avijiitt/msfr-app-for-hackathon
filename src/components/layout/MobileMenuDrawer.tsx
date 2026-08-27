@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Navigation2, MapPin, Calendar, Package, Wallet, Clock, Bookmark, 
   Bell, Calculator, Award, RotateCcw, Settings, X, ShieldAlert, Share2, 
-  GraduationCap, Bus, ChevronRight, Sparkles, User, Sun, Moon
+  GraduationCap, Bus, ChevronRight, Sparkles, User, Sun, Moon, LogOut
 } from 'lucide-react';
 import { MusafirSidebarTab } from './MusafirSidebar';
 import { ThemeMode } from '../../types/transit';
@@ -19,6 +19,7 @@ interface MobileMenuDrawerProps {
   onOpenStudent: () => void;
   onOpenWomenSafety: () => void;
   onOpenProfile: () => void;
+  onLogout?: () => void;
   themeMode: ThemeMode;
   onToggleTheme: () => void;
 }
@@ -35,6 +36,7 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
   onOpenStudent,
   onOpenWomenSafety,
   onOpenProfile,
+  onLogout,
   themeMode,
   onToggleTheme,
 }) => {
@@ -191,9 +193,21 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
           })}
         </div>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-slate-100 dark:border-slate-800 text-center">
-          <p className="text-[10px] text-slate-400">musafir • Multi-Modal India Transit v2.0</p>
+        {/* Footer with Log Out */}
+        <div className="p-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+          {onLogout && (
+            <button
+              onClick={() => {
+                onClose();
+                onLogout();
+              }}
+              className="w-full py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 font-bold text-xs transition flex items-center justify-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Log Out of Account</span>
+            </button>
+          )}
+          <p className="text-[10px] text-slate-400 text-center">musafir • Multi-Modal India Transit v2.0</p>
         </div>
       </div>
     </div>
