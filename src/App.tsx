@@ -413,6 +413,7 @@ export const App: React.FC = () => {
           destinationName={destQuery}
           originCoords={originCoords}
           destCoords={destCoords}
+          selectedRouteId={selectedRouteId}
           onStartNavigation={handleStartNavigation}
           onShareTrip={() => setIsFamilyShareOpen(true)}
           onBookPass={() => setIsWalletOpen(true)}

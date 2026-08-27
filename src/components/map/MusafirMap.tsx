@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents 
 import L from 'leaflet';
 import {
   Bus, Train, LocateFixed, Plus, Minus,
-  AlertTriangle, Clock, Eye, WifiOff, Zap, Navigation, ShieldCheck
+  AlertTriangle, Clock, Eye, WifiOff, Zap, Navigation, ShieldCheck, Layers, RotateCw
 } from 'lucide-react';
 import { Vehicle } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
@@ -272,8 +272,8 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   }, [originCoords, destCoords]);
 
   // Determine initial center and zoom
-  let mapCenter: [number, number] = [20.5937, 78.9629]; // India Center
-  let mapZoom = 5;
+  let mapCenter: [number, number] = [20.2961, 85.8245]; // Bhubaneswar Master Canteen / Central Area
+  let mapZoom = 13;
   let activeBounds: [number, number][] | null = null;
 
   if (originCoords && destCoords) {
@@ -284,19 +284,18 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
     activeBounds = [originCoords, destCoords];
   } else if (destCoords) {
     mapCenter = destCoords;
-    mapZoom = 13;
+    mapZoom = 14;
   } else if (originCoords) {
     mapCenter = originCoords;
-    mapZoom = 13;
+    mapZoom = 14;
   } else if (userLocation && userLocation.lat !== 20.3039) {
     mapCenter = [userLocation.lat, userLocation.lng];
-    mapZoom = 13;
+    mapZoom = 14;
   }
 
   // Filter vehicles based on active layers
   const visibleVehicles = vehicles.filter((v) => {
     if (v.mode === 'bus' && !showBuses) return false;
-    if (v.mode === 'metro' && !showMetro) return false;
     if (v.mode === 'auto' && !showAutos) return false;
     return true;
   });
@@ -307,7 +306,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
       {isOffline && !isAnyModalOpen && (
         <div className="absolute top-0 left-0 right-0 z-[400] bg-amber-500 text-white px-4 py-1.5 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-md">
           <WifiOff className="w-4 h-4" />
-          <span>Offline Navigation Mode — Preloaded India Transit Corridor Active</span>
+          <span>Offline Navigation Mode — Preloaded Bhubaneswar Mo Bus Corridor Active</span>
         </div>
       )}
 
@@ -318,41 +317,48 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
             isOffline ? 'top-10' : 'top-3'
           } left-3 sm:left-4 z-[400] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md px-3.5 py-2.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex items-center gap-3 transition animate-in fade-in`}
         >
-          <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
-            <Navigation className="w-5 h-5" />
+          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+            🚌
           </div>
-          <div className="text-xs">
-            <div className="flex items-center gap-1.5 font-extrabold text-slate-800 dark:text-white">
-              <span>{isLoadingRoute ? 'Calculating Road Route...' : routeInfo ? `${routeInfo.distanceKm} km • ~${routeInfo.durationMinutes} mins` : 'Live Corridor'}</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-xs text-slate-900 dark:text-white">
+                Connected Transit Route
+              </span>
+              <span className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                Live Road Network
+              </span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px] sm:max-w-[280px]">
-              {originName.split(',')[0]} → {destinationName.split(',')[0]}
-            </p>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              {isLoadingRoute ? (
+                <span className="flex items-center gap-1">
+                  <RotateCw className="w-3 h-3 animate-spin text-blue-600" />
+                  Calculating optimal Mo Bus path...
+                </span>
+              ) : routeInfo ? (
+                <span>
+                  {routeInfo.distanceKm} km • ~{routeInfo.durationMinutes} min travel time
+                </span>
+              ) : (
+                <span>{originName} ➔ {destinationName}</span>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Top Right: Live Clock HUD (Hidden when any modal/drawer is open) */}
+      {/* Top Right: Layer Visibility Floating Card */}
       {!isAnyModalOpen && (
         <div
           className={`absolute ${
             isOffline ? 'top-10' : 'top-3'
-          } right-3 sm:right-4 z-[400] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md px-3 py-1.5 rounded-2xl flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100 shadow-md border border-slate-200 dark:border-slate-700`}
+          } right-3 sm:right-4 z-[400] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-2.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 text-xs transition-all`}
         >
-          <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 animate-pulse" />
-          <span className="font-mono text-[11px] sm:text-xs">{currentTimeStr}</span>
-        </div>
-      )}
-
-      {/* Floating Map Layers (Bottom Left) — Hidden when any modal/drawer is open */}
-      {!isAnyModalOpen && (
-        <div className="absolute bottom-4 left-4 z-[400] transition-all">
           {isOptionsOpen ? (
-            <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-2xl p-3 space-y-2 w-48 text-xs font-semibold shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-1.5">
-                <span className="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                  Active Rides
+            <div className="space-y-2 min-w-[150px]">
+              <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-700">
+                <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px] uppercase tracking-wider">
+                  Transit Layers
                 </span>
                 <button
                   onClick={() => setIsOptionsOpen(false)}
@@ -362,10 +368,9 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
                 </button>
               </div>
               {[
-                { state: showBuses, setter: setShowBuses, icon: <Bus className="w-3.5 h-3.5 text-emerald-500" />, label: 'City Buses' },
-                { state: showMetro, setter: setShowMetro, icon: <Train className="w-3.5 h-3.5 text-blue-600" />, label: 'Metro Lines' },
-                { state: showAutos, setter: setShowAutos, icon: <Zap className="w-3.5 h-3.5 text-amber-500" />, label: 'EV Autos & Cabs' },
-                { state: showTraffic, setter: setShowTraffic, icon: <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />, label: 'Traffic Alerts' },
+                { state: showBuses, setter: setShowBuses, icon: <Bus className="w-3.5 h-3.5 text-emerald-500" />, label: 'Mo Bus Fleet' },
+                { state: showAutos, setter: setShowAutos, icon: <Zap className="w-3.5 h-3.5 text-amber-500" />, label: 'Mo E-Ride & Autos' },
+                { state: showTraffic, setter: setShowTraffic, icon: <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />, label: 'Traffic & Alerts' },
               ].map(({ state, setter, icon, label }) => (
                 <label
                   key={label}
@@ -378,17 +383,17 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
                     className="w-3.5 h-3.5 rounded text-blue-600 focus:ring-0 cursor-pointer"
                   />
                   {icon}
-                  <span className="text-[11px]">{label}</span>
+                  <span className="font-semibold text-[11px]">{label}</span>
                 </label>
               ))}
             </div>
           ) : (
             <button
               onClick={() => setIsOptionsOpen(true)}
-              className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 shadow-md flex items-center gap-1.5 transition active:scale-95"
+              className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200 text-xs hover:text-blue-600"
             >
-              <Eye className="w-3.5 h-3.5 text-blue-600" />
-              <span>Map Layers</span>
+              <Layers className="w-3.5 h-3.5 text-blue-600" />
+              <span>Layers</span>
             </button>
           )}
         </div>
@@ -400,7 +405,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         zoom={mapZoom}
         className={`w-full h-full ${themeMode === 'dark' ? 'dark-tiles' : ''}`}
         zoomControl={false}
-        minZoom={4}
+        minZoom={10}
         maxZoom={18}
       >
         {/* Dynamic Pan / Zoom / Bounds Controller */}

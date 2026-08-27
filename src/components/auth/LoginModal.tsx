@@ -190,7 +190,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
         localStorage.setItem('musafir_welcome_bonus_credited', '1');
       }
 
-      // 4. Update in-memory SOS and user profile
+      // 4. Send Confirmation Notification to User's Gmail
+      try {
+        await fetch('http://localhost:5000/api/auth/login-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email.trim(),
+            fullName: fullName.trim(),
+            phone: profileData.phone,
+            category,
+            homeCity,
+          }),
+        });
+      } catch (notifyErr) {
+        console.warn('Backend notification notice:', notifyErr);
+      }
+
+      // Browser Notification if supported
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`musafir: Welcome, ${fullName.trim()}!`, {
+          body: `Login confirmation sent to ${email.trim()}. ₹100 welcome bonus added to Mo-Wallet.`,
+          icon: '/favicon.ico',
+        });
+      } else if ('Notification' in window && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+
+      // 5. Update in-memory SOS and user profile
       sosService.reloadProfile();
 
       setLoading(false);

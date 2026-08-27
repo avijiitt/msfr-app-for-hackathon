@@ -263,10 +263,28 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
 
             {/* Origin Dropdown */}
             {isOriginFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 z-[1100] max-h-64 overflow-y-auto space-y-0.5">
-                <div className="flex items-center justify-between px-2 pb-1.5 border-b border-slate-100 dark:border-slate-700">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 z-[1100] max-h-72 overflow-y-auto space-y-1">
+                {/* 1-Tap Current Location Option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onUseLiveGps();
+                    setIsOriginFocused(false);
+                  }}
+                  className="w-full text-left p-2.5 rounded-xl bg-blue-50/90 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/60 flex items-center gap-2.5 text-xs text-blue-600 dark:text-blue-400 font-bold transition border border-blue-200 dark:border-blue-800/60 shadow-sm"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center flex-shrink-0">
+                    <LocateFixed className="w-3.5 h-3.5 animate-pulse" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-extrabold text-blue-700 dark:text-blue-300">📍 Use Current GPS Location</span>
+                    <span className="text-[10px] text-blue-500 font-normal">Detect current live coordinates</span>
+                  </div>
+                </button>
+
+                <div className="flex items-center justify-between px-2 pt-1 pb-1 border-b border-slate-100 dark:border-slate-700">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    🇮🇳 Select Departure (All India)
+                    🇮🇳 Popular Departures / Stations
                   </span>
                   {isOriginLoading && <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />}
                 </div>

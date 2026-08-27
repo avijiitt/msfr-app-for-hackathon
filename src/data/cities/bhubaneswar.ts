@@ -1,4 +1,4 @@
-﻿import { Station, TransitRoute, Vehicle } from '../../types/transit';
+import { Station, TransitRoute, Vehicle } from '../../types/transit';
 
 export const BHUBANESWAR_CENTER: [number, number] = [20.2961, 85.8245]; // Master Canteen / Central Area
 
@@ -149,23 +149,104 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     ],
   },
   {
-    id: 'bbs-cuttack-ferry',
-    name: 'Mahanadi Eco River Ferry Ghat',
-    localNames: { or: 'ମହାନଦୀ ଘାଟ ଫେରୀ ଷ୍ଟେସନ', hi: 'महानदी घाट फेरी' },
-    mode: 'ferry',
-    lat: 20.4631,
-    lng: 85.8821,
-    lines: ['FERRY-MAHANADI'],
-    isElevatorAccessible: false,
+    id: 'bbs-baramunda',
+    name: 'Baramunda ISBT (Babasaheb Ambedkar Bus Terminal)',
+    localNames: { or: 'ବରମୁଣ୍ଡା ଆନ୍ତଃରାଜ୍ୟ ବସ୍ ଟର୍ମିନାଲ୍ (ISBT)', hi: 'बरमुंडा बस टर्मिनल' },
+    mode: 'bus',
+    lat: 20.2798,
+    lng: 85.7958,
+    lines: ['MOBUS-10', 'MOBUS-17', 'MOBUS-20', 'MOBUS-30', 'MOBUS-41'],
+    isElevatorAccessible: true,
     hasCCTV: true,
     isWellLit: true,
     hasRestroom: true,
-    hasPharmacyNearby: false,
+    hasPharmacyNearby: true,
     hasPolicePostNearby: true,
-    hasParcelLocker: false,
-    isCoveredWalkway: false,
+    hasParcelLocker: true,
+    isCoveredWalkway: true,
     departures: [
-      { routeId: 'FERRY-MAHANADI', lineName: 'Mahanadi Eco Ferry', destination: 'Cuttack Silver City Ghat', mode: 'ferry', etaMinutes: 10, delayMinutes: 0, platform: 'Dock 1', occupancy: 'low' },
+      { routeId: 'MOBUS-10', lineName: 'Mo Bus 10 (AC Electric)', destination: 'Nandankanan / KIIT', mode: 'bus', etaMinutes: 2, delayMinutes: 0, platform: 'Bay 1', occupancy: 'low' },
+      { routeId: 'MOBUS-20', lineName: 'Mo Bus 20 (Non-AC)', destination: 'Khordha New Bus Stand', mode: 'bus', etaMinutes: 5, delayMinutes: 1, platform: 'Bay 4', occupancy: 'moderate' },
+    ],
+  },
+  {
+    id: 'bbs-rasulgarh',
+    name: 'Rasulgarh Square Transit Junction',
+    localNames: { or: 'ରସୁଲଗଡ଼ ଛକ', hi: 'रसूलगढ़ चौराहा' },
+    mode: 'bus',
+    lat: 20.2977,
+    lng: 85.8643,
+    lines: ['MOBUS-11', 'MOBUS-17', 'MOBUS-25'],
+    isElevatorAccessible: true,
+    hasCCTV: true,
+    isWellLit: true,
+    hasRestroom: true,
+    hasPharmacyNearby: true,
+    hasPolicePostNearby: true,
+    hasParcelLocker: true,
+    isCoveredWalkway: true,
+    departures: [
+      { routeId: 'MOBUS-11', lineName: 'Mo Bus 11 (Cuttack Trunk)', destination: 'Cuttack Badambadi', mode: 'bus', etaMinutes: 4, delayMinutes: 0, platform: 'NH16 Bay', occupancy: 'moderate' },
+    ],
+  },
+  {
+    id: 'bbs-khandagiri',
+    name: 'Khandagiri Square & Caves Heritage Stop',
+    localNames: { or: 'ଖଣ୍ଡଗିରି ଛକ', hi: 'खंडगिरि चौराहा' },
+    mode: 'bus',
+    lat: 20.2588,
+    lng: 85.7865,
+    lines: ['MOBUS-20', 'MOBUS-23', 'MOBUS-27'],
+    isElevatorAccessible: true,
+    hasCCTV: true,
+    isWellLit: true,
+    hasRestroom: true,
+    hasPharmacyNearby: true,
+    hasPolicePostNearby: true,
+    hasParcelLocker: true,
+    isCoveredWalkway: true,
+    departures: [
+      { routeId: 'MOBUS-20', lineName: 'Mo Bus 20', destination: 'Master Canteen', mode: 'bus', etaMinutes: 3, delayMinutes: 0, platform: 'Bay 1', occupancy: 'low' },
+    ],
+  },
+  {
+    id: 'bbs-cuttack-badambadi',
+    name: 'Cuttack Netaji Bus Terminal (CNBT Badambadi)',
+    localNames: { or: 'କଟକ ନେତାଜୀ ବସ୍ ଟର୍ମିନାଲ୍ (ବାଦାମବାଡ଼ି)', hi: 'कटक बादामबाड़ी बस टर्मिनल' },
+    mode: 'bus',
+    lat: 20.4578,
+    lng: 85.8732,
+    lines: ['MOBUS-11', 'MOBUS-17', 'MOBUS-18'],
+    isElevatorAccessible: true,
+    hasCCTV: true,
+    isWellLit: true,
+    hasRestroom: true,
+    hasPharmacyNearby: true,
+    hasPolicePostNearby: true,
+    hasParcelLocker: true,
+    isCoveredWalkway: true,
+    departures: [
+      { routeId: 'MOBUS-11', lineName: 'Mo Bus 11 (Non-AC Ordinary)', destination: 'Master Canteen Bhubaneswar', mode: 'bus', etaMinutes: 3, delayMinutes: 0, platform: 'Bay 1', occupancy: 'moderate' },
+    ],
+  },
+  {
+    id: 'bbs-puri-terminal',
+    name: 'Puri Jagannath Bus Stand (Talabania)',
+    localNames: { or: 'ପୁରୀ ଜଗନ୍ନାଥ ବସ୍ ଷ୍ଟାଣ୍ଡ (ତାଳବଣିଆ)', hi: 'पुरी जगन्नाथ बस स्टैंड' },
+    mode: 'bus',
+    lat: 19.8242,
+    lng: 85.8456,
+    lines: ['MOBUS-13', 'MOBUS-50'],
+    isElevatorAccessible: true,
+    hasCCTV: true,
+    isWellLit: true,
+    hasRestroom: true,
+    hasPharmacyNearby: true,
+    hasPolicePostNearby: true,
+    hasParcelLocker: true,
+    isCoveredWalkway: true,
+    departures: [
+      { routeId: 'MOBUS-50', lineName: 'Mo Bus 50 (Puri Express)', destination: 'Bhubaneswar Railway Station', mode: 'bus', etaMinutes: 5, delayMinutes: 0, platform: 'Bay P1', occupancy: 'low' },
     ],
   },
 ];
@@ -173,22 +254,21 @@ export const BHUBANESWAR_STATIONS: Station[] = [
 export const BHUBANESWAR_ROUTES: TransitRoute[] = [
   {
     id: 'MOBUS-10',
-    name: 'Mo Bus Route 10 (AC Electric Trunk Line)',
+    name: 'Mo Bus Route 10 (Baramunda ISBT ➔ Nandankanan / KIIT)',
     lineCode: 'MB-10',
     mode: 'bus',
     color: '#06B6D4',
     path: [
-      [20.2312, 85.7761], // AIIMS
-      [20.2524, 85.8178], // Airport
+      [20.2798, 85.7958], // Baramunda ISBT
       [20.2668, 85.8436], // Master Canteen
       [20.3015, 85.8365], // Vani Vihar
       [20.3039, 85.8188], // Jaydev Vihar
       [20.3541, 85.8175], // Patia / KIIT
       [20.3602, 85.8035], // InfoCity
     ],
-    stationIds: ['bbs-aiims', 'bbs-airport', 'bbs-master-canteen', 'bbs-vani-vihar', 'bbs-jaydev-vihar', 'bbs-patia-kiit', 'bbs-infocity'],
-    frequencyMins: 6,
-    baseFare: 20,
+    stationIds: ['bbs-baramunda', 'bbs-master-canteen', 'bbs-vani-vihar', 'bbs-jaydev-vihar', 'bbs-patia-kiit', 'bbs-infocity'],
+    frequencyMins: 5,
+    baseFare: 15,
     isNightSafe: true,
     isWeatherCovered: true,
     isEcoElectric: true,
@@ -196,17 +276,17 @@ export const BHUBANESWAR_ROUTES: TransitRoute[] = [
   },
   {
     id: 'MOBUS-11',
-    name: 'Mo Bus Route 11 (Affordable Non-AC)',
+    name: 'Mo Bus Route 11 (Master Canteen ➔ Cuttack CNBT Badambadi)',
     lineCode: 'MB-11',
     mode: 'bus',
     color: '#10B981',
     path: [
       [20.2668, 85.8436], // Master Canteen
+      [20.2977, 85.8643], // Rasulgarh
       [20.3015, 85.8365], // Vani Vihar
-      [20.3039, 85.8188], // Jaydev Vihar
-      [20.3541, 85.8175], // Patia
+      [20.4578, 85.8732], // Cuttack CNBT Badambadi
     ],
-    stationIds: ['bbs-master-canteen', 'bbs-vani-vihar', 'bbs-jaydev-vihar', 'bbs-patia-kiit'],
+    stationIds: ['bbs-master-canteen', 'bbs-rasulgarh', 'bbs-vani-vihar', 'bbs-cuttack-badambadi'],
     frequencyMins: 8,
     baseFare: 10,
     isNightSafe: true,
@@ -215,8 +295,66 @@ export const BHUBANESWAR_ROUTES: TransitRoute[] = [
     operationalStatus: 'operational',
   },
   {
+    id: 'MOBUS-20',
+    name: 'Mo Bus Route 20 (Master Canteen ➔ Khandagiri ➔ Khordha)',
+    lineCode: 'MB-20',
+    mode: 'bus',
+    color: '#3B82F6',
+    path: [
+      [20.2668, 85.8436], // Master Canteen
+      [20.2798, 85.7958], // Baramunda ISBT
+      [20.2588, 85.7865], // Khandagiri
+    ],
+    stationIds: ['bbs-master-canteen', 'bbs-baramunda', 'bbs-khandagiri'],
+    frequencyMins: 10,
+    baseFare: 10,
+    isNightSafe: true,
+    isWeatherCovered: true,
+    isEcoElectric: false,
+    operationalStatus: 'operational',
+  },
+  {
+    id: 'MOBUS-24',
+    name: 'Mo Bus Route 24 (Kalinga Hospital ➔ Jayadev Vihar ➔ Master Canteen)',
+    lineCode: 'MB-24',
+    mode: 'bus',
+    color: '#F59E0B',
+    path: [
+      [20.3039, 85.8188], // Jaydev Vihar
+      [20.3015, 85.8365], // Vani Vihar
+      [20.2668, 85.8436], // Master Canteen
+      [20.2312, 85.7761], // AIIMS
+    ],
+    stationIds: ['bbs-jaydev-vihar', 'bbs-vani-vihar', 'bbs-master-canteen', 'bbs-aiims'],
+    frequencyMins: 8,
+    baseFare: 10,
+    isNightSafe: true,
+    isWeatherCovered: true,
+    isEcoElectric: false,
+    operationalStatus: 'operational',
+  },
+  {
+    id: 'MOBUS-50',
+    name: 'Mo Bus Route 50 (Bhubaneswar Station ➔ Puri Jagannath Temple Express)',
+    lineCode: 'MB-50',
+    mode: 'bus',
+    color: '#E11D48',
+    path: [
+      [20.2668, 85.8436], // Master Canteen
+      [20.2524, 85.8178], // Airport
+      [19.8242, 85.8456], // Puri Jagannath Temple
+    ],
+    stationIds: ['bbs-master-canteen', 'bbs-airport', 'bbs-puri-terminal'],
+    frequencyMins: 15,
+    baseFare: 35,
+    isNightSafe: true,
+    isWeatherCovered: true,
+    isEcoElectric: true,
+    operationalStatus: 'operational',
+  },
+  {
     id: 'PINK-EV',
-    name: 'Women Pink Mo Bus (Safe Transit Express)',
+    name: 'Women Pink Mo Bus (Safe AC Electric Express)',
     lineCode: 'PINK-1',
     mode: 'bus',
     color: '#EC4899',
@@ -236,7 +374,7 @@ export const BHUBANESWAR_ROUTES: TransitRoute[] = [
   },
   {
     id: 'MOBUS-NIGHT',
-    name: 'Night Owl Safe Corridor Shuttle',
+    name: 'Night Owl 24x7 Mo Bus Corridor Shuttle',
     lineCode: 'NIGHT-X',
     mode: 'bus',
     color: '#8B5CF6',

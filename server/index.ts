@@ -386,7 +386,32 @@ app.post('/api/sos/trigger', (req: Request, res: Response) => {
     status: 'dispatched_and_active',
   };
 
-  res.json({ success: true, sos: sosPayload });
+// ── 8. User Auth & Login Notification API ─────────────────────────────────
+app.post('/api/auth/login-notification', async (req: Request, res: Response) => {
+  try {
+    const { email, fullName, phone, category, homeCity } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    console.log(`📧 [EMAIL NOTIFICATION] Sending Login Confirmation:`);
+    console.log(`   To: ${fullName} <${email}>`);
+    console.log(`   Phone: ${phone || 'N/A'}`);
+    console.log(`   City: ${homeCity || 'Bhubaneswar'}`);
+    console.log(`   Category: ${category || 'General Passenger'}`);
+    console.log(`   Message: "Welcome to musafir! You have successfully logged in to the unified transit platform. ₹100 Welcome Joining Bonus credited to your Mo-Wallet."`);
+
+    // In a production environment with SMTP / Resend / Supabase Auth, this delivers directly to user's inbox
+    res.json({
+      success: true,
+      message: `Login notification email successfully dispatched to ${email}`,
+      recipient: email,
+      passengerName: fullName,
+      bonusCredited: 100,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    console.error('Email dispatch error:', err);
+    res.status(500).json({ error: 'Failed to send login notification' });
+  }
 });
 
 // ── Start Server ───────────────────────────────────────────────────────────

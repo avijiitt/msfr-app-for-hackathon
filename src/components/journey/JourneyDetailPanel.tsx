@@ -6,6 +6,7 @@ interface JourneyDetailPanelProps {
   destinationName?: string;
   originCoords?: [number, number] | null;
   destCoords?: [number, number] | null;
+  selectedRouteId?: string;
   onStartNavigation: () => void;
   onShareTrip: () => void;
   onBookPass: () => void;
@@ -19,6 +20,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   destinationName = 'KIIT Square, Patia',
   originCoords,
   destCoords,
+  selectedRouteId = 'route-rec',
   onStartNavigation,
   onShareTrip,
   onBookPass,
@@ -46,10 +48,33 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   const cleanFrom = originName.split(',')[0] || 'Origin';
   const cleanTo = destinationName.split(',')[0] || 'Destination';
 
-  // Dynamic calculated metrics
-  const totalDurationMins = Math.max(12, Math.round(distanceKm * 2.5));
-  const totalFareInr = Math.max(15, Math.min(45, Math.round(10 + distanceKm * 1.8)));
-  const transfersCount = distanceKm > 10 ? 1 : 0;
+  // Dynamic calculated metrics based on selected route mode
+  const isCheap = selectedRouteId === 'route-cheap';
+  const isEco = selectedRouteId === 'route-eco';
+
+  const totalDurationMins = isEco
+    ? Math.max(14, Math.round(distanceKm * 2.1))
+    : isCheap
+    ? Math.max(18, Math.round(distanceKm * 3.2))
+    : Math.max(12, Math.round(distanceKm * 2.4));
+
+  const totalFareInr = isEco
+    ? Math.max(25, Math.min(45, Math.round(15 + distanceKm * 2.0)))
+    : isCheap
+    ? Math.max(10, Math.min(20, Math.round(5 + distanceKm * 1.0)))
+    : Math.max(15, Math.min(35, Math.round(10 + distanceKm * 1.5)));
+
+  const serviceName = isEco
+    ? 'Mo E-Ride Electric Auto + Pink Shuttle'
+    : isCheap
+    ? 'Mo Bus Ordinary Non-AC (Route 11 / 20)'
+    : 'Mo Bus AC Electric Express (Route 10 / 24)';
+
+  const serviceBadge = isEco
+    ? '🌿 100% Zero-Emission Feeder'
+    : isCheap
+    ? '💰 Lowest Public Bus Fare'
+    : '⚡ Fastest Direct AC Corridor';
 
   const now = new Date();
   const formatTime = (addMins: number) => {
@@ -80,13 +105,13 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
     <div className="w-full lg:w-96 flex-shrink-0 dashboard-card rounded-3xl p-5 flex flex-col justify-between gap-5">
       {/* Top Header */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <div>
             <h3 className="font-extrabold text-lg text-slate-900 dark:text-white">
-              Your Journey
+              Selected Ride Details
             </h3>
-            <p className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold truncate max-w-[180px]">
-              {cleanFrom} ➔ {cleanTo}
+            <p className="text-[11px] text-blue-600 dark:text-blue-400 font-bold truncate max-w-[180px]">
+              {serviceName}
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -107,13 +132,21 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
           </div>
         </div>
 
+        <div className="mb-2.5">
+          <span className="text-[10px] font-extrabold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-800">
+            {serviceBadge}
+          </span>
+        </div>
+
         {/* Top Summary Metrics Pill */}
         <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 pb-3 border-b border-slate-100 dark:border-slate-800">
           <span className="flex items-center gap-1 font-bold text-slate-900 dark:text-white">
             <Clock className="w-3.5 h-3.5 text-blue-500" /> {totalDurationMins} min ({distanceKm} km)
           </span>
-          <span>⇄ {transfersCount} {transfersCount === 1 ? 'Transfer' : 'Direct'}</span>
-          <span className="font-extrabold text-blue-600 dark:text-blue-400 text-sm">₹{totalFareInr}</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+            {isEco ? '⇄ Shared Feeder' : '🟢 Direct Ride'}
+          </span>
+          <span className="font-extrabold text-blue-600 dark:text-blue-400 text-base">₹{totalFareInr}</span>
         </div>
 
         {/* Multiple Intermediate Stops Section (Via Stops) */}
@@ -186,27 +219,27 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
           <div className="pl-1.5 ml-1 border-l-2 border-dashed border-slate-300 dark:border-slate-700 py-1 space-y-1">
             <div className="pl-4 flex items-center gap-2 text-[11px] text-slate-400">
               <Footprints className="w-3.5 h-3.5" />
-              <span>Walk 2 min (150 m) to Transit Platform</span>
+              <span>Walk 2 min (150 m) to Transit Bay</span>
             </div>
           </div>
 
-          {/* Step 2: Primary Mo Bus Leg */}
+          {/* Step 2: Primary Connected Leg */}
           <div className="flex items-start gap-3 relative">
-            <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm">
-              <Bus className="w-3.5 h-3.5" />
+            <div className={`w-6 h-6 rounded-lg ${isEco ? 'bg-pink-500' : isCheap ? 'bg-emerald-500' : 'bg-blue-600'} text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm font-bold text-xs`}>
+              {isEco ? '🛺' : '🚍'}
             </div>
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {distanceKm > 10 ? 'Mo Bus Route 10 (AC Electric Trunk)' : 'Mo Bus Direct Route 10 / 24'}
+                  {isEco ? 'Mo E-Ride Electric Auto' : isCheap ? 'Mo Bus Route 11 / 20 (Non-AC)' : 'Mo Bus Route 10 / 24 (AC Electric)'}
                 </span>
                 <span className="text-slate-400 font-mono">{formatTime(2)}</span>
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                {cleanFrom} ➔ {distanceKm > 10 ? 'Central Interchange Hub' : cleanTo}
+                {cleanFrom} ➔ {isEco ? 'CRUT Electric Interchange' : cleanTo}
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                <span>{Math.round(totalDurationMins * (distanceKm > 10 ? 0.6 : 0.85))} min • {Math.max(3, Math.round(distanceKm * 0.8))} stops</span>
+                <span>{Math.round(totalDurationMins * (isEco ? 0.6 : 0.9))} min • {Math.max(3, Math.round(distanceKm * 0.8))} stops</span>
                 <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
                   Live: On Time 🟢
                 </span>
@@ -214,34 +247,34 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
             </div>
           </div>
 
-          {/* Optional Transfer / Connected Transit Leg if distance > 10km */}
-          {distanceKm > 10 && (
+          {/* Optional Transfer Leg for Eco Route */}
+          {isEco && (
             <>
               <div className="pl-1.5 ml-2.5 border-l-2 border-dashed border-slate-300 dark:border-slate-700 py-1 space-y-1">
                 <div className="pl-4 flex items-center gap-2 text-[11px] text-slate-400">
-                  <Clock className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Transfer Platform • 4 min</span>
+                  <Clock className="w-3.5 h-3.5 text-pink-500" />
+                  <span>Doorstep Feeder Connection • 3 min</span>
                   <span className="text-slate-400 font-mono ml-auto">{formatTime(Math.round(totalDurationMins * 0.6) + 2)}</span>
                 </div>
               </div>
 
-              {/* Step 3: Connecting Mo Bus / Metro Leg */}
+              {/* Step 3: Pink Safe Shuttle Leg */}
               <div className="flex items-start gap-3 relative">
-                <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm">
-                  <Bus className="w-3.5 h-3.5" />
+                <div className="w-6 h-6 rounded-lg bg-pink-600 text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm text-xs">
+                  🌸
                 </div>
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-900 dark:text-white">Connecting Mo Bus / Metro Link</span>
-                    <span className="text-slate-400 font-mono">{formatTime(Math.round(totalDurationMins * 0.6) + 6)}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">Pink Safe Mo Bus Feeder</span>
+                    <span className="text-slate-400 font-mono">{formatTime(Math.round(totalDurationMins * 0.6) + 5)}</span>
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Central Interchange ➔ {cleanTo}
+                    Interchange ➔ {cleanTo}
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                    <span>{Math.round(totalDurationMins * 0.35)} min • 3 stops</span>
-                    <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-[10px]">
-                      Tracked
+                    <span>{Math.round(totalDurationMins * 0.35)} min • 2 stops</span>
+                    <span className="px-2 py-0.5 rounded bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 font-bold text-[10px]">
+                      Safe Transit
                     </span>
                   </div>
                 </div>
