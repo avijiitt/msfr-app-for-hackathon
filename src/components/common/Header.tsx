@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Wallet, Wifi, WifiOff, Globe, MapPin, Sun, Moon, Clock, GraduationCap, User, Headphones, Navigation2, LocateFixed } from 'lucide-react';
 import { SUPPORTED_LANGUAGES } from '../../data/translations';
 import { LanguageCode, TranslationDictionary } from '../../types/i18n';
@@ -77,13 +77,17 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Left: Brand & Pan-India City Hub */}
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center shadow-lg shadow-primary/10 flex-shrink-0">
-              <span className="text-xl">🇮🇳</span>
+            <div className="w-10 h-10 rounded-xl bg-white p-0.5 border border-primary/40 flex items-center justify-center shadow-lg shadow-primary/10 flex-shrink-0">
+              <img
+                src="/musafir-logo.png"
+                alt="Musafir"
+                className="w-full h-full object-contain rounded-lg"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg sm:text-2xl tracking-tight text-primary font-display-lg drop-shadow-[0_0_8px_rgba(255,228,175,0.3)]">
-                  MSFR
+                <span className="font-extrabold text-lg sm:text-2xl tracking-tight text-primary font-display-lg drop-shadow-[0_0_8px_rgba(255,228,175,0.3)] uppercase">
+                  MUSAFIR
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30 font-label-caps">
                   India Multi-Modal

@@ -93,12 +93,15 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({ isOpen, onCo
 
         {/* Header */}
         <div className="bg-gradient-to-br from-slate-900 to-slate-700 p-7 text-white text-center">
-          <div className="w-16 h-16 rounded-2xl bg-blue-600/30 border-2 border-blue-400/40 flex items-center justify-center mx-auto mb-4">
-            <Shield className="w-8 h-8 text-blue-300" />
+          <div className="w-16 h-16 rounded-2xl bg-white p-1 shadow-xl flex items-center justify-center mx-auto mb-3">
+            <img
+              src="/musafir-logo.png"
+              alt="Musafir"
+              className="w-full h-full object-contain rounded-xl"
+            />
           </div>
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Navigation2 className="w-4 h-4 text-blue-300" />
-            <span className="font-extrabold text-lg tracking-tight">musafir</span>
+            <span className="font-extrabold text-xl tracking-tight uppercase text-white font-sans">musafir</span>
           </div>
           <p className="text-slate-300 text-sm">needs a few permissions to give you the full experience</p>
         </div>

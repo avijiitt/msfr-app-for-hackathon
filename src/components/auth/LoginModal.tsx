@@ -377,11 +377,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
         <div className="p-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 text-white relative">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-inner">
-                <Navigation2 className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-2xl bg-white p-1 shadow-md flex items-center justify-center flex-shrink-0">
+                <img
+                  src="/musafir-logo.png"
+                  alt="Musafir"
+                  className="w-full h-full object-contain rounded-xl"
+                />
               </div>
               <div>
-                <h1 className="text-xl font-black tracking-tight">musafir</h1>
+                <h1 className="text-xl font-black tracking-tight uppercase font-sans">musafir</h1>
                 <p className="text-xs text-blue-100 font-medium">
                   {authMethod === 'PHONE' ? 'Mobile Number OTP Login' : 'Google Account Sign In'}
                 </p>

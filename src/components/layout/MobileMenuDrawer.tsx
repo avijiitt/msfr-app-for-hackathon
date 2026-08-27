@@ -80,12 +80,16 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
         {/* Drawer Top Header */}
         <div className="p-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-white font-black text-base shadow-sm">
-              M
+            <div className="w-10 h-10 rounded-2xl bg-white p-0.5 shadow-sm flex items-center justify-center flex-shrink-0">
+              <img
+                src="/musafir-logo.png"
+                alt="Musafir"
+                className="w-full h-full object-contain rounded-xl"
+              />
             </div>
             <div>
-              <h3 className="font-extrabold text-base tracking-tight">musafir</h3>
-              <p className="text-[11px] text-blue-100 font-medium">Pan-India Transit Companion</p>
+              <h3 className="font-extrabold text-base tracking-tight uppercase font-sans">musafir</h3>
+              <p className="text-[11px] text-blue-100 font-medium">Multi-Modal Transit</p>
             </div>
           </div>
           <button

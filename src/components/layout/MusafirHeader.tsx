@@ -200,10 +200,14 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
             className="flex items-center gap-2 sm:gap-2.5 cursor-pointer"
             onClick={() => onSearch('Current Location', 'KIIT Square, Bhubaneswar')}
           >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/30">
-              <Navigation2 className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm overflow-hidden flex-shrink-0">
+              <img
+                src="/musafir-logo.png"
+                alt="Musafir"
+                className="w-full h-full object-contain rounded-lg"
+              />
             </div>
-            <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-slate-900 dark:text-white">
+            <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-slate-900 dark:text-white uppercase font-sans">
               musafir
             </span>
           </div>
