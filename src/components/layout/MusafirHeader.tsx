@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu } from 'lucide-react';
+import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X } from 'lucide-react';
 import { indiaGeocodingService, geocodeAddressIndia, IndiaLocationResult, POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
 import { ThemeMode } from '../../types/transit';
 
@@ -246,6 +246,21 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
               />
             </div>
 
+            {originQuery && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOriginQuery('');
+                  handleFocusOrigin(true);
+                }}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition mr-1 flex-shrink-0"
+                title="Clear departure address"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+
             {/* Origin Dropdown */}
             {isOriginFocused && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 z-[1100] max-h-64 overflow-y-auto space-y-0.5">
@@ -306,6 +321,21 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
                 autoComplete="off"
               />
             </div>
+
+            {destQuery && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDestQuery('');
+                  handleFocusDest(true);
+                }}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition mr-1 flex-shrink-0"
+                title="Clear destination address"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
 
             {/* Destination Dropdown */}
             {isDestFocused && (

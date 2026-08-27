@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Bus, Train, ChevronRight, RotateCw, RefreshCw, Shield, Bell, Zap, Wallet, Star, Leaf, Accessibility, Moon, CloudRain, Coins } from 'lucide-react';
 import { RouteMode } from '../../types/transit';
 
@@ -8,6 +8,7 @@ export interface RouteCardOption {
   badgeColor: string;
   isStar?: boolean;
   modeType: RouteMode;
+  lineTitle: string;
   icons: { mode: 'bus' | 'metro'; color: string }[];
   durationMins: number;
   transfersCount: number;
@@ -18,6 +19,10 @@ export interface RouteCardOption {
 }
 
 interface BestRoutesCarouselProps {
+  originName?: string;
+  destinationName?: string;
+  originCoords?: [number, number] | null;
+  destCoords?: [number, number] | null;
   onSelectRoute: (routeId: string) => void;
   selectedRouteId: string;
   activeFilterMode: RouteMode;
@@ -29,6 +34,10 @@ interface BestRoutesCarouselProps {
 }
 
 export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
+  originName = 'Jayadev Vihar',
+  destinationName = 'KIIT Square, Patia',
+  originCoords,
+  destCoords,
   onSelectRoute,
   selectedRouteId,
   activeFilterMode,
@@ -39,6 +48,27 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
   onOpenSaveMore,
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Dynamic road/transit distance estimation
+  const distanceKm = React.useMemo(() => {
+    if (originCoords && destCoords) {
+      const latDiff = originCoords[0] - destCoords[0];
+      const lngDiff = (originCoords[1] - destCoords[1]) * Math.cos((originCoords[0] * Math.PI) / 180);
+      const d = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111.32;
+      return Math.max(1.5, Math.round(d * 10) / 10);
+    }
+    return 8.5;
+  }, [originCoords, destCoords]);
+
+  // Clean names
+  const cleanFrom = originName.split(',')[0] || 'Origin';
+  const cleanTo = destinationName.split(',')[0] || 'Destination';
+
+  // Format dynamic arrival times (e.g. + duration from now)
+  const getArrivalTime = (durationMins: number) => {
+    const d = new Date(Date.now() + durationMins * 60000);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   const filterTabs: { id: RouteMode; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'fastest', label: 'Best / Fastest', icon: Zap },
@@ -56,97 +86,101 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
       badgeColor: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
       isStar: true,
       modeType: 'fastest',
-      icons: [
+      lineTitle: `Mo Bus 10 (AC Electric Trunk) • Direct Corridor`,
+      icons: distanceKm > 10 ? [
         { mode: 'bus', color: 'text-emerald-500' },
         { mode: 'metro', color: 'text-blue-600' },
-        { mode: 'bus', color: 'text-red-500' },
+      ] : [
+        { mode: 'bus', color: 'text-emerald-500' },
       ],
-      durationMins: 42,
-      transfersCount: 2,
-      fareInr: 35,
-      arrivalTime: '10:45 AM',
-      co2SavedGrams: 420,
-      safetyScore: 95,
+      durationMins: Math.max(12, Math.round(distanceKm * 2.5)),
+      transfersCount: distanceKm > 10 ? 1 : 0,
+      fareInr: Math.max(15, Math.min(45, Math.round(10 + distanceKm * 1.8))),
+      arrivalTime: getArrivalTime(Math.max(12, Math.round(distanceKm * 2.5))),
+      co2SavedGrams: Math.round(distanceKm * 48),
+      safetyScore: 96,
     },
     {
       id: 'route-cheap',
       badge: 'Cheapest',
       badgeColor: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
       modeType: 'cheapest',
+      lineTitle: `Mo Bus 11 (Non-AC Ordinary) • ₹10 Base Fare`,
       icons: [
         { mode: 'bus', color: 'text-emerald-500' },
-        { mode: 'bus', color: 'text-emerald-500' },
       ],
-      durationMins: 55,
-      transfersCount: 1,
-      fareInr: 20,
-      arrivalTime: '10:58 AM',
-      co2SavedGrams: 310,
-      safetyScore: 88,
+      durationMins: Math.max(18, Math.round(distanceKm * 3.3)),
+      transfersCount: 0,
+      fareInr: Math.max(10, Math.min(25, Math.round(5 + distanceKm * 1.1))),
+      arrivalTime: getArrivalTime(Math.max(18, Math.round(distanceKm * 3.3))),
+      co2SavedGrams: Math.round(distanceKm * 38),
+      safetyScore: 89,
     },
     {
       id: 'route-eco',
       badge: 'Eco Friendly',
       badgeColor: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
       modeType: 'eco',
+      lineTitle: `Metro Electric Corridor + Mo Bus EV Pink Shuttle`,
       icons: [
         { mode: 'metro', color: 'text-blue-600' },
         { mode: 'bus', color: 'text-emerald-500' },
       ],
-      durationMins: 46,
+      durationMins: Math.max(15, Math.round(distanceKm * 2.7)),
       transfersCount: 1,
-      fareInr: 30,
-      arrivalTime: '10:49 AM',
-      co2SavedGrams: 580,
-      safetyScore: 92,
+      fareInr: Math.max(20, Math.min(40, Math.round(15 + distanceKm * 1.6))),
+      arrivalTime: getArrivalTime(Math.max(15, Math.round(distanceKm * 2.7))),
+      co2SavedGrams: Math.round(distanceKm * 65),
+      safetyScore: 94,
     },
     {
       id: 'route-senior',
       badge: 'Senior Friendly',
       badgeColor: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
       modeType: 'senior',
+      lineTitle: `Low-Floor Kneeling Mo Bus 20 • Direct Level Boarding`,
       icons: [
-        { mode: 'bus', color: 'text-emerald-500' },
-        { mode: 'bus', color: 'text-emerald-500' },
+        { mode: 'bus', color: 'text-purple-500' },
       ],
-      durationMins: 48,
-      transfersCount: 1,
-      fareInr: 25,
-      arrivalTime: '10:51 AM',
-      co2SavedGrams: 350,
-      safetyScore: 98,
+      durationMins: Math.max(16, Math.round(distanceKm * 2.8)),
+      transfersCount: 0,
+      fareInr: 0, // Free with Senior Transit Pass or ₹15
+      arrivalTime: getArrivalTime(Math.max(16, Math.round(distanceKm * 2.8))),
+      co2SavedGrams: Math.round(distanceKm * 42),
+      safetyScore: 99,
     },
     {
       id: 'route-night',
       badge: 'Night Safe',
       badgeColor: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
       modeType: 'night',
+      lineTitle: `Night Owl Express 24x7 • Well-Lit CCTV Corridor`,
       icons: [
-        { mode: 'metro', color: 'text-blue-600' },
-        { mode: 'bus', color: 'text-red-500' },
+        { mode: 'bus', color: 'text-indigo-500' },
       ],
-      durationMins: 40,
-      transfersCount: 1,
-      fareInr: 38,
-      arrivalTime: '10:43 AM',
-      co2SavedGrams: 410,
-      safetyScore: 99,
+      durationMins: Math.max(14, Math.round(distanceKm * 2.4)),
+      transfersCount: 0,
+      fareInr: Math.max(25, Math.min(50, Math.round(15 + distanceKm * 2.0))),
+      arrivalTime: getArrivalTime(Math.max(14, Math.round(distanceKm * 2.4))),
+      co2SavedGrams: Math.round(distanceKm * 40),
+      safetyScore: 98,
     },
     {
       id: 'route-weather',
       badge: 'Weather Safe',
-      badgeColor: 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400',
+      badgeColor: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
       modeType: 'weather',
+      lineTitle: `Flood-Resilient Skywalk & Underground Metro`,
       icons: [
         { mode: 'metro', color: 'text-blue-600' },
-        { mode: 'metro', color: 'text-blue-600' },
+        { mode: 'bus', color: 'text-cyan-500' },
       ],
-      durationMins: 38,
+      durationMins: Math.max(17, Math.round(distanceKm * 2.9)),
       transfersCount: 1,
-      fareInr: 40,
-      arrivalTime: '10:41 AM',
-      co2SavedGrams: 460,
-      safetyScore: 96,
+      fareInr: Math.max(20, Math.min(40, Math.round(12 + distanceKm * 1.7))),
+      arrivalTime: getArrivalTime(Math.max(17, Math.round(distanceKm * 2.9))),
+      co2SavedGrams: Math.round(distanceKm * 52),
+      safetyScore: 95,
     },
   ];
 
@@ -179,16 +213,21 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
         })}
       </div>
 
-      {/* Header */}
+      {/* Section Header */}
       <div className="flex items-center justify-between">
-        <h2 className="font-bold text-base sm:text-lg text-slate-900 dark:text-white">
-          Best Routes for You
-        </h2>
+        <div>
+          <h2 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2">
+            <span>Best Routes for You</span>
+            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-0.5 rounded-full">
+              {cleanFrom} ➔ {cleanTo} ({distanceKm} km)
+            </span>
+          </h2>
+        </div>
         <button
           onClick={handleRefresh}
           className="text-xs text-slate-400 hover:text-blue-600 flex items-center gap-1.5 font-medium transition"
         >
-          <span>Updated just now</span>
+          <span>Live Fleet Sync</span>
           <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
         </button>
       </div>
@@ -211,7 +250,7 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
               }`}
             >
               {/* Badge */}
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${card.badgeColor}`}>
                   {card.badge}
                 </span>
@@ -219,6 +258,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
                   <Star className="w-4 h-4 text-blue-600 fill-blue-600" />
                 )}
               </div>
+
+              {/* Connected Line Title */}
+              <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 line-clamp-1 mb-2.5">
+                {card.lineTitle}
+              </p>
 
               {/* Icons flow */}
               <div className="flex items-center gap-2 mb-3">

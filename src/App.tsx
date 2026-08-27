@@ -392,6 +392,10 @@ export const App: React.FC = () => {
 
           {/* Best Routes for You Section (with 6 Smart Optimization Modes) */}
           <BestRoutesCarousel
+            originName={originQuery}
+            destinationName={destQuery}
+            originCoords={originCoords}
+            destCoords={destCoords}
             selectedRouteId={selectedRouteId}
             onSelectRoute={(id) => setSelectedRouteId(id)}
             activeFilterMode={activeFilterMode}
@@ -405,6 +409,10 @@ export const App: React.FC = () => {
 
         {/* Column 3: Right Sidebar (Your Journey Panel with Multiple Stops) */}
         <JourneyDetailPanel
+          originName={originQuery}
+          destinationName={destQuery}
+          originCoords={originCoords}
+          destCoords={destCoords}
           onStartNavigation={handleStartNavigation}
           onShareTrip={() => setIsFamilyShareOpen(true)}
           onBookPass={() => setIsWalletOpen(true)}

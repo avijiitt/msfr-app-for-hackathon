@@ -1,7 +1,11 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Share2, Bus, Train, Footprints, Clock, Navigation, CheckCircle, ShieldCheck, Ticket, Plus, Trash2, Calendar, Calculator } from 'lucide-react';
 
 interface JourneyDetailPanelProps {
+  originName?: string;
+  destinationName?: string;
+  originCoords?: [number, number] | null;
+  destCoords?: [number, number] | null;
   onStartNavigation: () => void;
   onShareTrip: () => void;
   onBookPass: () => void;
@@ -11,6 +15,10 @@ interface JourneyDetailPanelProps {
 }
 
 export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
+  originName = 'Jayadev Vihar',
+  destinationName = 'KIIT Square, Patia',
+  originCoords,
+  destCoords,
   onStartNavigation,
   onShareTrip,
   onBookPass,
@@ -22,6 +30,32 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   const [viaStops, setViaStops] = useState<string[]>([]);
   const [newStopInput, setNewStopInput] = useState('');
   const [showAddStop, setShowAddStop] = useState(false);
+
+  // Dynamic road/transit distance estimation
+  const distanceKm = React.useMemo(() => {
+    if (originCoords && destCoords) {
+      const latDiff = originCoords[0] - destCoords[0];
+      const lngDiff = (originCoords[1] - destCoords[1]) * Math.cos((originCoords[0] * Math.PI) / 180);
+      const d = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111.32;
+      return Math.max(1.5, Math.round(d * 10) / 10);
+    }
+    return 8.5;
+  }, [originCoords, destCoords]);
+
+  // Clean names
+  const cleanFrom = originName.split(',')[0] || 'Origin';
+  const cleanTo = destinationName.split(',')[0] || 'Destination';
+
+  // Dynamic calculated metrics
+  const totalDurationMins = Math.max(12, Math.round(distanceKm * 2.5));
+  const totalFareInr = Math.max(15, Math.min(45, Math.round(10 + distanceKm * 1.8)));
+  const transfersCount = distanceKm > 10 ? 1 : 0;
+
+  const now = new Date();
+  const formatTime = (addMins: number) => {
+    const d = new Date(now.getTime() + addMins * 60000);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   const handleAddStop = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,9 +81,14 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
       {/* Top Header */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-extrabold text-lg text-slate-900 dark:text-white">
-            Your Journey
-          </h3>
+          <div>
+            <h3 className="font-extrabold text-lg text-slate-900 dark:text-white">
+              Your Journey
+            </h3>
+            <p className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold truncate max-w-[180px]">
+              {cleanFrom} ➔ {cleanTo}
+            </p>
+          </div>
           <div className="flex items-center gap-1.5">
             <button
               onClick={onOpenScheduleRide}
@@ -63,19 +102,18 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
               className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-xl flex items-center gap-1.5 hover:bg-blue-100 transition"
             >
               <Share2 className="w-3.5 h-3.5" />
-              <span>Share Trip</span>
+              <span>Share</span>
             </button>
           </div>
         </div>
 
         {/* Top Summary Metrics Pill */}
         <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <span className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-slate-400" /> 42 min
+          <span className="flex items-center gap-1 font-bold text-slate-900 dark:text-white">
+            <Clock className="w-3.5 h-3.5 text-blue-500" /> {totalDurationMins} min ({distanceKm} km)
           </span>
-          <span>⇄ 2 Transfers</span>
-          <span className="font-bold text-slate-900 dark:text-white">₹35</span>
-          <span className="text-emerald-600 dark:text-emerald-400">Less walking</span>
+          <span>⇄ {transfersCount} {transfersCount === 1 ? 'Transfer' : 'Direct'}</span>
+          <span className="font-extrabold text-blue-600 dark:text-blue-400 text-sm">₹{totalFareInr}</span>
         </div>
 
         {/* Multiple Intermediate Stops Section (Via Stops) */}
@@ -135,119 +173,94 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
 
         {/* Step-by-Step Interactive Timeline */}
         <div className="py-3 space-y-4">
-          {/* Step 1: Your Location */}
+          {/* Step 1: Your Departure Location */}
           <div className="flex items-start gap-3 relative">
             <div className="w-3 h-3 rounded-full border-2 border-blue-600 bg-white dark:bg-slate-900 mt-1 flex-shrink-0 z-10"></div>
             <div className="flex-1 flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-900 dark:text-white">Your Location</span>
-              <span className="text-slate-400 font-mono">10:03 AM</span>
+              <span className="font-bold text-slate-900 dark:text-white">Board at {cleanFrom}</span>
+              <span className="text-slate-400 font-mono">{formatTime(0)}</span>
             </div>
           </div>
 
-          {/* Walk Segment 1 */}
+          {/* Walk / Platform Access */}
           <div className="pl-1.5 ml-1 border-l-2 border-dashed border-slate-300 dark:border-slate-700 py-1 space-y-1">
             <div className="pl-4 flex items-center gap-2 text-[11px] text-slate-400">
               <Footprints className="w-3.5 h-3.5" />
-              <span>Walk 4 min (300 m)</span>
+              <span>Walk 2 min (150 m) to Transit Platform</span>
             </div>
           </div>
 
-          {/* Step 2: Take Bus 24A (Green) */}
+          {/* Step 2: Primary Mo Bus Leg */}
           <div className="flex items-start gap-3 relative">
             <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm">
               <Bus className="w-3.5 h-3.5" />
             </div>
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-900 dark:text-white">Take Bus 24A</span>
-                <span className="text-slate-400 font-mono">10:07 AM</span>
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {distanceKm > 10 ? 'Mo Bus Route 10 (AC Electric Trunk)' : 'Mo Bus Direct Route 10 / 24'}
+                </span>
+                <span className="text-slate-400 font-mono">{formatTime(2)}</span>
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                Jayadev Vihar ➔ Master Canteen
+                {cleanFrom} ➔ {distanceKm > 10 ? 'Central Interchange Hub' : cleanTo}
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                <span>8 min • 5 stops</span>
+                <span>{Math.round(totalDurationMins * (distanceKm > 10 ? 0.6 : 0.85))} min • {Math.max(3, Math.round(distanceKm * 0.8))} stops</span>
                 <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
-                  Live: On Time
+                  Live: On Time 🟢
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Walk Segment 2 */}
-          <div className="pl-1.5 ml-2.5 border-l-2 border-dashed border-slate-300 dark:border-slate-700 py-1 space-y-1">
-            <div className="pl-4 flex items-center gap-2 text-[11px] text-slate-400">
-              <Footprints className="w-3.5 h-3.5" />
-              <span>Walk 3 min (200 m)</span>
-              <span className="text-slate-400 font-mono ml-auto">10:15 AM</span>
-            </div>
-          </div>
+          {/* Optional Transfer / Connected Transit Leg if distance > 10km */}
+          {distanceKm > 10 && (
+            <>
+              <div className="pl-1.5 ml-2.5 border-l-2 border-dashed border-slate-300 dark:border-slate-700 py-1 space-y-1">
+                <div className="pl-4 flex items-center gap-2 text-[11px] text-slate-400">
+                  <Clock className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Transfer Platform • 4 min</span>
+                  <span className="text-slate-400 font-mono ml-auto">{formatTime(Math.round(totalDurationMins * 0.6) + 2)}</span>
+                </div>
+              </div>
 
-          {/* Step 3: Take Metro Blue Line */}
-          <div className="flex items-start gap-3 relative">
-            <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm">
-              <Train className="w-3.5 h-3.5" />
-            </div>
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-900 dark:text-white">Take Metro (Blue Line)</span>
-                <span className="text-slate-400 font-mono">10:18 AM</span>
+              {/* Step 3: Connecting Mo Bus / Metro Leg */}
+              <div className="flex items-start gap-3 relative">
+                <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm">
+                  <Bus className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-900 dark:text-white">Connecting Mo Bus / Metro Link</span>
+                    <span className="text-slate-400 font-mono">{formatTime(Math.round(totalDurationMins * 0.6) + 6)}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Central Interchange ➔ {cleanTo}
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                    <span>{Math.round(totalDurationMins * 0.35)} min • 3 stops</span>
+                    <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-[10px]">
+                      Tracked
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                Master Canteen ➔ Bhubaneswar Railway Station
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                <span>15 min • 7 stops</span>
-                <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
-                  Live: On Time
-                </span>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
 
-          {/* Transfer Time */}
-          <div className="pl-1.5 ml-2.5 border-l-2 border-dashed border-slate-300 dark:border-slate-700 py-1 space-y-1">
-            <div className="pl-4 flex items-center gap-2 text-[11px] text-slate-400">
-              <Clock className="w-3.5 h-3.5 text-amber-500" />
-              <span>Transfer Time: 5 min</span>
-              <span className="text-slate-400 font-mono ml-auto">10:33 AM</span>
-            </div>
-          </div>
-
-          {/* Step 4: Take Bus 18 (Red) */}
-          <div className="flex items-start gap-3 relative">
-            <div className="w-6 h-6 rounded-lg bg-red-500 text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm">
-              <Bus className="w-3.5 h-3.5" />
-            </div>
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-900 dark:text-white">Take Bus 18</span>
-                <span className="text-slate-400 font-mono">10:38 AM</span>
-              </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                Railway Station ➔ KIIT Square
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                <span>7 min • 4 stops</span>
-                <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
-                  Live: On Time
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 5: Arrival at Destination */}
+          {/* Step 4: Arrival at Destination */}
           <div className="flex items-start gap-3 relative pt-1">
-            <div className="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0 z-10 text-[9px] shadow-sm">
+            <div className="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0 z-10 text-[9px] shadow-sm font-bold">
               📍
             </div>
             <div className="flex-1 space-y-0.5">
               <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white">
-                <span>KIIT Square</span>
-                <span className="text-slate-400 font-mono font-normal">10:45 AM</span>
+                <span>Alight at {cleanTo}</span>
+                <span className="text-slate-400 font-mono font-normal">{formatTime(totalDurationMins)}</span>
               </div>
               <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                You have arrived!
+                Destination reached • Total Fare ₹{totalFareInr}
               </p>
             </div>
           </div>
