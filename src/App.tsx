@@ -98,11 +98,13 @@ export const App: React.FC = () => {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const t = translations[currentLang] || translations.en;
 
-  // Track if any modal or drawer is currently open to hide floating map badges
+  // Track if any modal, drawer or search dropdown is currently open to hide floating map badges
   const isAnyModalOpen = Boolean(
+    isSearchFocused ||
     isLoginOpen ||
     isPermissionsOpen ||
     isMobileMenuOpen ||
@@ -335,6 +337,7 @@ export const App: React.FC = () => {
         onOriginSelected={handleOriginSelected}
         onDestSelected={handleDestSelected}
         onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        onSearchFocusChange={setIsSearchFocused}
       />
 
       {/* 2. Main 3-Column Dashboard Body (Mobile Optimized with pb-24 for bottom bar) */}

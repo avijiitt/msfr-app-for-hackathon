@@ -24,6 +24,7 @@ interface MusafirHeaderProps {
   onOriginSelected?: (result: IndiaLocationResult) => void;
   onDestSelected?: (result: IndiaLocationResult) => void;
   onOpenMobileMenu?: () => void;
+  onSearchFocusChange?: (isFocused: boolean) => void;
 }
 
 export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
@@ -46,6 +47,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   onOriginSelected,
   onDestSelected,
   onOpenMobileMenu,
+  onSearchFocusChange,
 }) => {
   const [originSuggestions, setOriginSuggestions] = useState<IndiaLocationResult[]>([]);
   const [destSuggestions, setDestSuggestions] = useState<IndiaLocationResult[]>([]);
@@ -108,10 +110,34 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
     onSearch(destQuery, temp);
   };
 
+  const handleFocusOrigin = (focused: boolean) => {
+    setIsOriginFocused(focused);
+    onSearchFocusChange?.(focused || isDestFocused);
+  };
+
+  const handleFocusDest = (focused: boolean) => {
+    setIsDestFocused(focused);
+    onSearchFocusChange?.(isOriginFocused || focused);
+  };
+
+  const handleSelectOrigin = (item: IndiaLocationResult) => {
+    setOriginQuery(item.name);
+    handleFocusOrigin(false);
+    onOriginSelected?.(item);
+    onSearch(item.name, destQuery);
+  };
+
+  const handleSelectDest = (item: IndiaLocationResult) => {
+    setDestQuery(item.name);
+    handleFocusDest(false);
+    onDestSelected?.(item);
+    onSearch(originQuery, item.name);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsOriginFocused(false);
-    setIsDestFocused(false);
+    handleFocusOrigin(false);
+    handleFocusDest(false);
 
     // If user typed something not yet selected, geocode both origin and destination
     const localOrig = indiaGeocodingService.searchLocations(originQuery)[0];
@@ -139,15 +165,15 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   // Close dropdowns on outside click
   useEffect(() => {
     const handler = () => {
-      setIsOriginFocused(false);
-      setIsDestFocused(false);
+      handleFocusOrigin(false);
+      handleFocusDest(false);
     };
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-2.5 transition-colors">
+    <header className="sticky top-0 z-[1000] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-2.5 transition-colors shadow-xs">
       <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-3 sm:gap-6">
 
         {/* Brand Name + Mobile Hamburger */}
@@ -203,7 +229,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
                 value={originQuery}
                 onFocus={(e) => {
                   e.stopPropagation();
-                  setIsOriginFocused(true);
+                  handleFocusOrigin(true);
                   setOriginSuggestions(
                     originQuery.length > 0
                       ? indiaGeocodingService.searchLocations(originQuery)
@@ -218,7 +244,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
 
             {/* Origin Dropdown */}
             {isOriginFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-2 z-50 max-h-64 overflow-y-auto space-y-0.5">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 z-[1100] max-h-64 overflow-y-auto space-y-0.5">
                 <div className="flex items-center justify-between px-2 pb-1.5 border-b border-slate-100 dark:border-slate-700">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     🇮🇳 Select Departure (All India)
@@ -229,13 +255,8 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => {
-                      setOriginQuery(item.name);
-                      setIsOriginFocused(false);
-                      onOriginSelected?.(item);
-                      onSearch(item.name, destQuery);
-                    }}
-                    className="w-full text-left p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-700/60 flex items-start gap-2.5 text-xs transition group"
+                    onClick={() => handleSelectOrigin(item)}
+                    className="w-full text-left p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800/80 flex items-start gap-2.5 text-xs transition group"
                   >
                     <MapPin className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
@@ -269,7 +290,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
                 value={destQuery}
                 onFocus={(e) => {
                   e.stopPropagation();
-                  setIsDestFocused(true);
+                  handleFocusDest(true);
                   setDestSuggestions(
                     destQuery.length > 0
                       ? indiaGeocodingService.searchLocations(destQuery)
@@ -284,7 +305,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
 
             {/* Destination Dropdown */}
             {isDestFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-2 z-50 max-h-64 overflow-y-auto space-y-0.5">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 z-[1100] max-h-64 overflow-y-auto space-y-0.5">
                 <div className="flex items-center justify-between px-2 pb-1.5 border-b border-slate-100 dark:border-slate-700">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     🇮🇳 Select Destination (All India)
@@ -295,13 +316,8 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => {
-                      setDestQuery(item.name);
-                      setIsDestFocused(false);
-                      onDestSelected?.(item);
-                      onSearch(originQuery, item.name);
-                    }}
-                    className="w-full text-left p-2 rounded-xl hover:bg-red-50 dark:hover:bg-slate-700/60 flex items-start gap-2.5 text-xs transition group"
+                    onClick={() => handleSelectDest(item)}
+                    className="w-full text-left p-2 rounded-xl hover:bg-red-50 dark:hover:bg-slate-800/80 flex items-start gap-2.5 text-xs transition group"
                   >
                     <MapPin className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
