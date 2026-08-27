@@ -48,9 +48,9 @@ export const App: React.FC = () => {
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
   const [currentLang, setCurrentLang] = useState<LanguageCode>('en');
 
-  // Auth State — show login on first load if not authenticated
+  // Auth State — show login on first load if profile registration not completed
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(authService.getCurrentUser());
-  const [isLoginOpen, setIsLoginOpen] = useState(() => !authService.getCurrentUser());
+  const [isLoginOpen, setIsLoginOpen] = useState(() => !localStorage.getItem('musafir_profile_completed'));
   const [isPermissionsOpen, setIsPermissionsOpen] = useState(false);
 
   // Sidebar & Navigation
