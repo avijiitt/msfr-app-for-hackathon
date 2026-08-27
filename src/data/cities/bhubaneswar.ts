@@ -480,3 +480,120 @@ export const INITIAL_BHUBANESWAR_VEHICLES: Vehicle[] = [
     evVehicle: true,
   },
 ];
+
+export interface BhubaneswarLocality {
+  id: string;
+  name: string;
+  category: 'transit_hub' | 'neighborhood' | 'tech_park' | 'education' | 'hospital' | 'shopping' | 'heritage';
+  lat: number;
+  lng: number;
+  popularLandmark?: string;
+  hubStationId?: string;
+}
+
+export const BHUBANESWAR_LOCALITIES: BhubaneswarLocality[] = [
+  { id: 'patia', name: 'Patia / Big Bazaar Square', category: 'neighborhood', lat: 20.3541, lng: 85.8175, popularLandmark: 'Near KIIT Road & Big Bazaar', hubStationId: 'bbs-patia-kiit' },
+  { id: 'kiit-univ', name: 'KIIT University (Campus 1 to 20)', category: 'education', lat: 20.3533, lng: 85.8164, popularLandmark: 'KIIT International School & KIMS Hospital', hubStationId: 'bbs-patia-kiit' },
+  { id: 'infocity', name: 'InfoCity Tech Park / DLF Cybercity', category: 'tech_park', lat: 20.3602, lng: 85.8035, popularLandmark: 'TCS, Infosys, Mindtree, DLF', hubStationId: 'bbs-infocity' },
+  { id: 'jayadev-vihar', name: 'Jayadev Vihar / Pal Heights', category: 'transit_hub', lat: 20.3039, lng: 85.8188, popularLandmark: 'Pal Heights Mall & Mayfair Hotel', hubStationId: 'bbs-jaydev-vihar' },
+  { id: 'master-canteen', name: 'Master Canteen / Railway Station', category: 'transit_hub', lat: 20.2668, lng: 85.8436, popularLandmark: 'Bhubaneswar Central Railway Station', hubStationId: 'bbs-master-canteen' },
+  { id: 'saheed-nagar', name: 'Saheed Nagar / BMC Bhawani Mall', category: 'shopping', lat: 20.2895, lng: 85.8445, popularLandmark: 'BMC Bhawani Mall & Angan Restaurant' },
+  { id: 'rasulgarh', name: 'Rasulgarh Square / Esplanade One', category: 'shopping', lat: 20.2977, lng: 85.8643, popularLandmark: 'Esplanade One Mall (Nexus Malls)', hubStationId: 'bbs-rasulgarh' },
+  { id: 'khandagiri', name: 'Khandagiri & Udayagiri Caves', category: 'heritage', lat: 20.2588, lng: 85.7865, popularLandmark: 'Ancient Caves & NH16 Overbridge', hubStationId: 'bbs-khandagiri' },
+  { id: 'baramunda-isbt', name: 'Baramunda ISBT Bus Terminal', category: 'transit_hub', lat: 20.2798, lng: 85.7958, popularLandmark: 'Dr. B.R. Ambedkar Inter-State Bus Terminal', hubStationId: 'bbs-baramunda' },
+  { id: 'nayapalli', name: 'Nayapalli / IRC Village / ISKCON', category: 'neighborhood', lat: 20.2982, lng: 85.8105, popularLandmark: 'ISKCON Krishna Temple & Crown Hotel' },
+  { id: 'damana', name: 'Damana Square / Chandrasekharpur', category: 'transit_hub', lat: 20.3340, lng: 85.8205, popularLandmark: 'Damana Chhak & Housing Board Colony' },
+  { id: 'kalinga-hosp', name: 'Kalinga Hospital Square', category: 'hospital', lat: 20.3225, lng: 85.8218, popularLandmark: 'Kalinga Hospital & Nalco Square' },
+  { id: 'aiims-bbsr', name: 'AIIMS Hospital Bhubaneswar (Sijua)', category: 'hospital', lat: 20.2312, lng: 85.7761, popularLandmark: 'AIIMS Trauma Center & College', hubStationId: 'bbs-aiims' },
+  { id: 'airport-bbi', name: 'Biju Patnaik Airport (Terminal 1/2)', category: 'transit_hub', lat: 20.2524, lng: 85.8178, popularLandmark: 'Domestic & International Airport Gate', hubStationId: 'bbs-airport' },
+  { id: 'vani-vihar', name: 'Vani Vihar / Utkal University', category: 'education', lat: 20.3015, lng: 85.8365, popularLandmark: 'Utkal University Main Entrance', hubStationId: 'bbs-vani-vihar' },
+  { id: 'acharya-vihar', name: 'Acharya Vihar / Regional Science Center', category: 'transit_hub', lat: 20.3055, lng: 85.8285, popularLandmark: 'Science Park & RPRC Botanical Garden' },
+  { id: 'old-town', name: 'Old Town / Lingaraj Temple', category: 'heritage', lat: 20.2385, lng: 85.8335, popularLandmark: '11th-Century Lingaraj Temple & Bindusagar' },
+  { id: 'sailashree-vihar', name: 'Sailashree Vihar / DAV School', category: 'neighborhood', lat: 20.3420, lng: 85.8110, popularLandmark: 'DAV Public School CSPUR & Jagannath Temple' },
+  { id: 'niladri-vihar', name: 'Niladri Vihar / Utkal Hospital', category: 'hospital', lat: 20.3370, lng: 85.8055, popularLandmark: 'Utkal Multi-speciality Hospital' },
+  { id: 'iter-soa', name: 'ITER / SOA University (Jagamara)', category: 'education', lat: 20.2515, lng: 85.7985, popularLandmark: 'ITER Engineering College & SUM Ultimate' },
+  { id: 'outr-cet', name: 'OUTR (Formerly CET) / Ghatikia', category: 'education', lat: 20.2745, lng: 85.7765, popularLandmark: 'Odisha University of Technology & Research' },
+  { id: 'sum-hosp', name: 'SUM Hospital / Kalinga Nagar', category: 'hospital', lat: 20.2760, lng: 85.7580, popularLandmark: 'IMS & SUM Hospital & Medical Campus' },
+  { id: 'pokhariput', name: 'Pokhariput / Aerodrome / DAV School', category: 'neighborhood', lat: 20.2440, lng: 85.8040, popularLandmark: 'Ananda Bazar & DAV Pokhariput' },
+  { id: 'mancheswar', name: 'Mancheswar Industrial Area / VSS Nagar', category: 'neighborhood', lat: 20.3165, lng: 85.8560, popularLandmark: 'Railway Carriage Workshop & VSS Nagar' },
+  { id: 'palasuni', name: 'Palasuni / Hi-Tech Square', category: 'transit_hub', lat: 20.3115, lng: 85.8620, popularLandmark: 'NH16 Flyover & Hi-Tech Medical Link' },
+  { id: 'fire-station', name: 'Fire Station Square / Baramunda', category: 'transit_hub', lat: 20.2770, lng: 85.8060, popularLandmark: 'Odisha State Fire Academy' },
+  { id: 'unit1-market', name: 'Unit-1 Daily Market / Rajmahal', category: 'shopping', lat: 20.2640, lng: 85.8340, popularLandmark: 'Market Building & Rajmahal Square' },
+  { id: 'unit4-mla', name: 'Unit-4 / MLA Colony / Madhusudan Marg', category: 'neighborhood', lat: 20.2720, lng: 85.8280, popularLandmark: 'Odisha State Assembly & Secretariat' },
+  { id: 'kalpana-sq', name: 'Kalpana Square / State Museum', category: 'heritage', lat: 20.2570, lng: 85.8420, popularLandmark: 'Odisha State Museum & BJB Nagar' },
+  { id: 'tamando', name: 'Tamando / Info Valley / IIIT', category: 'tech_park', lat: 20.2195, lng: 85.7480, popularLandmark: 'Info Valley 2 & IIIT Tech Park' },
+  { id: 'cuttack-badambadi', name: 'Cuttack Netaji Bus Terminal (Badambadi)', category: 'transit_hub', lat: 20.4578, lng: 85.8732, popularLandmark: 'CNBT Central Badambadi Terminal', hubStationId: 'bbs-cuttack-badambadi' },
+];
+
+/**
+ * Computes all nearby stations, landmarks, and transit junctions located
+ * along or near the route corridor between Origin and Destination.
+ */
+export function getNearbyLocationsAlongCorridor(
+  originQuery: string,
+  destQuery: string,
+  originCoords?: { lat: number; lng: number },
+  destCoords?: { lat: number; lng: number }
+): BhubaneswarLocality[] {
+  const normOrigin = originQuery.toLowerCase();
+  const normDest = destQuery.toLowerCase();
+
+  // If no queries provided, return major transit junctions
+  if (!normOrigin && !normDest) {
+    return BHUBANESWAR_LOCALITIES.slice(0, 8);
+  }
+
+  // 1. If we have coordinates, calculate distance from line segment
+  if (originCoords && destCoords && originCoords.lat && destCoords.lat) {
+    const minLat = Math.min(originCoords.lat, destCoords.lat) - 0.02;
+    const maxLat = Math.max(originCoords.lat, destCoords.lat) + 0.02;
+    const minLng = Math.min(originCoords.lng, destCoords.lng) - 0.02;
+    const maxLng = Math.max(originCoords.lng, destCoords.lng) + 0.02;
+
+    const inBoundingBox = BHUBANESWAR_LOCALITIES.filter(
+      (loc) => loc.lat >= minLat && loc.lat <= maxLat && loc.lng >= minLng && loc.lng <= maxLng
+    );
+
+    if (inBoundingBox.length >= 3) {
+      return inBoundingBox;
+    }
+  }
+
+  // 2. Corridors based on keywords
+  const isPatiaNorth = normOrigin.includes('patia') || normOrigin.includes('kiit') || normOrigin.includes('infocity') || normDest.includes('patia') || normDest.includes('kiit') || normDest.includes('infocity');
+  const isCentral = normOrigin.includes('master') || normOrigin.includes('railway') || normOrigin.includes('canteen') || normDest.includes('master') || normDest.includes('railway') || normDest.includes('canteen');
+  const isCuttack = normOrigin.includes('cuttack') || normDest.includes('cuttack') || normOrigin.includes('badambadi') || normDest.includes('badambadi');
+  const isKhandagiriWest = normOrigin.includes('khandagiri') || normOrigin.includes('baramunda') || normOrigin.includes('aiims') || normDest.includes('khandagiri') || normDest.includes('baramunda') || normDest.includes('aiims');
+
+  if (isPatiaNorth && isCentral) {
+    // Trunk corridor 10 (Master Canteen <-> Patia / Infocity)
+    return BHUBANESWAR_LOCALITIES.filter((loc) =>
+      ['jayadev-vihar', 'acharya-vihar', 'vani-vihar', 'kalinga-hosp', 'damana', 'sailashree-vihar', 'niladri-vihar', 'patia', 'kiit-univ', 'infocity'].includes(loc.id)
+    );
+  }
+
+  if (isCuttack) {
+    // NH16 Cuttack Corridor
+    return BHUBANESWAR_LOCALITIES.filter((loc) =>
+      ['vani-vihar', 'rasulgarh', 'palasuni', 'mancheswar', 'cuttack-badambadi'].includes(loc.id)
+    );
+  }
+
+  if (isKhandagiriWest) {
+    // West Corridor (Baramunda, Khandagiri, AIIMS, ITER)
+    return BHUBANESWAR_LOCALITIES.filter((loc) =>
+      ['baramunda-isbt', 'fire-station', 'khandagiri', 'iter-soa', 'outr-cet', 'aiims-bbsr', 'sum-hosp'].includes(loc.id)
+    );
+  }
+
+  // Fallback: match by query partial or popular stops
+  const matches = BHUBANESWAR_LOCALITIES.filter(
+    (loc) =>
+      normOrigin.includes(loc.id) ||
+      normDest.includes(loc.id) ||
+      loc.name.toLowerCase().includes(normOrigin.slice(0, 4)) ||
+      loc.name.toLowerCase().includes(normDest.slice(0, 4))
+  );
+
+  return matches.length > 0 ? matches : BHUBANESWAR_LOCALITIES.slice(0, 7);
+}

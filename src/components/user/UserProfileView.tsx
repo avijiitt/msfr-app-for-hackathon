@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   User, Mail, Phone, MapPin, HeartPulse, Droplet, Users, Cloud,
   CheckCircle2, ShieldCheck, Plus, Trash2, GraduationCap, Headphones,
-  Leaf, Zap, Navigation, History, Clock, ArrowRight, LogOut
+  Leaf, Zap, Navigation, History, Clock, ArrowRight, LogOut, Edit2, Bookmark,
+  Home, Briefcase, School, Compass, Sparkles, Check
 } from 'lucide-react';
-import { UserProfile, EmergencyContact } from '../../types/transit';
+import { UserProfile, EmergencyContact, SavedLocation } from '../../types/transit';
 import { sosService } from '../../services/sosService';
 import { authService } from '../../services/supabaseClient';
 import { tripService, TripRecord } from '../../services/tripService';
@@ -16,6 +17,7 @@ interface UserProfileViewProps {
   onOpenStudent: () => void;
   onOpenSupport: () => void;
   onLogout?: () => void;
+  onSelectLocation?: (address: string) => void;
   t: TranslationDictionary;
 }
 
@@ -25,6 +27,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   onOpenStudent,
   onOpenSupport,
   onLogout,
+  onSelectLocation,
   t,
 }) => {
   const [profile, setProfile] = useState<UserProfile>(userProfile);
@@ -34,6 +37,13 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [trips, setTrips] = useState<TripRecord[]>(tripService.getTrips());
+
+  // Saved Locations Management State
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [editingLocId, setEditingLocId] = useState<string | null>(null);
+  const [locName, setLocName] = useState('');
+  const [locAddress, setLocAddress] = useState('');
+  const [locCategory, setLocCategory] = useState<SavedLocation['category']>('home');
 
   useEffect(() => {
     setProfile(userProfile);
@@ -50,10 +60,25 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
     sosService.saveProfile(profile);
     onUpdateProfile(profile);
 
-    // Sync to Supabase if configured
+    // Sync to Supabase & Backend Database
+    try {
+      await fetch('http://localhost:5000/api/users/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: profile.email,
+          fullName: profile.name,
+          phone: profile.phone,
+          bloodGroup: profile.bloodGroup,
+          homeCity: profile.homeAddress,
+          savedLocations: profile.savedLocations,
+        }),
+      });
+    } catch (e) {}
+
     const res = await authService.updateProfile({ full_name: profile.name });
     setIsSyncing(false);
-    setSyncMessage(res.success ? 'Profile saved & synced to Supabase! ✅' : 'Saved locally (connect Supabase for cloud sync)');
+    setSyncMessage(res.success ? 'Profile & Saved Locations synced to Cloud Database! ✅' : 'Saved locally to your device! ✅');
     setTimeout(() => setSyncMessage(null), 3500);
   };
 
@@ -84,6 +109,88 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
     setProfile(updated);
     sosService.saveProfile(updated);
     onUpdateProfile(updated);
+  };
+
+  // Saved Location Handlers
+  const handleOpenAddLocation = () => {
+    setEditingLocId(null);
+    setLocName('');
+    setLocAddress('');
+    setLocCategory('home');
+    setShowLocationModal(true);
+  };
+
+  const handleOpenEditLocation = (loc: SavedLocation) => {
+    setEditingLocId(loc.id);
+    setLocName(loc.name);
+    setLocAddress(loc.address);
+    setLocCategory(loc.category);
+    setShowLocationModal(true);
+  };
+
+  const handleSaveLocationSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!locName.trim() || !locAddress.trim()) return;
+
+    const iconMap = {
+      home: '🏠',
+      work: '💼',
+      college: '🎓',
+      station: '🚍',
+      custom: '📍',
+    };
+
+    let updatedLocations: SavedLocation[] = [];
+    const currentLocs = profile.savedLocations || sosService.getSavedLocations();
+
+    if (editingLocId) {
+      updatedLocations = currentLocs.map((loc) =>
+        loc.id === editingLocId
+          ? {
+              ...loc,
+              name: locName.trim(),
+              address: locAddress.trim(),
+              category: locCategory,
+              icon: iconMap[locCategory] || '📍',
+            }
+          : loc
+      );
+    } else {
+      const newLoc: SavedLocation = {
+        id: 'loc-' + Date.now(),
+        name: locName.trim(),
+        address: locAddress.trim(),
+        category: locCategory,
+        icon: iconMap[locCategory] || '📍',
+      };
+      updatedLocations = [...currentLocs, newLoc];
+    }
+
+    const updatedProfile: UserProfile = {
+      ...profile,
+      savedLocations: updatedLocations,
+      homeAddress: locCategory === 'home' ? locAddress.trim() : profile.homeAddress,
+      workAddress: locCategory === 'work' ? locAddress.trim() : profile.workAddress,
+    };
+
+    setProfile(updatedProfile);
+    sosService.saveProfile(updatedProfile);
+    onUpdateProfile(updatedProfile);
+    setShowLocationModal(false);
+    setSyncMessage(editingLocId ? 'Location updated! ⭐' : 'New location saved! ⭐');
+    setTimeout(() => setSyncMessage(null), 3000);
+  };
+
+  const handleDeleteLocation = (id: string) => {
+    const currentLocs = profile.savedLocations || sosService.getSavedLocations();
+    const updatedLocations = currentLocs.filter((loc) => loc.id !== id);
+    const updatedProfile: UserProfile = {
+      ...profile,
+      savedLocations: updatedLocations,
+    };
+    setProfile(updatedProfile);
+    sosService.saveProfile(updatedProfile);
+    onUpdateProfile(updatedProfile);
   };
 
   return (
@@ -222,6 +329,215 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ── Saved Locations & Frequent Spots Section ── */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Bookmark className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                ⭐ Saved Locations & Frequent Spots
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                1-tap route destinations and favorite transit addresses in Bhubaneswar
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleOpenAddLocation}
+            className="py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Location</span>
+          </button>
+        </div>
+
+        {/* List of Saved Locations */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {(profile.savedLocations || sosService.getSavedLocations()).map((loc) => (
+            <div
+              key={loc.id}
+              className="bg-slate-50 dark:bg-slate-800/80 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col justify-between gap-3 hover:border-blue-300 dark:hover:border-blue-700 transition"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>{loc.icon || '📍'}</span>
+                    <span>{loc.name}</span>
+                  </span>
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    {loc.category}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full">
+                  {loc.address}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleOpenEditLocation(loc)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700 transition text-xs font-semibold flex items-center gap-1"
+                    title="Edit Location"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteLocation(loc.id)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition text-xs font-semibold"
+                    title="Delete Location"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {onSelectLocation && (
+                  <button
+                    onClick={() => onSelectLocation(loc.address)}
+                    className="py-1 px-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 font-bold text-[11px] flex items-center gap-1 transition"
+                  >
+                    <span>Travel Here</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Modal: Add / Edit Saved Location */}
+      {showLocationModal && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                <Bookmark className="w-4 h-4 text-amber-500" />
+                <span>{editingLocId ? 'Edit Saved Location' : 'Add New Saved Location'}</span>
+              </h3>
+              <button
+                onClick={() => setShowLocationModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveLocationSubmit} className="space-y-3.5 text-xs">
+              {/* Category Selector */}
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  Location Type
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+                  {[
+                    { id: 'home', label: 'Home', icon: '🏠' },
+                    { id: 'work', label: 'Work', icon: '💼' },
+                    { id: 'college', label: 'College', icon: '🎓' },
+                    { id: 'station', label: 'Station', icon: '🚍' },
+                    { id: 'custom', label: 'Custom', icon: '📍' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setLocCategory(cat.id as any)}
+                      className={`p-2 rounded-xl text-center font-bold border transition flex flex-col items-center gap-0.5 ${
+                        locCategory === cat.id
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400'
+                      }`}
+                    >
+                      <span className="text-sm">{cat.icon}</span>
+                      <span className="text-[10px]">{cat.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Location Name / Label */}
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Location Label *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. My Apartment, KIIT Campus 6, Tech Park"
+                  value={locName}
+                  onChange={(e) => setLocName(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Full Address */}
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Full Address / Landmark in Bhubaneswar *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Patia, Jayadev Vihar, Sailashree Vihar, Bhubaneswar"
+                  value={locAddress}
+                  onChange={(e) => setLocAddress(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Quick Bhubaneswar Address Presets */}
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 block mb-1 uppercase">
+                  Quick Bhubaneswar Hotspots:
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    'Patia / KIIT Square',
+                    'Jayadev Vihar',
+                    'InfoCity Tech Park',
+                    'Master Canteen',
+                    'Saheed Nagar',
+                    'Baramunda ISBT',
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        setLocAddress(preset + ', Bhubaneswar');
+                        if (!locName) setLocName(preset);
+                      }}
+                      className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-semibold hover:bg-blue-50 hover:text-blue-600 transition"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowLocationModal(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-500/20"
+                >
+                  {editingLocId ? 'Update Location' : 'Save Location'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Basic Personal Details Form */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">

@@ -404,6 +404,10 @@ export const App: React.FC = () => {
             onOpenSmartAlerts={() => setIsAlertsOpen(true)}
             onOpenSafeJourney={() => setIsFamilyShareOpen(true)}
             onOpenSaveMore={() => setIsFareCalcOpen(true)}
+            onSelectDestination={(dest) => {
+              setDestQuery(dest);
+              handleSearch(originQuery || 'Current Location', dest);
+            }}
           />
         </main>
 
@@ -552,6 +556,11 @@ export const App: React.FC = () => {
               onOpenSupport={() => {
                 setIsProfileOpen(false);
                 setIsSupportOpen(true);
+              }}
+              onSelectLocation={(dest) => {
+                setIsProfileOpen(false);
+                setDestQuery(dest);
+                handleSearch(originQuery || 'Current Location', dest);
               }}
               onLogout={handleLogout}
               t={t}

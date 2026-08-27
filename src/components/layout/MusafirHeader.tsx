@@ -1,7 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X } from 'lucide-react';
+import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X, Bookmark, Sparkles } from 'lucide-react';
 import { indiaGeocodingService, geocodeAddressIndia, IndiaLocationResult, POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
-import { ThemeMode } from '../../types/transit';
+import { getNearbyLocationsAlongCorridor, BHUBANESWAR_LOCALITIES, BhubaneswarLocality } from '../../data/cities/bhubaneswar';
+import { sosService } from '../../services/sosService';
+import { ThemeMode, SavedLocation } from '../../types/transit';
 
 interface MusafirHeaderProps {
   originQuery: string;
@@ -263,7 +265,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
 
             {/* Origin Dropdown */}
             {isOriginFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 z-[1100] max-h-72 overflow-y-auto space-y-1">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 z-[1100] max-h-80 overflow-y-auto space-y-1.5">
                 {/* 1-Tap Current Location Option */}
                 <button
                   type="button"
@@ -282,9 +284,85 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
                   </div>
                 </button>
 
-                <div className="flex items-center justify-between px-2 pt-1 pb-1 border-b border-slate-100 dark:border-slate-700">
+                {/* ⭐ User's Saved Locations */}
+                {sosService.getSavedLocations().length > 0 && (
+                  <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <div className="px-2 text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                      <Bookmark className="w-3 h-3" />
+                      <span>My Saved Locations</span>
+                    </div>
+                    {sosService.getSavedLocations().map((loc) => (
+                      <button
+                        key={loc.id}
+                        type="button"
+                        onClick={() => {
+                          setOriginQuery(loc.address);
+                          setIsOriginFocused(false);
+                          if (loc.lat && loc.lng) {
+                            onOriginSelected?.({
+                              id: loc.id,
+                              name: loc.name,
+                              city: 'Bhubaneswar',
+                              state: 'Odisha',
+                              formattedAddress: loc.address,
+                              lat: loc.lat,
+                              lng: loc.lng,
+                              type: 'station',
+                            });
+                          }
+                        }}
+                        className="w-full text-left p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center gap-2.5 text-xs transition group"
+                      >
+                        <span className="text-sm">{loc.icon || '📍'}</span>
+                        <div className="min-w-0 flex-1">
+                          <strong className="text-slate-800 dark:text-slate-200 block truncate group-hover:text-amber-600">
+                            {loc.name}
+                          </strong>
+                          <span className="text-[10px] text-slate-400 truncate block">{loc.address}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* 📍 Nearby Locations on Corridor */}
+                {getNearbyLocationsAlongCorridor(originQuery, destQuery).length > 0 && (
+                  <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <div className="px-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      <span>Nearby BBSR Transit Stops</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 px-1">
+                      {getNearbyLocationsAlongCorridor(originQuery, destQuery).slice(0, 6).map((loc) => (
+                        <button
+                          key={loc.id}
+                          type="button"
+                          onClick={() => {
+                            setOriginQuery(`${loc.name}, Bhubaneswar`);
+                            setIsOriginFocused(false);
+                            onOriginSelected?.({
+                              id: loc.id,
+                              name: loc.name,
+                              city: 'Bhubaneswar',
+                              state: 'Odisha',
+                              formattedAddress: `${loc.name}, Bhubaneswar, Odisha`,
+                              lat: loc.lat,
+                              lng: loc.lng,
+                              type: 'station',
+                            });
+                          }}
+                          className="text-left p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-slate-700 dark:text-slate-300 text-[11px] truncate font-medium transition"
+                        >
+                          📍 {loc.name.split('/')[0].trim()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between px-2 pt-1 pb-1 border-t border-slate-100 dark:border-slate-700">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    🇮🇳 Popular Departures / Stations
+                    🇮🇳 Search Results / Stations
                   </span>
                   {isOriginLoading && <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />}
                 </div>
@@ -357,10 +435,88 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
 
             {/* Destination Dropdown */}
             {isDestFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 z-[1100] max-h-64 overflow-y-auto space-y-0.5">
-                <div className="flex items-center justify-between px-2 pb-1.5 border-b border-slate-100 dark:border-slate-700">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 z-[1100] max-h-80 overflow-y-auto space-y-1.5">
+                {/* ⭐ User's Saved Locations */}
+                {sosService.getSavedLocations().length > 0 && (
+                  <div className="space-y-1">
+                    <div className="px-2 text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                      <Bookmark className="w-3 h-3" />
+                      <span>My Saved Locations</span>
+                    </div>
+                    {sosService.getSavedLocations().map((loc) => (
+                      <button
+                        key={loc.id}
+                        type="button"
+                        onClick={() => {
+                          setDestQuery(loc.address);
+                          setIsDestFocused(false);
+                          if (loc.lat && loc.lng) {
+                            onDestSelected?.({
+                              id: loc.id,
+                              name: loc.name,
+                              city: 'Bhubaneswar',
+                              state: 'Odisha',
+                              formattedAddress: loc.address,
+                              lat: loc.lat,
+                              lng: loc.lng,
+                              type: 'station',
+                            });
+                          }
+                          onSearch(originQuery || 'Current Location', loc.address);
+                        }}
+                        className="w-full text-left p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center gap-2.5 text-xs transition group"
+                      >
+                        <span className="text-sm">{loc.icon || '📍'}</span>
+                        <div className="min-w-0 flex-1">
+                          <strong className="text-slate-800 dark:text-slate-200 block truncate group-hover:text-amber-600">
+                            {loc.name}
+                          </strong>
+                          <span className="text-[10px] text-slate-400 truncate block">{loc.address}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* 📍 Nearby Locations on this Route Corridor */}
+                {getNearbyLocationsAlongCorridor(originQuery, destQuery).length > 0 && (
+                  <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <div className="px-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      <span>📍 Nearby Stops on this Corridor</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 px-1">
+                      {getNearbyLocationsAlongCorridor(originQuery, destQuery).slice(0, 6).map((loc) => (
+                        <button
+                          key={loc.id}
+                          type="button"
+                          onClick={() => {
+                            setDestQuery(`${loc.name}, Bhubaneswar`);
+                            setIsDestFocused(false);
+                            onDestSelected?.({
+                              id: loc.id,
+                              name: loc.name,
+                              city: 'Bhubaneswar',
+                              state: 'Odisha',
+                              formattedAddress: `${loc.name}, Bhubaneswar, Odisha`,
+                              lat: loc.lat,
+                              lng: loc.lng,
+                              type: 'station',
+                            });
+                            onSearch(originQuery || 'Current Location', `${loc.name}, Bhubaneswar`);
+                          }}
+                          className="text-left p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-slate-700 dark:text-slate-300 text-[11px] truncate font-medium transition"
+                        >
+                          📍 {loc.name.split('/')[0].trim()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between px-2 pt-1 pb-1 border-t border-slate-100 dark:border-slate-700">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    🇮🇳 Select Destination (All India)
+                    🇮🇳 All India Search Suggestions
                   </span>
                   {isDestLoading && <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />}
                 </div>

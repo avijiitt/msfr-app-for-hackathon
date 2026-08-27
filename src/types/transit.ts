@@ -1,4 +1,4 @@
-﻿export type TransitMode = 'bus' | 'metro' | 'train' | 'tram' | 'ferry' | 'auto' | 'walk' | 'bike';
+export type TransitMode = 'bus' | 'metro' | 'train' | 'tram' | 'ferry' | 'auto' | 'walk' | 'bike';
 
 export type RouteMode = 'fastest' | 'cheapest' | 'senior' | 'night' | 'eco' | 'weather';
 
@@ -161,6 +161,16 @@ export interface EmergencyContact {
   relation: string;
 }
 
+export interface SavedLocation {
+  id: string;
+  name: string;
+  address: string;
+  category: 'home' | 'work' | 'college' | 'station' | 'custom';
+  icon?: string;
+  lat?: number;
+  lng?: number;
+}
+
 export interface UserProfile {
   id?: string;
   name: string;
@@ -168,6 +178,7 @@ export interface UserProfile {
   phone: string;
   homeAddress: string;
   workAddress: string;
+  savedLocations?: SavedLocation[];
   emergencyContacts: EmergencyContact[];
   bloodGroup: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
   medicalNotes: string;

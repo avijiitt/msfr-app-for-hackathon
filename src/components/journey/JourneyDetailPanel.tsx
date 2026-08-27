@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Share2, Bus, Train, Footprints, Clock, Navigation, CheckCircle, ShieldCheck, Ticket, Plus, Trash2, Calendar, Calculator } from 'lucide-react';
+import { Share2, Bus, Train, Footprints, Clock, Navigation, CheckCircle, ShieldCheck, Ticket, Plus, Trash2, Calendar, Calculator, Sparkles } from 'lucide-react';
+import { getNearbyLocationsAlongCorridor } from '../../data/cities/bhubaneswar';
 
 interface JourneyDetailPanelProps {
   originName?: string;
@@ -165,21 +166,54 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
           </div>
 
           {showAddStop && (
-            <form onSubmit={handleAddStop} className="flex gap-1.5 mt-2">
-              <input
-                type="text"
-                placeholder="Enter intermediate stop..."
-                value={newStopInput}
-                onChange={(e) => setNewStopInput(e.target.value)}
-                className="flex-1 bg-slate-100 dark:bg-slate-800 p-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none border border-slate-200 dark:border-slate-700"
-              />
-              <button
-                type="submit"
-                className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm"
-              >
-                Add
-              </button>
-            </form>
+            <div className="space-y-2 mt-2">
+              <form onSubmit={handleAddStop} className="flex gap-1.5">
+                <input
+                  type="text"
+                  placeholder="Enter intermediate stop..."
+                  value={newStopInput}
+                  onChange={(e) => setNewStopInput(e.target.value)}
+                  className="flex-1 bg-slate-100 dark:bg-slate-800 p-2 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none border border-slate-200 dark:border-slate-700"
+                />
+                <button
+                  type="submit"
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm"
+                >
+                  Add
+                </button>
+              </form>
+
+              {/* Quick suggestions from nearby corridor */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-blue-500" />
+                  <span>Stops on this Route Corridor:</span>
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {getNearbyLocationsAlongCorridor(
+                    originName,
+                    destinationName,
+                    originCoords ? { lat: originCoords[0], lng: originCoords[1] } : undefined,
+                    destCoords ? { lat: destCoords[0], lng: destCoords[1] } : undefined
+                  ).slice(0, 5).map((loc) => (
+                    <button
+                      key={loc.id}
+                      type="button"
+                      onClick={() => {
+                        const stopName = loc.name.split('/')[0].trim();
+                        if (!viaStops.includes(stopName)) {
+                          setViaStops([...viaStops, stopName]);
+                        }
+                        setShowAddStop(false);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold hover:bg-blue-100 transition"
+                    >
+                      + {loc.name.split('/')[0].trim()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
 
           {viaStops.length > 0 && (

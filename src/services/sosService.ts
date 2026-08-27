@@ -1,7 +1,13 @@
-import { UserProfile, EmergencyContact } from '../types/transit';
+import { UserProfile, EmergencyContact, SavedLocation } from '../types/transit';
 import { audioService } from './audioService';
 
 const STORAGE_KEY_PROFILE = 'transitsync_user_profile';
+
+const DEFAULT_SAVED_LOCATIONS: SavedLocation[] = [
+  { id: 'loc-1', name: 'Home', address: 'Patia, Bhubaneswar, Odisha', category: 'home', icon: '🏠', lat: 20.3541, lng: 85.8175 },
+  { id: 'loc-2', name: 'Work / Office', address: 'InfoCity Tech Park Gate 1, Bhubaneswar', category: 'work', icon: '💼', lat: 20.3602, lng: 85.8035 },
+  { id: 'loc-3', name: 'College / University', address: 'KIIT University Campus 6, Bhubaneswar', category: 'college', icon: '🎓', lat: 20.3533, lng: 85.8164 },
+];
 
 function getDefaultProfile(): UserProfile {
   // Try reading from the logged-in user's registration data
@@ -9,8 +15,9 @@ function getDefaultProfile(): UserProfile {
   let email = '';
   let phone = '';
   let bloodGroup = 'O+';
-  let homeAddress = '';
+  let homeAddress = 'Patia, Bhubaneswar, Odisha';
   let emergencyContacts: EmergencyContact[] = [];
+  let savedLocations: SavedLocation[] = DEFAULT_SAVED_LOCATIONS;
 
   try {
     const demoUser = localStorage.getItem('musafir_demo_user');
@@ -51,6 +58,9 @@ function getDefaultProfile(): UserProfile {
           relation: p.emergencyContact.relation || 'Family / Guardian',
         }];
       }
+      if (p.savedLocations && Array.isArray(p.savedLocations) && p.savedLocations.length > 0) {
+        savedLocations = p.savedLocations;
+      }
     }
   } catch {}
 
@@ -59,10 +69,11 @@ function getDefaultProfile(): UserProfile {
     email,
     phone,
     homeAddress,
-    workAddress: '',
+    workAddress: 'InfoCity Tech Park Gate 1, Bhubaneswar',
     bloodGroup: bloodGroup as UserProfile['bloodGroup'],
     medicalNotes: '',
     allergies: '',
+    savedLocations,
     studentVerification: {
       isVerified: isStudent,
       verificationMethod: isStudent ? 'digilocker' : 'none',
@@ -86,11 +97,17 @@ class SOSService {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // If parsed has stale dummy email, ignore it
         if (parsed.email === 'abhijit.sahoo@example.com' || !parsed.name || parsed.name === 'Abhijit Sahoo') {
           this.profile = defaultProf;
         } else {
-          this.profile = { ...defaultProf, ...parsed, name: defaultProf.name !== 'Traveller' ? defaultProf.name : parsed.name, email: defaultProf.email || parsed.email, phone: defaultProf.phone || parsed.phone };
+          this.profile = {
+            ...defaultProf,
+            ...parsed,
+            name: defaultProf.name !== 'Traveller' ? defaultProf.name : parsed.name,
+            email: defaultProf.email || parsed.email,
+            phone: defaultProf.phone || parsed.phone,
+            savedLocations: (parsed.savedLocations && parsed.savedLocations.length > 0) ? parsed.savedLocations : defaultProf.savedLocations,
+          };
         }
       } catch {
         this.profile = defaultProf;
@@ -109,12 +126,41 @@ class SOSService {
         name: active.name !== 'Traveller' ? active.name : this.profile.name,
         email: active.email || this.profile.email,
         phone: active.phone || this.profile.phone,
-        bloodGroup: active.bloodGroup || this.profile.bloodGroup,
-        homeAddress: active.homeAddress || this.profile.homeAddress,
-        emergencyContacts: active.emergencyContacts.length > 0 ? active.emergencyContacts : this.profile.emergencyContacts,
+        savedLocations: this.profile.savedLocations || active.savedLocations,
       };
     }
-    return { ...this.profile };
+    return this.profile;
+  }
+
+  public getSavedLocations(): SavedLocation[] {
+    return this.profile.savedLocations || DEFAULT_SAVED_LOCATIONS;
+  }
+
+  public addSavedLocation(loc: Omit<SavedLocation, 'id'>): SavedLocation[] {
+    const newLoc: SavedLocation = {
+      ...loc,
+      id: 'loc-' + Date.now(),
+    };
+    const updated = [...(this.profile.savedLocations || DEFAULT_SAVED_LOCATIONS), newLoc];
+    this.profile.savedLocations = updated;
+    this.saveProfile(this.profile);
+    return updated;
+  }
+
+  public updateSavedLocation(id: string, updatedFields: Partial<SavedLocation>): SavedLocation[] {
+    const current = this.profile.savedLocations || DEFAULT_SAVED_LOCATIONS;
+    const updated = current.map((loc) => (loc.id === id ? { ...loc, ...updatedFields } : loc));
+    this.profile.savedLocations = updated;
+    this.saveProfile(this.profile);
+    return updated;
+  }
+
+  public deleteSavedLocation(id: string): SavedLocation[] {
+    const current = this.profile.savedLocations || DEFAULT_SAVED_LOCATIONS;
+    const updated = current.filter((loc) => loc.id !== id);
+    this.profile.savedLocations = updated;
+    this.saveProfile(this.profile);
+    return updated;
   }
 
   public reloadProfile(): UserProfile {

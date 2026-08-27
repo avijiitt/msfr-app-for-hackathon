@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Bus, Train, ChevronRight, RotateCw, RefreshCw, Shield, Bell, Zap, Wallet, Star, Leaf, Accessibility, Moon, CloudRain, Coins } from 'lucide-react';
+import { Bus, Train, ChevronRight, RotateCw, RefreshCw, Shield, Bell, Zap, Wallet, Star, Leaf, Accessibility, Moon, CloudRain, Coins, MapPin, Sparkles } from 'lucide-react';
 import { RouteMode } from '../../types/transit';
+import { getNearbyLocationsAlongCorridor } from '../../data/cities/bhubaneswar';
 
 export interface RouteCardOption {
   id: string;
@@ -33,6 +34,7 @@ interface BestRoutesCarouselProps {
   onOpenSmartAlerts?: () => void;
   onOpenSafeJourney?: () => void;
   onOpenSaveMore?: () => void;
+  onSelectDestination?: (dest: string) => void;
 }
 
 export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
@@ -48,6 +50,7 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
   onOpenSmartAlerts,
   onOpenSafeJourney,
   onOpenSaveMore,
+  onSelectDestination,
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -355,6 +358,43 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
         </button>
       </div>
+
+      {/* 📍 Nearby Locations & Stops on this Route Corridor */}
+      {getNearbyLocationsAlongCorridor(
+        originName,
+        destinationName,
+        originCoords ? { lat: originCoords[0], lng: originCoords[1] } : undefined,
+        destCoords ? { lat: destCoords[0], lng: destCoords[1] } : undefined
+      ).length > 0 && (
+        <div className="bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-emerald-50/80 dark:from-slate-800/80 dark:via-slate-800/60 dark:to-slate-800/80 rounded-2xl p-3 border border-blue-100 dark:border-slate-700 space-y-1.5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <span>📍 Nearby Locations & Stops on this Corridor ({cleanFrom} ➔ {cleanTo})</span>
+            </span>
+            <span className="text-[10px] text-slate-400 font-semibold">Tap to switch destination</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+            {getNearbyLocationsAlongCorridor(
+              originName,
+              destinationName,
+              originCoords ? { lat: originCoords[0], lng: originCoords[1] } : undefined,
+              destCoords ? { lat: destCoords[0], lng: destCoords[1] } : undefined
+            ).map((loc) => (
+              <button
+                key={loc.id}
+                type="button"
+                onClick={() => onSelectDestination?.(`${loc.name}, Bhubaneswar`)}
+                className="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-700/90 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-600 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 whitespace-nowrap shadow-2xs transition flex items-center gap-1 active:scale-95"
+              >
+                <span>📍</span>
+                <span>{loc.name.split('/')[0].trim()}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Exactly 3 Route Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
