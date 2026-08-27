@@ -97,18 +97,14 @@ class SOSService {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.email === 'abhijit.sahoo@example.com' || !parsed.name || parsed.name === 'Abhijit Sahoo') {
-          this.profile = defaultProf;
-        } else {
-          this.profile = {
-            ...defaultProf,
-            ...parsed,
-            name: defaultProf.name !== 'Traveller' ? defaultProf.name : parsed.name,
-            email: defaultProf.email || parsed.email,
-            phone: defaultProf.phone || parsed.phone,
-            savedLocations: (parsed.savedLocations && parsed.savedLocations.length > 0) ? parsed.savedLocations : defaultProf.savedLocations,
-          };
-        }
+        this.profile = {
+          ...defaultProf,
+          ...parsed,
+          name: parsed.name || defaultProf.name,
+          email: parsed.email || defaultProf.email,
+          phone: parsed.phone || defaultProf.phone,
+          savedLocations: (parsed.savedLocations && parsed.savedLocations.length > 0) ? parsed.savedLocations : defaultProf.savedLocations,
+        };
       } catch {
         this.profile = defaultProf;
       }
@@ -120,16 +116,13 @@ class SOSService {
 
   public getProfile(): UserProfile {
     const active = getDefaultProfile();
-    if (active.name !== 'Traveller' || active.email) {
-      return {
-        ...this.profile,
-        name: active.name !== 'Traveller' ? active.name : this.profile.name,
-        email: active.email || this.profile.email,
-        phone: active.phone || this.profile.phone,
-        savedLocations: this.profile.savedLocations || active.savedLocations,
-      };
-    }
-    return this.profile;
+    return {
+      ...this.profile,
+      name: (this.profile.name && this.profile.name !== 'Traveller') ? this.profile.name : active.name,
+      email: this.profile.email || active.email,
+      phone: this.profile.phone || active.phone,
+      savedLocations: this.profile.savedLocations || active.savedLocations,
+    };
   }
 
   public getSavedLocations(): SavedLocation[] {

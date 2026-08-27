@@ -2,21 +2,17 @@
   {
     "id": "81f77c46-d4a8-4806-8987-cba1c6181a2a",
     "email": "abhijitsatapathy44@gmail.com",
-    "full_name": "abhij",
-    "phone": "+91 8339809105",
+    "full_name": "abhijt satapathy",
+    "phone": "+91 5373535773",
     "blood_group": "B+",
     "home_address": "Bhubaneswar, Odisha",
-    "emergency_contact": {
-      "name": "naman",
-      "phone": "+91 0707778696",
-      "relation": "Family / Guardian"
-    },
+    "emergency_contact": null,
     "is_student": false,
-    "student_college_name": "OUTR / KIIT University",
+    "student_college_name": null,
     "student_roll_no": null,
     "is_senior_verified": false,
     "is_women_passenger": false,
-    "created_at": "2026-08-27T07:40:17.238Z",
-    "updated_at": "2026-08-27T07:40:17.238Z"
+    "created_at": "2026-08-27T11:12:41.066Z",
+    "updated_at": "2026-08-27T11:12:41.066Z"
   }
 ]
