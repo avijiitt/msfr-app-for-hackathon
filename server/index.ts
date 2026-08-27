@@ -34,6 +34,7 @@ if (GEMINI_API_KEY && GEMINI_API_KEY.length > 10) {
 
 // ── In-Memory Simulation Storage (Fallback if offline) ────────────────────
 const memoryStore = {
+  profiles: [] as any[],
   trips: [] as any[],
   parcels: [
     {
@@ -43,8 +44,8 @@ const memoryStore = {
       lockerNumber: 'LKR-04',
       pin: '8492',
       status: 'ready_pickup',
-      recipientName: 'Abhijit Sahoo',
-      recipientPhone: '+91 98765 43210',
+      recipientName: 'Commuter',
+      recipientPhone: '',
       expiryTime: new Date(Date.now() + 48 * 3600000).toISOString(),
     },
   ],
@@ -61,17 +62,7 @@ const memoryStore = {
       routeOrMethod: 'Google Pay UPI',
     },
   ],
-  passes: [
-    {
-      id: 'pass-std-1',
-      type: 'student',
-      title: 'DigiLocker Student Monthly Pass (50% Off)',
-      validUntil: '30 Sep 2026',
-      qrPayload: 'MSFR-PASS-STD-2026-OUTR-0941',
-      passengerName: 'Abhijit Sahoo',
-      discountPercentage: 50,
-    },
-  ],
+  passes: [] as any[],
   tickets: [] as any[],
   scheduledRides: [] as any[],
 };
@@ -85,8 +76,53 @@ app.get('/api/health', (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     supabaseConnected: Boolean(SUPABASE_URL && SUPABASE_ANON_KEY),
     geminiConfigured: Boolean(GEMINI_API_KEY),
-    olaMapsConfigured: Boolean(OLA_MAPS_API_KEY),
   });
+});
+
+// ── 1.1 User Profiles API ──────────────────────────────────────────────────
+// List all users from Supabase / Memory
+app.get('/api/users', async (_req: Request, res: Response) => {
+  try {
+    let profiles = memoryStore.profiles;
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      if (!error && data) {
+        profiles = data;
+      }
+    }
+    res.json({ success: true, count: profiles.length, profiles });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Get single user profile by email or ID
+app.get('/api/users/profile', async (req: Request, res: Response) => {
+  try {
+    const { email, id } = req.query;
+    if (!email && !id) {
+      return res.status(400).json({ success: false, error: 'Provide email or id query param' });
+    }
+
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      let query = supabase.from('profiles').select('*');
+      if (email) query = query.eq('email', email as string);
+      if (id) query = query.eq('id', id as string);
+      const { data, error } = await query.single();
+      if (!error && data) {
+        return res.json({ success: true, profile: data });
+      }
+    }
+
+    const found = memoryStore.profiles.find((p: any) => p.email === email || p.id === id);
+    if (found) {
+      return res.json({ success: true, profile: found });
+    }
+
+    res.status(404).json({ success: false, error: 'User profile not found' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ── 2. Trips API ───────────────────────────────────────────────────────────

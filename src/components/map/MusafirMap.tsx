@@ -324,11 +324,6 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           <div className="text-xs">
             <div className="flex items-center gap-1.5 font-extrabold text-slate-800 dark:text-white">
               <span>{isLoadingRoute ? 'Calculating Road Route...' : routeInfo ? `${routeInfo.distanceKm} km • ~${routeInfo.durationMinutes} mins` : 'Live Corridor'}</span>
-              {routeInfo?.source === 'ola_maps' && (
-                <span className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[10px] px-1.5 py-0.5 rounded-md font-bold">
-                  OLA Route
-                </span>
-              )}
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px] sm:max-w-[280px]">
               {originName.split(',')[0]} → {destinationName.split(',')[0]}
