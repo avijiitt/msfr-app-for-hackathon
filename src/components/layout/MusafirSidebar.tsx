@@ -42,6 +42,7 @@ interface MusafirSidebarProps {
   onOpenShareLocation: () => void;
   onOpenSOS: () => void;
   onOpenStudent: () => void;
+  onOpenBusRoutes?: () => void;
   onSelectSavedPlace: (name: string) => void;
 }
 
@@ -52,6 +53,7 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   onOpenShareLocation,
   onOpenSOS,
   onOpenStudent,
+  onOpenBusRoutes,
   onSelectSavedPlace,
 }) => {
   const mainNav = [
@@ -70,9 +72,10 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   ];
 
   const quickAccess = [
-    { label: 'Nearby Stops', icon: Bus, color: 'text-blue-600', action: onOpenNearbyStops },
+    { label: 'Mo Bus (82 Routes)', icon: Bus, color: 'text-blue-600 font-bold', action: onOpenBusRoutes || onOpenNearbyStops },
+    { label: 'Nearby Stops', icon: MapPin, color: 'text-emerald-600', action: onOpenNearbyStops },
     { label: 'Student Pass (50% Off)', icon: GraduationCap, color: 'text-purple-600', action: onOpenStudent },
-    { label: 'Share Location', icon: Share2, color: 'text-emerald-600', action: onOpenShareLocation },
+    { label: 'Share Location', icon: Share2, color: 'text-indigo-600', action: onOpenShareLocation },
     { label: 'SOS / Safety', icon: ShieldAlert, color: 'text-red-500', action: onOpenSOS },
   ];
 

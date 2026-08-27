@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Share2, Bus, Train, Footprints, Clock, Navigation, CheckCircle, ShieldCheck, Ticket, Plus, Trash2, Calendar, Calculator, Sparkles } from 'lucide-react';
-import { getNearbyLocationsAlongCorridor } from '../../data/cities/bhubaneswar';
+import { getNearbyLocationsAlongCorridor, findMatchingMoBusRoutes } from '../../data/cities/bhubaneswar';
 
 interface JourneyDetailPanelProps {
   originName?: string;
@@ -33,6 +33,14 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   const [viaStops, setViaStops] = useState<string[]>([]);
   const [newStopInput, setNewStopInput] = useState('');
   const [showAddStop, setShowAddStop] = useState(false);
+
+  // Dynamic matched Mo Bus routes
+  const matchedBus = React.useMemo(() => {
+    return findMatchingMoBusRoutes(originName, destinationName);
+  }, [originName, destinationName]);
+
+  const primaryBus = matchedBus.primarySuggestion || { route: '10', path: 'Bhubaneswar Airport – MANU University' };
+  const altBus = matchedBus.directRoutes[1] || matchedBus.connectedRoutes[0] || { route: '11', path: 'Bhubaneswar Railway Station – Nandankanan' };
 
   // Dynamic road/transit distance estimation
   const distanceKm = React.useMemo(() => {
@@ -68,8 +76,8 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   const serviceName = isEco
     ? 'Mo E-Ride Electric Auto + Pink Shuttle'
     : isCheap
-    ? 'Mo Bus Ordinary Non-AC (Route 11 / 20)'
-    : 'Mo Bus AC Electric Express (Route 10 / 24)';
+    ? `Mo Bus Ordinary Non-AC (Route ${altBus.route})`
+    : `Mo Bus AC Electric Express (Route ${primaryBus.route})`;
 
   const serviceBadge = isEco
     ? '🌿 100% Zero-Emission Feeder'

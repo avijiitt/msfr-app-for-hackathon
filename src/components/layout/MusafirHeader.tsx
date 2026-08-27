@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X, Bookmark, Sparkles } from 'lucide-react';
+import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X, Bookmark, Sparkles, Bus } from 'lucide-react';
 import { indiaGeocodingService, geocodeAddressIndia, IndiaLocationResult, POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
 import { getNearbyLocationsAlongCorridor, BHUBANESWAR_LOCALITIES, BhubaneswarLocality } from '../../data/cities/bhubaneswar';
 import { sosService } from '../../services/sosService';
@@ -29,6 +29,7 @@ interface MusafirHeaderProps {
   onDestSelected?: (result: IndiaLocationResult) => void;
   onOpenMobileMenu?: () => void;
   onSearchFocusChange?: (isFocused: boolean) => void;
+  onOpenBusRoutes?: () => void;
 }
 
 export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
@@ -54,6 +55,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   onDestSelected,
   onOpenMobileMenu,
   onSearchFocusChange,
+  onOpenBusRoutes,
 }) => {
   const [originSuggestions, setOriginSuggestions] = useState<IndiaLocationResult[]>([]);
   const [destSuggestions, setDestSuggestions] = useState<IndiaLocationResult[]>([]);
@@ -553,6 +555,18 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
 
         {/* Right Controls */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          {onOpenBusRoutes && (
+            <button
+              type="button"
+              onClick={onOpenBusRoutes}
+              title="Explore all 82+ CRUT Mo Bus Routes"
+              className="px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 text-xs font-bold flex items-center gap-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition active:scale-95"
+            >
+              <Bus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span className="hidden sm:inline">Mo Bus (82)</span>
+            </button>
+          )}
+
           <button
             onClick={onToggleOffline}
             title={isOffline ? 'Offline Mode Active' : 'Online Sync Active'}

@@ -597,3 +597,208 @@ export function getNearbyLocationsAlongCorridor(
 
   return matches.length > 0 ? matches : BHUBANESWAR_LOCALITIES.slice(0, 7);
 }
+
+export interface MoBusRouteInfo {
+  route: string;
+  path: string;
+  isSpecial?: boolean;
+  frequencyMinutes?: number;
+  origin?: string;
+  destination?: string;
+}
+
+// ── Official Complete CRUT Mo Bus Routes Dataset ─────────────────────────────
+export const STANDARD_MO_BUS_ROUTES: MoBusRouteInfo[] = [
+  { route: "09", path: "Bhubaneswar Railway Station – Patia (via Niladri Vihar)", origin: "Bhubaneswar Railway Station", destination: "Patia" },
+  { route: "10", path: "Bhubaneswar Airport – MANU University, Cuttack (Via Jaydev Vihar, KIIT Square, Biju Pattnaik Park)", origin: "Bhubaneswar Airport", destination: "MANU University, Cuttack" },
+  { route: "11", path: "Bhubaneswar Railway Station – Nandankanan (via Acharya Vihar)", origin: "Bhubaneswar Railway Station", destination: "Nandankanan" },
+  { route: "12", path: "Bhubaneswar Railway Station – Nandankanan (via Jaydev Vihar)", origin: "Bhubaneswar Railway Station", destination: "Nandankanan" },
+  { route: "13", path: "Nandankanan – Lingipur (via AG Square)", origin: "Nandankanan", destination: "Lingipur" },
+  { route: "14", path: "Kalinga Vihar – Bhubaneswar Railway Station (Via Sum Ultimate, BSABT, OUAT, AG)", origin: "Kalinga Vihar", destination: "Bhubaneswar Railway Station" },
+  { route: "16", path: "Bhubaneswar Railway Station – Sri Sri University, Cuttack (via NH)", origin: "Bhubaneswar Railway Station", destination: "Sri Sri University, Cuttack" },
+  { route: "17", path: "Biju Patnaik International Airport, BBSR – Barabati Stadium, Cuttack", origin: "Biju Patnaik International Airport, BBSR", destination: "Barabati Stadium, Cuttack" },
+  { route: "18", path: "Baramunda BSABT – Jagatpur (via Nandankanan)", origin: "Baramunda BSABT", destination: "Jagatpur" },
+  { route: "19", path: "AIIMS – OMP Square-Mahanadi Vihar (via NH)", origin: "AIIMS", destination: "OMP Square-Mahanadi Vihar" },
+  { route: "20", path: "Bhubaneswar Railway Station – Khordha New Bus Stand (via Vani Vihar)", origin: "Bhubaneswar Railway Station", destination: "Khordha New Bus Stand" },
+  { route: "21", path: "Bhubaneswar Railway Station – Khordha New Bus Stand (via OUAT)", origin: "Bhubaneswar Railway Station", destination: "Khordha New Bus Stand" },
+  { route: "22A", path: "Bhubaneswar Railway Station – Khordha Road Station", origin: "Bhubaneswar Railway Station", destination: "Khordha Road Station" },
+  { route: "22B", path: "Jatani Gate – Khordha New Bus Stand (via Jatani)", origin: "Jatani Gate", destination: "Khordha New Bus Stand" },
+  { route: "23", path: "Bhubaneswar Railway Station – Sum Hospital", origin: "Bhubaneswar Railway Station", destination: "Sum Hospital" },
+  { route: "24", path: "Kalinga Vihar – Sai Temple", origin: "Kalinga Vihar", destination: "Sai Temple" },
+  { route: "24E", path: "Kalinga Vihar – Bainchua (via Sai Temple)", origin: "Kalinga Vihar", destination: "Bainchua" },
+  { route: "25", path: "Dumduma – Gadakana (via Master Canteen, Mancheswar)", origin: "Dumduma", destination: "Gadakana" },
+  { route: "26", path: "Dumduma (Jadupur) – Rokat, Rajdhani Engg College (via Chakeisiani)", origin: "Dumduma (Jadupur)", destination: "Rokat, Rajdhani Engg College" },
+  { route: "27", path: "Bhubaneswar Railway Station – Bhagwanpur (via AIIMS)", origin: "Bhubaneswar Railway Station", destination: "Bhagwanpur" },
+  { route: "28", path: "Bhubaneswar Railway Station – Kalinga Nagar (Trident Galaxy)", origin: "Bhubaneswar Railway Station", destination: "Kalinga Nagar (Trident Galaxy)" },
+  { route: "29", path: "Bhagwanpur – Sai Mandir", origin: "Bhagwanpur", destination: "Sai Mandir" },
+  { route: "29E", path: "Bhagwanpur – SBI Colony (via Sai Mandir)", origin: "Bhagwanpur", destination: "SBI Colony" },
+  { route: "30", path: "Bhubaneswar Railway Station – Chatabar (via Sum Hospital)", origin: "Bhubaneswar Railway Station", destination: "Chatabar" },
+  { route: "31", path: "Bhubaneswar Railway Station – Hi-Tech Hospital (via Toshali Bhawan, Laxmi Sagar)", origin: "Bhubaneswar Railway Station", destination: "Hi-Tech Hospital" },
+  { route: "32", path: "Baramunda BSABT – Lingaraj Temple (via Bhubaneswar Railway Station)", origin: "Baramunda BSABT", destination: "Lingaraj Temple" },
+  { route: "33", path: "Bhubaneswar Railway Station – Pipili", origin: "Bhubaneswar Railway Station", destination: "Pipili" },
+  { route: "34", path: "Bhubaneswar Railway Station – Balakati (Sai Hospital)", origin: "Bhubaneswar Railway Station", destination: "Balakati (Sai Hospital)" },
+  { route: "35", path: "Bhubaneswar Railway Station – Adaspur (via Jayadev Pitha)", origin: "Bhubaneswar Railway Station", destination: "Adaspur" },
+  { route: "36", path: "Bhubaneswar Railway Station – Jagadguru Krupalu University (JKU)", origin: "Bhubaneswar Railway Station", destination: "Jagadguru Krupalu University (JKU)" },
+  { route: "37", path: "Baramunda BSABT – Naraj Railway Station (via Trisulia Square)", origin: "Baramunda BSABT", destination: "Naraj Railway Station" },
+  { route: "38", path: "Bhubaneswar Railway Station – Taraboi (via Khordha Bypass, IIT)", origin: "Bhubaneswar Railway Station", destination: "Taraboi" },
+  { route: "39", path: "Bhubaneswar Railway Station – AIIMS (via Capital Hospital, Bhimtangi)", origin: "Bhubaneswar Railway Station", destination: "AIIMS" },
+  { route: "40", path: "AIIMS – Sai Mandir (Kesora) (via Capital Hospital)", origin: "AIIMS", destination: "Sai Mandir (Kesora)" },
+  { route: "41", path: "Baramunda BSABT – Tangi (via NH)", origin: "Baramunda BSABT", destination: "Tangi" },
+  { route: "42", path: "Baramunda BSABT – Nandankanan (via Chandaka)", origin: "Baramunda BSABT", destination: "Nandankanan" },
+  { route: "43", path: "Baramunda BSABT – Banamalipur (via Rasulgarh, Kalpana Sqr)", origin: "Baramunda BSABT", destination: "Banamalipur" },
+  { route: "44", path: "Baramunda BSABT – SVNIRTAR, Olatpur", origin: "Baramunda BSABT", destination: "SVNIRTAR, Olatpur" },
+  { route: "45", path: "Bhubaneswar Railway Station – Jayadev Pitha", origin: "Bhubaneswar Railway Station", destination: "Jayadev Pitha" },
+  { route: "46", path: "Bhubaneswar Railway Station – Nandankanan (via Kalyanpur)", origin: "Bhubaneswar Railway Station", destination: "Nandankanan" },
+  { route: "47", path: "Sum Hospital – SCB Medical, Cuttack (via Ekamra Kanan, Mayfair)", origin: "Sum Hospital", destination: "SCB Medical, Cuttack" },
+  { route: "48", path: "Khordha New Bus Stand – Jagatpur, Cuttack (via Pitapalli, Chandaka)", origin: "Khordha New Bus Stand", destination: "Jagatpur, Cuttack" },
+  { route: "49", path: "Bhubaneswar Railway Station – Delanga Hata (via Pipili)", origin: "Bhubaneswar Railway Station", destination: "Delanga Hata" },
+  { route: "50", path: "Bhubaneswar Railway Station – Puri Bus Stand", origin: "Bhubaneswar Railway Station", destination: "Puri Bus Stand" },
+  { route: "51", path: "Baramunda BSABT – Puri Bus Stand (via Vani Vihar)", origin: "Baramunda BSABT", destination: "Puri Bus Stand" },
+  { route: "52", path: "Puri Bus Stand – Omkareshwar Temple (via Beach Road)", origin: "Puri Bus Stand", destination: "Omkareshwar Temple" },
+  { route: "53", path: "Malatipatpur Bus Stand – Shree Mandira (via Puri Bus Stand)", origin: "Malatipatpur Bus Stand", destination: "Shree Mandira" },
+  { route: "54", path: "NLU, Cuttack – Puri Bus Stand (via Badambadi)", origin: "NLU, Cuttack", destination: "Puri Bus Stand" },
+  { route: "56", path: "Khordha New Bus Stand – Puri Bus Stand (via Jatani, Pipili)", origin: "Khordha New Bus Stand", destination: "Puri Bus Stand" },
+  { route: "58", path: "Jagatpur, Cuttack – Puri Bus Stand", origin: "Jagatpur, Cuttack", destination: "Puri Bus Stand" },
+  { route: "59", path: "Mahanadi Vihar, Cuttack – Puri Bus Stand (via Badambadi, Link Road)", origin: "Mahanadi Vihar, Cuttack", destination: "Puri Bus Stand" },
+  { route: "62", path: "Bhubaneswar Railway Station – Suando (via Kalpana Square, Pipili Bypass, Pattanaikia)", origin: "Bhubaneswar Railway Station", destination: "Suando" },
+  { route: "63", path: "BSABT – Madhabananda Temple, Niali (via Vani Vihar, Master Canteen, Rasulgarh, Nakhara, Adaspur)", origin: "BSABT", destination: "Madhabananda Temple, Niali" },
+  { route: "64", path: "Bhubaneswar Railway Station – Jatani Gate (via Vani Vihar, Gohiria Square, Madanpur, Bagchi Sri Shankara Hospital)", origin: "Bhubaneswar Railway Station", destination: "Jatani Gate" },
+  { route: "65", path: "Bhubaneswar Railway Station – Wonderla Amusement Park (via Vani Vihar)", origin: "Bhubaneswar Railway Station", destination: "Wonderla Amusement Park" },
+  { route: "66", path: "Airport – Pathargadia Square (Via Kiss College, Kelucharan Park, Vani Vihar)", origin: "Airport", destination: "Pathargadia Square" },
+  { route: "70", path: "Bhubaneswar Railway Station – Konark", origin: "Bhubaneswar Railway Station", destination: "Konark" },
+  { route: "71", path: "Baramunda BSABT – Konark (via Rasulgarh Square)", origin: "Baramunda BSABT", destination: "Konark" },
+  { route: "73", path: "Puri Bus Stand – Jagannath Medical College (via Medical Sqr, Collector Office, Sanskrit University, Grid Station)", origin: "Puri Bus Stand", destination: "Jagannath Medical College" },
+  { route: "74", path: "Puri Railway Station – Shree Mandira (Via Puri Bus Stand)", origin: "Puri Railway Station", destination: "Shree Mandira" },
+  { route: "75", path: "Shree Mandira – Kakatpur (Via Puri Bus Stand, Balighai, Marine Drive, Konark)", origin: "Shree Mandira", destination: "Kakatpur" },
+  { route: "76", path: "Puri Bus Stand – Sakhigopal Temple", origin: "Puri Bus Stand", destination: "Sakhigopal Temple" },
+  { route: "77", path: "Puri Bus Stand – Nimapada Bus Stand", origin: "Puri Bus Stand", destination: "Nimapada Bus Stand" },
+  { route: "78", path: "Shree Mandira – Alarnath (Brahamgiri New Bus Stand)", origin: "Shree Mandira", destination: "Alarnath" },
+  { route: "79", path: "Shree Mandira – Pipili (Via Delanga)", origin: "Shree Mandira", destination: "Pipili" },
+  { route: "80", path: "Naraj Police Outpost – Agrahat, Charbatia (via NLU, Badambadi, SCB Medical)", origin: "Naraj Police Outpost", destination: "Agrahat, Charbatia" },
+  { route: "80E", path: "Naraj Police Outpost – Mangarajpur (via NLU, Badambadi, SCB Medical)", origin: "Naraj Police Outpost", destination: "Mangarajpur" },
+  { route: "81", path: "Barabati Stadium – Jagannath Temple, Salepur (via SCB Medical, OMP Square, Jagatpur)", origin: "Barabati Stadium", destination: "Jagannath Temple, Salepur" },
+  { route: "82", path: "Bhubaneswar Airport - SCB Medical (Settlement Office) (via NH)", origin: "Bhubaneswar Airport", destination: "SCB Medical (Settlement Office)" },
+  { route: "83", path: "Dhabaleswar - Kandarpur (via 42 Mouza)", origin: "Dhabaleswar", destination: "Kandarpur" },
+  { route: "84", path: "Biju pattanaik Park,CDA – Madhabananda Temple, Niali (via Badambadi, Link Road, SVNIRTAR, Olatpur)", origin: "Biju pattanaik Park,CDA", destination: "Madhabananda Temple, Niali" },
+  { route: "85", path: "Cuttack Netaji Bus Terminal - Gadama (via OMP, Kandarpur)", origin: "Cuttack Netaji Bus Terminal", destination: "Gadama" },
+  { route: "86", path: "MANU University – Mahanadi Vihar (Via Chahata Square)", origin: "MANU University", destination: "Mahanadi Vihar" },
+  { route: "87", path: "Naraj Police Outpost – Mahanadi Vihar (Via CDA, Judicial Square, Link Road)", origin: "Naraj Police Outpost", destination: "Mahanadi Vihar" },
+  { route: "88", path: "NLU – SCB Hospital (Via CDA, Judicial Square, Dolamundai, Professorpada)", origin: "NLU", destination: "SCB Hospital" },
+  { route: "89", path: "Trishulia Bus Stand – Jagadguru Krupalu University", origin: "Trishulia Bus Stand", destination: "Jagadguru Krupalu University" },
+  { route: "90", path: "Khordha New Bus Stand – Jagatpur, Cuttack (Via NH)", origin: "Khordha New Bus Stand", destination: "Jagatpur, Cuttack" },
+  { route: "91", path: "Baramunda BSABT – Biju Patnaik Park, Cuttack (Via NH)", origin: "Baramunda BSABT", destination: "Biju Patnaik Park, Cuttack" },
+  { route: "92", path: "Baramunda BSABT – Sai Temple (Via Khandagiri, Lingraj Station, Bhim Tangi, Capital Hospital, Kalpana)", origin: "Baramunda BSABT", destination: "Sai Temple" },
+  { route: "93", path: "Bhubaneswar Railway Station – Biju Patnaik Park, CDA (Via Fire Station, Sum Hospital, Kateni)", origin: "Bhubaneswar Railway Station", destination: "Biju Patnaik Park, CDA" },
+];
+
+export const SPECIAL_MO_BUS_ROUTES: MoBusRouteInfo[] = [
+  { route: "1H", path: "Nandankanan, Botanical Garden - Dhauli (via Jaydev Vihar, Master Canteen, Lingaraj Temple)", isSpecial: true, origin: "Nandankanan", destination: "Dhauli" },
+  { route: "2H", path: "Sai Mandir - Khandagiri-Udaygiri (via Panchu Pandav, Bhubaneswar Railway Station, BSABT, Jaydev Vatika)", isSpecial: true, origin: "Sai Mandir", destination: "Khandagiri-Udaygiri" },
+  { route: "DD1", path: "International Airport, Bhubaneswar – Shree Mandira Parking, Puri (Via Kalpana Square)", isSpecial: true, origin: "International Airport, Bhubaneswar", destination: "Shree Mandira Parking, Puri" }
+];
+
+export const ALL_MO_BUS_ROUTES: MoBusRouteInfo[] = [
+  ...STANDARD_MO_BUS_ROUTES,
+  ...SPECIAL_MO_BUS_ROUTES,
+];
+
+/**
+ * Intelligent Mo Bus Route Recommender
+ * Searches all 82 routes and finds the most relevant Mo Bus numbers matching the trip corridor.
+ */
+export function findMatchingMoBusRoutes(originQuery: string, destQuery: string): {
+  directRoutes: MoBusRouteInfo[];
+  connectedRoutes: MoBusRouteInfo[];
+  primarySuggestion: MoBusRouteInfo;
+} {
+  const normO = (originQuery || '').toLowerCase();
+  const normD = (destQuery || '').toLowerCase();
+
+  // Helper keyword tokenizer
+  const getKeywords = (str: string) => {
+    return str
+      .replace(/bhubaneswar|cuttack|odisha|india|square|chhak|bus|stand|station|terminal/gi, '')
+      .toLowerCase()
+      .split(/[\s,–—\-\/]+/)
+      .filter((w) => w.length >= 3);
+  };
+
+  const originTokens = getKeywords(normO);
+  const destTokens = getKeywords(normD);
+
+  const directMatches: MoBusRouteInfo[] = [];
+  const partialMatches: MoBusRouteInfo[] = [];
+
+  for (const r of ALL_MO_BUS_ROUTES) {
+    const routeText = (r.route + ' ' + r.path).toLowerCase();
+    
+    // Check if route text contains words from both origin and dest
+    const matchesOrigin = originTokens.length === 0 || originTokens.some((tok) => routeText.includes(tok));
+    const matchesDest = destTokens.length === 0 || destTokens.some((tok) => routeText.includes(tok));
+
+    if (matchesOrigin && matchesDest && (originTokens.length > 0 || destTokens.length > 0)) {
+      directMatches.push(r);
+    } else if (matchesOrigin || matchesDest) {
+      partialMatches.push(r);
+    }
+  }
+
+  // Fallbacks if no direct match is found
+  if (directMatches.length === 0) {
+    // Check popular corridors
+    if (normO.includes('airport') || normD.includes('airport')) {
+      directMatches.push(
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '10')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '17')!,
+        SPECIAL_MO_BUS_ROUTES.find((r) => r.route === 'DD1')!
+      );
+    } else if (normO.includes('nandankanan') || normD.includes('nandankanan')) {
+      directMatches.push(
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '11')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '12')!,
+        SPECIAL_MO_BUS_ROUTES.find((r) => r.route === '1H')!
+      );
+    } else if (normO.includes('puri') || normD.includes('puri')) {
+      directMatches.push(
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '50')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '51')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '56')!
+      );
+    } else if (normO.includes('aiims') || normD.includes('aiims')) {
+      directMatches.push(
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '19')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '39')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '27')!
+      );
+    } else if (normO.includes('sum') || normD.includes('sum')) {
+      directMatches.push(
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '23')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '47')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '30')!
+      );
+    } else if (normO.includes('baramunda') || normD.includes('baramunda')) {
+      directMatches.push(
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '18')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '32')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '42')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '51')!
+      );
+    } else {
+      // Default central high-frequency trunk lines
+      directMatches.push(
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '10')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '11')!,
+        STANDARD_MO_BUS_ROUTES.find((r) => r.route === '24')!
+      );
+    }
+  }
+
+  const cleanDirect = directMatches.filter(Boolean);
+  const cleanPartial = partialMatches.filter(Boolean);
+
+  return {
+    directRoutes: cleanDirect,
+    connectedRoutes: cleanPartial.slice(0, 4),
+    primarySuggestion: cleanDirect[0] || STANDARD_MO_BUS_ROUTES[1],
+  };
+}

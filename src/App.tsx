@@ -40,6 +40,7 @@ import { UserProfileView } from './components/user/UserProfileView';
 import { LoginModal } from './components/auth/LoginModal';
 import { authService, AuthUser } from './services/supabaseClient';
 import { PermissionsModal } from './components/auth/PermissionsModal';
+import { BusRoutesModal } from './components/routes/BusRoutesModal';
 import { tripService } from './services/tripService';
 
 
@@ -97,6 +98,7 @@ export const App: React.FC = () => {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isBusRoutesOpen, setIsBusRoutesOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -108,6 +110,7 @@ export const App: React.FC = () => {
     isLoginOpen ||
     isPermissionsOpen ||
     isMobileMenuOpen ||
+    isBusRoutesOpen ||
     isFareCalcOpen ||
     isRewardsOpen ||
     isTripAssuranceOpen ||
@@ -357,6 +360,7 @@ export const App: React.FC = () => {
         onDestSelected={handleDestSelected}
         onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         onSearchFocusChange={setIsSearchFocused}
+        onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
       />
 
       {/* 2. Main 3-Column Dashboard Body (Mobile Optimized with pb-24 for bottom bar) */}
@@ -370,6 +374,7 @@ export const App: React.FC = () => {
             onOpenShareLocation={() => setIsFamilyShareOpen(true)}
             onOpenSOS={() => setIsSosOpen(true)}
             onOpenStudent={() => setIsStudentOpen(true)}
+            onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
             onSelectSavedPlace={(place) => setDestQuery(place)}
           />
         </div>
@@ -584,6 +589,17 @@ export const App: React.FC = () => {
             setIsPermissionsOpen(true);
             localStorage.setItem('musafir_perms_asked', '1');
           }
+        }}
+      />
+
+      {/* Bus Routes Network Modal (82+ CRUT Mo Bus Lines) */}
+      <BusRoutesModal
+        isOpen={isBusRoutesOpen}
+        onClose={() => setIsBusRoutesOpen(false)}
+        onSelectRoute={(orig, dest) => {
+          setOriginQuery(orig);
+          setDestQuery(dest);
+          handleSearch(orig, dest);
         }}
       />
 
