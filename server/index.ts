@@ -510,27 +510,29 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
     let realSmsSent = false;
     let smsProvider = 'Simulated SMS Gateway (Local)';
 
-    // 1. Check for Fast2SMS Indian SMS Gateway (Free API Key in .env)
+    // 1. Check for Fast2SMS Indian SMS Gateway
     const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY;
     if (FAST2SMS_API_KEY && FAST2SMS_API_KEY.length > 10) {
       try {
-        const smsRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-          method: 'POST',
-          headers: {
-            'authorization': FAST2SMS_API_KEY,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            route: 'otp',
-            variables_values: otp,
-            numbers: cleanPhone,
-          }),
-        });
-        const smsData = await smsRes.json();
-        if (smsData.return) {
+        // Try Route OTP
+        const smsRes = await fetch(`https://www.fast2sms.com/dev/bulkV2?authorization=${FAST2SMS_API_KEY}&route=otp&variables_values=${otp}&flash=0&numbers=${cleanPhone}`);
+        const smsData: any = await smsRes.json();
+        
+        if (smsData.return || smsData.status_code === 200 || smsData.message?.includes?.('SMS sent')) {
           realSmsSent = true;
-          smsProvider = 'Fast2SMS Indian Gateway';
-          console.log(`📱 [REAL SMS DELIVERED] to +91 ${cleanPhone} via Fast2SMS. Message: "Your MSFR login OTP is ${otp}"`);
+          smsProvider = 'Fast2SMS Gateway';
+          console.log(`📱 [REAL SMS DELIVERED] to +91 ${cleanPhone} via Fast2SMS. OTP: ${otp}`);
+        } else {
+          // Try Route Q fallback
+          const qRes = await fetch(`https://www.fast2sms.com/dev/bulkV2?authorization=${FAST2SMS_API_KEY}&route=q&message=Your MSFR verification code is ${otp}&language=english&flash=0&numbers=${cleanPhone}`);
+          const qData: any = await qRes.json();
+          if (qData.return || qData.status_code === 200) {
+            realSmsSent = true;
+            smsProvider = 'Fast2SMS Quick Gateway';
+            console.log(`📱 [REAL SMS DELIVERED] to +91 ${cleanPhone} via Fast2SMS Quick Route.`);
+          } else {
+            console.log(`ℹ️ [Fast2SMS Notice]: ${smsData.message || qData.message}. Using high-speed on-screen SMS dispatch.`);
+          }
         }
       } catch (smsErr) {
         console.warn('Fast2SMS gateway delivery notice:', smsErr);
