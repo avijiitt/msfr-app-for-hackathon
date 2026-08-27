@@ -83,7 +83,25 @@ class AuthService {
   }
 
   public getCurrentUser(): AuthUser | null {
+    if (!this.currentUser) {
+      const stored = localStorage.getItem('musafir_demo_user');
+      if (stored) {
+        try {
+          this.currentUser = JSON.parse(stored);
+        } catch {}
+      }
+    }
     return this.currentUser;
+  }
+
+  public setSessionUser(user: AuthUser | null) {
+    this.currentUser = user;
+    if (user) {
+      localStorage.setItem('musafir_demo_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('musafir_demo_user');
+    }
+    this.listeners.forEach(fn => fn(this.currentUser));
   }
 
   public isLoggedIn(): boolean {

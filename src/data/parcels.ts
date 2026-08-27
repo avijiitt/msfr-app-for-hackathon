@@ -1,4 +1,4 @@
-﻿import { ParcelLockerItem } from '../types/transit';
+import { ParcelLockerItem } from '../types/transit';
 
 export const INITIAL_PARCEL_ITEMS: ParcelLockerItem[] = [
   {
@@ -8,8 +8,8 @@ export const INITIAL_PARCEL_ITEMS: ParcelLockerItem[] = [
     lockerNumber: 'Locker #B-14',
     pin: '8492',
     status: 'ready_pickup',
-    recipientName: 'Abhijit Sahoo',
-    recipientPhone: '+91 98765 43210',
+    recipientName: 'You',
+    recipientPhone: '',
     expiryTime: 'In 18 hours',
   },
   {

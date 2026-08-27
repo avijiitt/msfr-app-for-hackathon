@@ -1,35 +1,80 @@
-﻿import { UserProfile, EmergencyContact } from '../types/transit';
+import { UserProfile, EmergencyContact } from '../types/transit';
 import { audioService } from './audioService';
 
 const STORAGE_KEY_PROFILE = 'transitsync_user_profile';
 
-const DEFAULT_PROFILE: UserProfile = {
-  name: 'Abhijit Sahoo',
-  email: 'abhijit.sahoo@example.com',
-  phone: '+91 98765 43210',
-  homeAddress: 'Plot #142, Sailashree Vihar, Bhubaneswar, Odisha',
-  workAddress: 'InfoCity Tech Park Tower B, Patia, Bhubaneswar',
-  bloodGroup: 'O+',
-  medicalNotes: 'Mild Asthma, carrying inhaler. Penicillin allergy.',
-  allergies: 'Penicillin, Dust mites',
-  studentVerification: {
-    isVerified: true,
-    verificationMethod: 'digilocker',
-    rollNo: '2023-CS-0842',
-    collegeName: 'KIIT University, Bhubaneswar',
-    courseName: 'B.Tech Computer Science',
-    validUntil: '2027',
-    verifiedAt: '2026-08-15',
-  },
-  isSeniorVerified: false,
-  isWomenPassenger: false,
-  familyShareActive: true,
-  emergencyContacts: [
-    { id: 'ec-1', name: 'Dr. S. Sahoo (Father)', phone: '+91 94370 12345', relation: 'Father' },
-    { id: 'ec-2', name: 'Sunita Sahoo (Mother)', phone: '+91 94371 67890', relation: 'Mother' },
-    { id: 'ec-3', name: 'Rohan Ray (Roommate/Friend)', phone: '+91 99370 54321', relation: 'Friend' },
-  ],
-};
+function getDefaultProfile(): UserProfile {
+  // Try reading from the logged-in user's registration data
+  let name = 'Traveller';
+  let email = '';
+  let phone = '';
+  let bloodGroup = 'O+';
+  let homeAddress = '';
+  let emergencyContacts: EmergencyContact[] = [];
+
+  try {
+    const demoUser = localStorage.getItem('musafir_demo_user');
+    if (demoUser) {
+      const u = JSON.parse(demoUser);
+      name = u.fullName || u.full_name || name;
+      email = u.email || email;
+    }
+  } catch {}
+
+  let isStudent = false;
+  let collegeName = '';
+  let rollNo = '';
+  let isSenior = false;
+  let isWomen = false;
+
+  try {
+    const profile = localStorage.getItem('musafir_user_profile');
+    if (profile) {
+      const p = JSON.parse(profile);
+      name = p.fullName || name;
+      email = p.email || email;
+      phone = p.phone || phone;
+      bloodGroup = p.bloodGroup || bloodGroup;
+      homeAddress = p.homeCity || homeAddress;
+      isStudent = p.category === 'student';
+      if (p.studentDetails) {
+        collegeName = p.studentDetails.college || '';
+        rollNo = p.studentDetails.rollNo || '';
+      }
+      isSenior = p.category === 'senior';
+      isWomen = p.category === 'women';
+      if (p.emergencyContact) {
+        emergencyContacts = [{
+          id: 'ec-1',
+          name: p.emergencyContact.name,
+          phone: p.emergencyContact.phone,
+          relation: p.emergencyContact.relation || 'Family / Guardian',
+        }];
+      }
+    }
+  } catch {}
+
+  return {
+    name,
+    email,
+    phone,
+    homeAddress,
+    workAddress: '',
+    bloodGroup: bloodGroup as UserProfile['bloodGroup'],
+    medicalNotes: '',
+    allergies: '',
+    studentVerification: {
+      isVerified: isStudent,
+      verificationMethod: isStudent ? 'digilocker' : 'none',
+      collegeName,
+      rollNo,
+    },
+    isSeniorVerified: isSenior,
+    isWomenPassenger: isWomen,
+    familyShareActive: false,
+    emergencyContacts,
+  };
+}
 
 class SOSService {
   private profile: UserProfile;
@@ -39,17 +84,23 @@ class SOSService {
     const saved = localStorage.getItem(STORAGE_KEY_PROFILE);
     if (saved) {
       try {
-        this.profile = { ...DEFAULT_PROFILE, ...JSON.parse(saved) };
+        this.profile = { ...getDefaultProfile(), ...JSON.parse(saved) };
       } catch {
-        this.profile = DEFAULT_PROFILE;
+        this.profile = getDefaultProfile();
       }
     } else {
-      this.profile = DEFAULT_PROFILE;
-      this.saveProfile(DEFAULT_PROFILE);
+      this.profile = getDefaultProfile();
+      this.saveProfile(this.profile);
     }
   }
 
   public getProfile(): UserProfile {
+    return { ...this.profile };
+  }
+
+  public reloadProfile(): UserProfile {
+    this.profile = getDefaultProfile();
+    this.saveProfile(this.profile);
     return { ...this.profile };
   }
 

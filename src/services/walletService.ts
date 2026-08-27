@@ -1,4 +1,4 @@
-﻿import { TransitPass, WalletTransaction } from '../types/transit';
+import { TransitPass, WalletTransaction } from '../types/transit';
 
 const STORAGE_KEY_WALLET = 'msfr_wallet_balance';
 const STORAGE_KEY_TXS = 'msfr_wallet_transactions';
@@ -13,7 +13,7 @@ const INITIAL_TRANSACTIONS: WalletTransaction[] = [
     timestamp: 'Today, 08:30 AM',
     balanceAfter: 500,
     status: 'success',
-    routeOrMethod: 'UPI ID: abhijit@okhdfcbank',
+    routeOrMethod: 'UPI via Google Pay',
   },
   {
     id: 'TX-1098',

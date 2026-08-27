@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { authService, isSupabaseConfigured, supabase } from '../../services/supabaseClient';
 import { walletService } from '../../services/walletService';
+import { sosService } from '../../services/sosService';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -180,7 +181,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
         email: email.trim(),
         fullName: fullName.trim(),
       };
-      localStorage.setItem('musafir_demo_user', JSON.stringify(authObj));
+      authService.setSessionUser(authObj);
 
       // 3. Credit ₹100 Welcome Joining Bonus to Mo-Wallet
       const hasBonus = localStorage.getItem('musafir_welcome_bonus_credited');
@@ -188,6 +189,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
         walletService.addFunds(100, 'Musafir Welcome Joining Bonus 🎁');
         localStorage.setItem('musafir_welcome_bonus_credited', '1');
       }
+
+      // 4. Update in-memory SOS and user profile
+      sosService.reloadProfile();
 
       setLoading(false);
       onSuccess(); // Close modal and unlock main dashboard
@@ -361,7 +365,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Abhijit Sahoo"
+                  placeholder="e.g. Rahul Kumar"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"

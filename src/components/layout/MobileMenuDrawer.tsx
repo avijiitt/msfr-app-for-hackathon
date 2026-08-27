@@ -40,6 +40,19 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  // Read actual logged-in user details
+  let userName = 'Traveller';
+  let userEmail = '';
+  try {
+    const stored = localStorage.getItem('musafir_demo_user');
+    if (stored) {
+      const u = JSON.parse(stored);
+      userName = u.fullName || u.full_name || 'Traveller';
+      userEmail = u.email || '';
+    }
+  } catch {}
+  const initials = userName.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+
   const handleSelectTab = (tab: MusafirSidebarTab) => {
     onTabChange(tab);
     onClose();
@@ -85,10 +98,11 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
           <div className="flex items-center gap-3" onClick={() => { onOpenProfile(); onClose(); }}>
             <div className="w-10 h-10 rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-sm">
-              <User className="w-5 h-5" />
+              {initials || <User className="w-5 h-5" />}
             </div>
             <div>
-              <strong className="text-xs text-slate-900 dark:text-white block">Abhijit Sahoo</strong>
+              <strong className="text-xs text-slate-900 dark:text-white block">{userName}</strong>
+              {userEmail && <span className="text-[10px] text-slate-400 block">{userEmail}</span>}
               <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold font-mono">
                 Wallet: ₹{walletBalance.toFixed(2)}
               </span>

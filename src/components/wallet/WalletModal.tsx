@@ -63,7 +63,12 @@ export const WalletModal: React.FC<WalletModalProps> = ({
   };
 
   const handleBuyPass = (type: 'student' | 'senior' | 'daily' | 'women_pink' | 'standard') => {
-    const res = walletService.purchasePass(type, 'Abhijit Sahoo');
+    let buyerName = 'Traveller';
+    try {
+      const stored = localStorage.getItem('musafir_demo_user');
+      if (stored) { const u = JSON.parse(stored); buyerName = u.fullName || u.full_name || buyerName; }
+    } catch {}
+    const res = walletService.purchasePass(type, buyerName);
     if (res.success && res.pass) {
       onBalanceUpdated(walletService.getBalance());
       setTransactions(walletService.getTransactions());

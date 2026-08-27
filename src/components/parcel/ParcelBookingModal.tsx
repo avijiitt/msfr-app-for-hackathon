@@ -19,9 +19,28 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
   const [activeTab, setActiveTab] = useState<'track' | 'book'>('track');
   const [bookings, setBookings] = useState<ParcelBooking[]>(supabaseService.getParcelBookings());
 
-  // Form State
-  const [senderName, setSenderName] = useState('Abhijit Sahoo');
-  const [senderPhone, setSenderPhone] = useState('+91 98765 43210');
+  // Form State - read from logged-in user
+  const getUserInfo = () => {
+    try {
+      const profile = localStorage.getItem('musafir_user_profile');
+      const demoUser = localStorage.getItem('musafir_demo_user');
+      let name = '';
+      let phone = '';
+      if (profile) {
+        const p = JSON.parse(profile);
+        name = p.fullName || '';
+        phone = p.phone || '';
+      }
+      if (!name && demoUser) {
+        const u = JSON.parse(demoUser);
+        name = u.fullName || u.full_name || '';
+      }
+      return { name, phone };
+    } catch { return { name: '', phone: '' }; }
+  };
+  const userInfo = getUserInfo();
+  const [senderName, setSenderName] = useState(userInfo.name);
+  const [senderPhone, setSenderPhone] = useState(userInfo.phone);
   const [recipientName, setRecipientName] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
   const [alternateRecipientPhone, setAlternateRecipientPhone] = useState('');

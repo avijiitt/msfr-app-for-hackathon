@@ -537,6 +537,8 @@ export const App: React.FC = () => {
         onClose={() => setIsLoginOpen(false)}
         onSuccess={() => {
           setCurrentUser(authService.getCurrentUser());
+          setUserProfile(sosService.getProfile());
+          setWalletBalance(walletService.getBalance());
           setIsLoginOpen(false);
           // Show permissions modal after successful login (only once)
           const hasAskedPerms = localStorage.getItem('musafir_perms_asked');
