@@ -120,16 +120,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
     e.preventDefault();
     setError(null);
 
-    const isMatch = userEnteredOtp.trim() === generatedOtp || userEnteredOtp.trim() === '123456';
+    const cleanNumber = phoneInput.trim().replace(/\D/g, '');
+    const formattedPhone = '+91 ' + cleanNumber.slice(-10);
 
-    if (isMatch) {
-      setLoading(true);
+    setLoading(true);
 
-      // Check if user already registered previously
-      const cleanNumber = phoneInput.trim().replace(/\D/g, '');
-      const formattedPhone = '+91 ' + cleanNumber.slice(-10);
+    try {
+      // 1. Verify against Backend Database OTP record
+      const res = await fetch('http://localhost:5000/api/auth/verify-sms-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: cleanNumber.slice(-10),
+          otp: userEnteredOtp.trim(),
+        }),
+      });
 
-      // Check local saved profile
+      const data = await res.json();
+
+      if (!res.ok || !data.verified) {
+        // Fallback local match if backend was offline
+        if (userEnteredOtp.trim() !== generatedOtp) {
+          setError(data.error || 'Invalid OTP code! Please check your unique code.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Check if user already registered previously in local database
       const savedProfileRaw = localStorage.getItem('musafir_user_profile');
       let existingProfile = null;
       if (savedProfileRaw) {
@@ -161,8 +179,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
       setToastMessage('');
       setPhone(formattedPhone);
       setPhoneStep('PROFILE_INPUT');
-    } else {
-      setError('Invalid OTP code! Check the SMS banner or enter 123456.');
+    } catch (err: any) {
+      if (userEnteredOtp.trim() === generatedOtp) {
+        setLoading(false);
+        setToastMessage('');
+        setPhone(formattedPhone);
+        setPhoneStep('PROFILE_INPUT');
+      } else {
+        setError('Invalid OTP code. Please enter the code sent for your number.');
+        setLoading(false);
+      }
     }
   };
 
@@ -506,13 +532,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
                       <span className="flex items-center gap-1">
                         <KeyRound className="w-3 h-3 text-blue-500" /> 6-Digit OTP Code *
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => setUserEnteredOtp('123456')}
-                        className="text-[10px] text-blue-600 hover:underline font-bold"
-                      >
-                        Use Default: 123456
-                      </button>
+                      {generatedOtp && (
+                        <button
+                          type="button"
+                          onClick={() => setUserEnteredOtp(generatedOtp)}
+                          className="text-[10px] text-blue-600 hover:underline font-bold"
+                        >
+                          Auto-Fill Code
+                        </button>
+                      )}
                     </label>
                     <input
                       type="text"

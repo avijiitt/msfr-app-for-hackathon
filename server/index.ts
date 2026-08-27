@@ -20,9 +20,11 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
-// Persistent database file
+// Persistent database files
 const DATA_DIR = path.join(__dirname, 'data');
 const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
+const OTP_LOGS_FILE = path.join(DATA_DIR, 'otp_logs.json');
+
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
@@ -43,6 +45,25 @@ function saveProfiles(profiles: any[]) {
     fs.writeFileSync(PROFILES_FILE, JSON.stringify(profiles, null, 2), 'utf-8');
   } catch (e) {
     console.warn('Error saving profiles.json:', e);
+  }
+}
+
+function loadOtpLogs(): any[] {
+  try {
+    if (fs.existsSync(OTP_LOGS_FILE)) {
+      return JSON.parse(fs.readFileSync(OTP_LOGS_FILE, 'utf-8'));
+    }
+  } catch (e) {
+    console.warn('Error reading otp_logs.json:', e);
+  }
+  return [];
+}
+
+function saveOtpLogs(logs: any[]) {
+  try {
+    fs.writeFileSync(OTP_LOGS_FILE, JSON.stringify(logs, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn('Error saving otp_logs.json:', e);
   }
 }
 
@@ -490,8 +511,18 @@ app.post('/api/sos/trigger', (req: Request, res: Response) => {
   res.json({ success: true, sos: sosPayload });
 });
 
-// ── 8. Real SMS OTP & Notification APIs ───────────────────────────────────
-const activeOtpStore = new Map<string, { otp: string; expiresAt: number }>();
+// ── 8. Unique Real SMS OTP & Verification Database APIs ─────────────────────
+const activeOtpStore = new Map<string, { otp: string; expiresAt: number; id: string }>();
+
+// List all OTP generation and verification history from database
+app.get('/api/auth/otp-logs', (_req: Request, res: Response) => {
+  const logs = loadOtpLogs();
+  res.json({
+    success: true,
+    totalRecords: logs.length,
+    logs,
+  });
+});
 
 app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
   try {
@@ -503,9 +534,24 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Valid 10-digit Indian phone number required' });
     }
 
-    // Generate random 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    activeOtpStore.set(cleanPhone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+    // Generate unique cryptographically random 6-digit OTP for this specific number
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpId = 'otp-' + crypto.randomUUID().slice(0, 8);
+    const expiresAt = Date.now() + 5 * 60 * 1000;
+
+    activeOtpStore.set(cleanPhone, { otp, expiresAt, id: otpId });
+
+    // Store in persistent database (otp_logs.json)
+    const logs = loadOtpLogs();
+    logs.unshift({
+      id: otpId,
+      phone: `+91 ${cleanPhone}`,
+      otp,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(expiresAt).toISOString(),
+    });
+    saveOtpLogs(logs.slice(0, 100)); // retain last 100 records
 
     let realSmsSent = false;
     let smsProvider = 'Simulated SMS Gateway (Local)';
@@ -531,7 +577,7 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
             smsProvider = 'Fast2SMS Quick Gateway';
             console.log(`📱 [REAL SMS DELIVERED] to +91 ${cleanPhone} via Fast2SMS Quick Route.`);
           } else {
-            console.log(`ℹ️ [Fast2SMS Notice]: ${smsData.message || qData.message}. Using high-speed on-screen SMS dispatch.`);
+            console.log(`ℹ️ [Fast2SMS Notice]: ${smsData.message || qData.message}.`);
           }
         }
       } catch (smsErr) {
@@ -549,7 +595,7 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
         const params = new URLSearchParams();
         params.append('To', `+91${cleanPhone}`);
         params.append('From', TWILIO_FROM);
-        params.append('Body', `Your musafir transit verification code is: ${otp}. Valid for 5 minutes.`);
+        params.append('Body', `Your unique musafir transit verification code is: ${otp}. Valid for 5 minutes.`);
 
         const twilioRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
           method: 'POST',
@@ -569,17 +615,17 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
       }
     }
 
-    console.log(`📩 [SMS OTP DISPATCH]: Mobile: +91 ${cleanPhone} | OTP: ${otp} | Gateway: ${smsProvider}`);
+    console.log(`📩 [UNIQUE OTP GENERATED & STORED IN DB]: Mobile: +91 ${cleanPhone} | OTP: ${otp} | Provider: ${smsProvider}`);
 
     res.json({
       success: true,
       phone: `+91 ${cleanPhone}`,
-      otp, // included for simulated toast / fallback verification
+      otp, // provided for on-screen SMS toast banner
       realSmsSent,
       smsProvider,
       message: realSmsSent
         ? `Real SMS dispatched to +91 ${cleanPhone} via ${smsProvider}`
-        : `Simulated SMS dispatched to +91 ${cleanPhone}`,
+        : `Unique OTP generated and stored in database for +91 ${cleanPhone}`,
     });
   } catch (err: any) {
     console.error('Send OTP error:', err);
@@ -596,13 +642,8 @@ app.post('/api/auth/verify-sms-otp', (req: Request, res: Response) => {
   const cleanPhone = phone.replace(/\D/g, '').slice(-10);
   const record = activeOtpStore.get(cleanPhone);
 
-  // Universal master test code for hackathon judges: '123456'
-  if (otp.trim() === '123456') {
-    return res.json({ success: true, verified: true, message: 'OTP verified successfully (Master Test Code)' });
-  }
-
   if (!record) {
-    return res.status(400).json({ success: false, verified: false, error: 'No OTP requested for this number or OTP expired' });
+    return res.status(400).json({ success: false, verified: false, error: 'No active OTP found for this mobile number. Please request a new OTP.' });
   }
 
   if (Date.now() > record.expiresAt) {
@@ -611,11 +652,21 @@ app.post('/api/auth/verify-sms-otp', (req: Request, res: Response) => {
   }
 
   if (record.otp === otp.trim()) {
+    // Update record in database to verified
+    const logs = loadOtpLogs();
+    const logItem = logs.find((l: any) => l.phone.includes(cleanPhone) && l.otp === otp.trim());
+    if (logItem) {
+      logItem.status = 'verified';
+      logItem.verifiedAt = new Date().toISOString();
+      saveOtpLogs(logs);
+    }
+
     activeOtpStore.delete(cleanPhone);
-    return res.json({ success: true, verified: true, message: 'OTP verified successfully' });
+    console.log(`✅ [OTP VERIFIED IN DB]: Mobile: +91 ${cleanPhone} verified successfully.`);
+    return res.json({ success: true, verified: true, message: 'OTP verified successfully against database record' });
   }
 
-  res.status(400).json({ success: false, verified: false, error: 'Invalid OTP code' });
+  res.status(400).json({ success: false, verified: false, error: 'Invalid OTP code! Please enter the exact 6-digit code sent for your mobile number.' });
 });
 
 app.post('/api/auth/login-notification', async (req: Request, res: Response) => {
