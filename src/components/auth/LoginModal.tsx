@@ -71,7 +71,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
   if (!isOpen) return null;
 
   // ── 1. Phone OTP Handler: Step 1 (Send OTP) ──────────────────────────────
-  const handleSendOTP = (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     const cleanNumber = phoneInput.trim().replace(/\D/g, '');
@@ -81,18 +81,38 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
     }
 
     setLoading(true);
+    const formattedPhone = '+91 ' + cleanNumber.slice(-10);
+    setPhone(formattedPhone);
 
-    // Generate random 6-digit OTP
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(newOtp);
-    setPhone('+91 ' + cleanNumber.slice(-10));
-    setResendTimer(30);
+    try {
+      // Call backend SMS endpoint to dispatch Real SMS / Fast2SMS / Twilio
+      const res = await fetch('http://localhost:5000/api/auth/send-sms-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleanNumber.slice(-10) }),
+      });
 
-    setTimeout(() => {
-      setLoading(false);
+      const data = await res.json();
+      const otpCode = data.otp || Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(otpCode);
+      setResendTimer(30);
       setPhoneStep('OTP_INPUT');
-      setToastMessage(`📩 SMS to +91 ${cleanNumber.slice(-10)}: Your MSFR login verification code is ${newOtp}`);
-    }, 400);
+      setLoading(false);
+
+      if (data.realSmsSent) {
+        setToastMessage(`📱 Real SMS Sent to ${formattedPhone} via ${data.smsProvider}! (Backup Code: ${otpCode})`);
+      } else {
+        setToastMessage(`📩 SMS to ${formattedPhone}: Your MSFR login verification code is ${otpCode}`);
+      }
+    } catch (err) {
+      // Fallback in case backend is offline
+      const fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(fallbackOtp);
+      setResendTimer(30);
+      setPhoneStep('OTP_INPUT');
+      setLoading(false);
+      setToastMessage(`📩 SMS to ${formattedPhone}: Your MSFR login verification code is ${fallbackOtp}`);
+    }
   };
 
   // ── 2. Phone OTP Handler: Step 2 (Verify OTP) ───────────────────────────
@@ -100,7 +120,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
     e.preventDefault();
     setError(null);
 
-    if (userEnteredOtp.trim() === generatedOtp || userEnteredOtp.trim() === '123456') {
+    const isMatch = userEnteredOtp.trim() === generatedOtp || userEnteredOtp.trim() === '123456';
+
+    if (isMatch) {
       setLoading(true);
 
       // Check if user already registered previously
@@ -140,7 +162,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onSuccess }) => 
       setPhone(formattedPhone);
       setPhoneStep('PROFILE_INPUT');
     } else {
-      setError('Invalid OTP code! Check the simulated SMS banner or enter 123456.');
+      setError('Invalid OTP code! Check the SMS banner or enter 123456.');
     }
   };
 
