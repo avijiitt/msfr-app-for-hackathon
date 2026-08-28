@@ -77,7 +77,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
   if (!isOpen) return null;
 
-  // ── 1. Phone Flow: Step 1 (Send Unique OTP via Fast2SMS) ─────────────────────
+  // ── 1. Phone Flow: Step 1 (Send 6-digit OTP via Supabase & Fast2SMS) ─────────────
   const handleSendOTP = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setError(null);
@@ -91,7 +91,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
     const formattedPhone = '+91 ' + cleanNumber.slice(-10);
 
     try {
-      // High speed Fast2SMS Dispatcher
+      // 1. Trigger Supabase Phone Auth signInWithOtp
+      authService.signInWithPhoneOtp(cleanNumber).catch((err) => {
+        console.warn('Supabase phone auth background notice:', err);
+      });
+
+      // 2. High-speed Fast2SMS Real SMS Gateway Dispatcher
       const result = await dispatchMobileOTP(cleanNumber);
       const otpCode = result.otp;
       setGeneratedOtp(otpCode);
@@ -102,11 +107,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
       setLoading(false);
 
       if (result.realSmsSent) {
-        setSmsDeliveryStatus('Real SMS Sent via Fast2SMS');
-        setToastMessage(`📱 Real SMS Sent to ${formattedPhone} via Fast2SMS!`);
+        setSmsDeliveryStatus('Real SMS Sent via Supabase & Fast2SMS');
+        setToastMessage(`📱 Real 6-Digit SMS Sent to ${formattedPhone}!`);
       } else {
-        setSmsDeliveryStatus('Fast2SMS Gateway Active');
-        setToastMessage(`📩 SMS to ${formattedPhone}: Your unique verification code is ${otpCode}`);
+        setSmsDeliveryStatus('Supabase & Fast2SMS Active');
+        setToastMessage(`📩 SMS to ${formattedPhone}: Your unique 6-digit verification code is ${otpCode}`);
       }
     } catch (err) {
       const fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -116,7 +121,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
       setUserEnteredOtp('');
       setPhoneStep('OTP_INPUT');
       setLoading(false);
-      setToastMessage(`📩 SMS to ${formattedPhone}: Your unique verification code is ${fallbackOtp}`);
+      setToastMessage(`📩 SMS to ${formattedPhone}: Your unique 6-digit verification code is ${fallbackOtp}`);
     }
   };
 
@@ -159,7 +164,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
     }
   };
 
-  // ── 2. Phone Flow: Step 2 (Verify OTP) ──────────────────────────────────────
+  // ── 2. Phone Flow: Step 2 (Verify 6-digit OTP in Supabase & Database) ──────────
   const executeVerification = async (codeToVerify: string) => {
     setError(null);
     const cleanOtp = codeToVerify.trim();
@@ -174,7 +179,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
     setLoading(true);
 
     try {
-      // Try backend verification
+      // 1. Check Supabase Phone Auth verification
+      const supabaseResult = await authService.verifyPhoneOtp(cleanNumber, cleanOtp);
+      if (supabaseResult.success && supabaseResult.user) {
+        console.log('✅ Supabase Phone OTP verified successfully!');
+      }
+
+      // 2. Check Backend OTP verification & rate limit check
       try {
         const res = await fetch('http://localhost:5000/api/auth/verify-sms-otp', {
           method: 'POST',
@@ -187,7 +198,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
         const data = await res.json();
         if (!res.ok || !data.verified) {
-          if (cleanOtp !== generatedOtp) {
+          if (cleanOtp !== generatedOtp && !supabaseResult.success) {
             setError(data.error || 'Invalid OTP code! Please check the 6-digit code.');
             setLoading(false);
             return;
@@ -195,7 +206,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
         }
       } catch {
         // Direct OTP match validation
-        if (cleanOtp !== generatedOtp) {
+        if (cleanOtp !== generatedOtp && !supabaseResult.success) {
           setError('Invalid verification OTP. Please check the code.');
           setLoading(false);
           return;

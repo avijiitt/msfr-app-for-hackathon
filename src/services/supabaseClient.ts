@@ -171,6 +171,78 @@ class AuthService {
     return { success: true };
   }
 
+  // ── Phone OTP Sign In / Sign Up (Supabase Auth) ──────────────────────────
+  public async signInWithPhoneOtp(phone: string): Promise<{ success: boolean; error?: string; message?: string }> {
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    const internationalPhone = '+91' + cleanPhone;
+
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { data, error } = await supabase.auth.signInWithOtp({
+          phone: internationalPhone,
+          options: {
+            channel: 'sms',
+          },
+        });
+
+        if (error) {
+          console.warn('Supabase signInWithOtp notice:', error.message);
+          return { success: false, error: error.message };
+        }
+
+        console.log(`📱 [Supabase Phone Auth] 6-digit OTP request sent to ${internationalPhone}`);
+        return { success: true, message: `6-digit OTP dispatched to ${internationalPhone}` };
+      } catch (e: any) {
+        console.warn('Supabase phone auth network exception:', e);
+        return { success: false, error: e.message };
+      }
+    }
+
+    return { success: false, error: 'Supabase client is not initialized.' };
+  }
+
+  public async verifyPhoneOtp(phone: string, token: string): Promise<AuthResult> {
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    const internationalPhone = '+91' + cleanPhone;
+
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { data, error } = await supabase.auth.verifyOtp({
+          phone: internationalPhone,
+          token: token.trim(),
+          type: 'sms',
+        });
+
+        if (error) {
+          console.warn('Supabase verifyOtp notice:', error.message);
+          return { success: false, error: error.message };
+        }
+
+        if (data.user) {
+          const user = this.mapUser(data.user);
+          this.setSessionUser(user);
+
+          // Save/upsert profile in user_profiles
+          try {
+            await supabase.from('user_profiles').upsert({
+              id: data.user.id,
+              full_name: data.user.user_metadata?.full_name || 'Passenger',
+              phone: internationalPhone,
+              updated_at: new Date().toISOString(),
+            });
+          } catch {}
+
+          console.log(`✅ [Supabase Phone Auth] User successfully verified & logged in: ${data.user.id}`);
+          return { success: true, user };
+        }
+      } catch (e: any) {
+        return { success: false, error: e.message };
+      }
+    }
+
+    return { success: false, error: 'Supabase client is not initialized.' };
+  }
+
   // ── Sign Out ───────────────────────────────────────────────────────────────
   public async signOut(): Promise<void> {
     if (supabase) {
