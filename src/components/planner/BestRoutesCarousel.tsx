@@ -35,6 +35,7 @@ interface BestRoutesCarouselProps {
   onOpenSmartAlerts?: () => void;
   onOpenSafeJourney?: () => void;
   onOpenSaveMore?: () => void;
+  onOpenFareCalc?: () => void;
   onSelectDestination?: (dest: string) => void;
   t?: TranslationDictionary;
 }
@@ -52,6 +53,7 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
   onOpenSmartAlerts,
   onOpenSafeJourney,
   onOpenSaveMore,
+  onOpenFareCalc,
   onSelectDestination,
   t,
 }) => {
@@ -486,12 +488,23 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
       </div>
 
       {/* Mo Bus Official Fare Comparison Matrix */}
-      <div className="dashboard-card rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 text-xs">
-        <div className="flex items-center justify-between mb-2 font-bold text-slate-800 dark:text-slate-200">
-          <span>📊 Bhubaneswar Mo Bus Fare Comparison Matrix ({distanceKm} km transit):</span>
-          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
-            CRUT Tariff Active
-          </span>
+      <div className="dashboard-card rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 text-xs space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 font-bold text-slate-800 dark:text-slate-200">
+          <span>📊 Fare Comparison Matrix ({distanceKm} km transit):</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
+              CRUT Tariff Active
+            </span>
+            {onOpenFareCalc && (
+              <button
+                type="button"
+                onClick={onOpenFareCalc}
+                className="px-2.5 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold transition flex items-center gap-1 shadow-xs active:scale-95"
+              >
+                <span>🧮 Open Fare Calculator</span>
+              </button>
+            )}
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
           <div className="p-2.5 rounded-xl bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">

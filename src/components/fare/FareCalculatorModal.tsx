@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, X, ArrowRight, ShieldCheck, MapPin, Navigation, Shuffle, Bus, Sparkles } from 'lucide-react';
-import { calculateAreaFareMatrix, AreaFareComparison } from '../../services/fareMatrixService';
+import { Calculator, X, ArrowRight, ShieldCheck, MapPin, Navigation, Shuffle, Bus, Sparkles, CheckCircle2 } from 'lucide-react';
+import { calculateAreaFareMatrix, calculateDistanceBetweenLocations, AreaFareComparison } from '../../services/fareMatrixService';
+import { BHUBANESWAR_LOCALITIES } from '../../data/cities/bhubaneswar';
 
 interface FareCalculatorModalProps {
   isOpen: boolean;
@@ -12,13 +13,15 @@ interface FareCalculatorModalProps {
 const POPULAR_LOCALITIES = [
   'Master Canteen',
   'Jayadev Vihar',
-  'KIIT Square, Patia',
+  'KIIT University, Patia',
   'Infocity IT Hub',
   'Baramunda ISBT',
   'Biju Patnaik Airport',
-  'Khandagiri Square',
+  'Khandagiri Caves',
   'Cuttack Badambadi',
   'Vani Vihar Square',
+  'Rasulgarh Square',
+  'AIIMS Hospital',
 ];
 
 export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
@@ -29,12 +32,35 @@ export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
 }) => {
   const [manualOrigin, setManualOrigin] = useState(originName);
   const [manualDest, setManualDest] = useState(destName);
-  const [distanceKm, setDistanceKm] = useState(8.5);
+  const [isAutoMeasured, setIsAutoMeasured] = useState(true);
+  
+  // Calculate initial auto distance
+  const [distanceKm, setDistanceKm] = useState(() => 
+    calculateDistanceBetweenLocations(originName, destName)
+  );
 
   useEffect(() => {
     if (originName) setManualOrigin(originName);
     if (destName) setManualDest(destName);
+    const measured = calculateDistanceBetweenLocations(originName, destName);
+    setDistanceKm(measured);
+    setIsAutoMeasured(true);
   }, [originName, destName]);
+
+  // When user edits origin or destination, auto-calculate road distance
+  const handleOriginChange = (val: string) => {
+    setManualOrigin(val);
+    const measured = calculateDistanceBetweenLocations(val, manualDest);
+    setDistanceKm(measured);
+    setIsAutoMeasured(true);
+  };
+
+  const handleDestChange = (val: string) => {
+    setManualDest(val);
+    const measured = calculateDistanceBetweenLocations(manualOrigin, val);
+    setDistanceKm(measured);
+    setIsAutoMeasured(true);
+  };
 
   const [fareData, setFareData] = useState<AreaFareComparison>(() =>
     calculateAreaFareMatrix(manualOrigin, manualDest, distanceKm)
@@ -47,16 +73,20 @@ export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
   if (!isOpen) return null;
 
   const handleSwap = () => {
-    const temp = manualOrigin;
-    setManualOrigin(manualDest);
-    setManualDest(temp);
+    const tempOrig = manualOrigin;
+    const tempDest = manualDest;
+    setManualOrigin(tempDest);
+    setManualDest(tempOrig);
+    const measured = calculateDistanceBetweenLocations(tempDest, tempOrig);
+    setDistanceKm(measured);
+    setIsAutoMeasured(true);
   };
 
   const handleQuickSelect = (place: string, target: 'origin' | 'dest') => {
     if (target === 'origin') {
-      setManualOrigin(place);
+      handleOriginChange(place);
     } else {
-      setManualDest(place);
+      handleDestChange(place);
     }
   };
 
@@ -88,10 +118,25 @@ export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
 
         {/* 📍 Manual Location Input Section */}
         <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3 shadow-xs">
-          <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-            <Navigation className="w-3.5 h-3.5 text-blue-600" />
-            <span>Enter Route Locations Manually</span>
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <Navigation className="w-3.5 h-3.5 text-blue-600" />
+              <span>Select or Type Route Places (Auto-Calculates Distance)</span>
+            </div>
+            <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" />
+              Auto-Distance Active
+            </span>
           </div>
+
+          {/* Datalist for existing places */}
+          <datalist id="bbsr-places">
+            {BHUBANESWAR_LOCALITIES.map((loc) => (
+              <option key={loc.id} value={loc.name}>
+                {loc.popularLandmark || loc.category}
+              </option>
+            ))}
+          </datalist>
 
           <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,1fr] items-center gap-2">
             {/* Origin Input */}
@@ -99,18 +144,19 @@ export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
               <div className="absolute left-3 top-3 text-emerald-500 font-bold text-xs">🟢</div>
               <input
                 type="text"
+                list="bbsr-places"
                 placeholder="From (e.g. Master Canteen)"
                 value={manualOrigin}
-                onChange={(e) => setManualOrigin(e.target.value)}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 transition"
+                onChange={(e) => handleOriginChange(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2.5 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 transition shadow-2xs"
               />
             </div>
 
             {/* Swap Button */}
             <button
               onClick={handleSwap}
-              className="p-2 self-center mx-auto rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 transition active:scale-95"
-              title="Swap Locations"
+              className="p-2.5 self-center mx-auto rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 transition active:scale-95 shadow-2xs"
+              title="Swap From and To"
             >
               <Shuffle className="w-3.5 h-3.5" />
             </button>
@@ -120,25 +166,26 @@ export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
               <div className="absolute left-3 top-3 text-rose-500 font-bold text-xs">📍</div>
               <input
                 type="text"
-                placeholder="To (e.g. KIIT Square, Patia)"
+                list="bbsr-places"
+                placeholder="To (e.g. KIIT University, Patia)"
                 value={manualDest}
-                onChange={(e) => setManualDest(e.target.value)}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 transition"
+                onChange={(e) => handleDestChange(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2.5 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 transition shadow-2xs"
               />
             </div>
           </div>
 
           {/* Quick Suggestion Chips */}
-          <div className="space-y-1 pt-1">
+          <div className="space-y-1.5 pt-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Quick Pick Destinations:
+              Quick Pick Existing Places:
             </span>
             <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-              {POPULAR_LOCALITIES.slice(0, 6).map((place) => (
+              {POPULAR_LOCALITIES.map((place) => (
                 <button
                   key={place}
                   onClick={() => handleQuickSelect(place, 'dest')}
-                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-[11px] font-medium transition"
+                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-[11px] font-semibold transition shadow-2xs active:scale-95"
                 >
                   {place.split(',')[0]}
                 </button>
@@ -149,22 +196,34 @@ export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
 
         {/* 📏 Distance Slider & Route Info */}
         <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
-            <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0" />
-            <span className="truncate">{manualOrigin || 'Origin'} ➔ {manualDest || 'Destination'}</span>
+          <div className="space-y-0.5 min-w-0">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+              <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <span className="truncate">{manualOrigin || 'Origin'} ➔ {manualDest || 'Destination'}</span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              <span>{isAutoMeasured ? 'Real-world road distance auto-computed' : 'Manually customized distance'}</span>
+            </p>
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto flex-shrink-0">
-            <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 whitespace-nowrap">
-              {distanceKm} km
-            </span>
+            <div className="text-right">
+              <span className="text-sm font-black text-blue-600 dark:text-blue-400 block whitespace-nowrap">
+                {distanceKm} km
+              </span>
+              <span className="text-[9px] text-slate-400 uppercase font-bold">Road Dist</span>
+            </div>
             <input
               type="range"
               min="1"
               max="50"
               step="0.5"
               value={distanceKm}
-              onChange={(e) => setDistanceKm(parseFloat(e.target.value))}
+              onChange={(e) => {
+                setDistanceKm(parseFloat(e.target.value));
+                setIsAutoMeasured(false);
+              }}
               className="w-36 accent-blue-600 cursor-pointer"
             />
           </div>

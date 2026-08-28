@@ -432,6 +432,7 @@ export const App: React.FC = () => {
             onOpenSmartAlerts={() => setIsAlertsOpen(true)}
             onOpenSafeJourney={() => setIsFamilyShareOpen(true)}
             onOpenSaveMore={() => setIsFareCalcOpen(true)}
+            onOpenFareCalc={() => setIsFareCalcOpen(true)}
             onSelectDestination={(dest) => {
               setDestQuery(dest);
               handleSearch(originQuery || 'Current Location', dest);

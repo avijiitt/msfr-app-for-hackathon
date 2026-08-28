@@ -1,3 +1,5 @@
+import { BHUBANESWAR_LOCALITIES, BHUBANESWAR_STATIONS } from '../data/cities/bhubaneswar';
+
 export interface TransitModeFare {
   mode: 'bus' | 'metro' | 'train' | 'auto' | 'cab' | 'bike' | 'ferry';
   title: string;
@@ -17,6 +19,82 @@ export interface AreaFareComparison {
   destination: string;
   estimatedDistanceKm: number;
   modes: TransitModeFare[];
+}
+
+/**
+ * Automatically calculates road distance in km between any two places
+ */
+export function calculateDistanceBetweenLocations(
+  originQuery: string,
+  destQuery: string,
+  originCoords?: [number, number] | null,
+  destCoords?: [number, number] | null
+): number {
+  let lat1 = originCoords?.[0];
+  let lon1 = originCoords?.[1];
+  let lat2 = destCoords?.[0];
+  let lon2 = destCoords?.[1];
+
+  const normOrig = (originQuery || '').toLowerCase().trim();
+  const normDest = (destQuery || '').toLowerCase().trim();
+
+  // 1. Resolve coordinates from localities & stations if not provided
+  if (!lat1 || !lon1) {
+    const locMatch = BHUBANESWAR_LOCALITIES.find(
+      (l) => normOrig.includes(l.id) || l.name.toLowerCase().includes(normOrig) || normOrig.includes(l.name.toLowerCase().split('/')[0].trim())
+    );
+    if (locMatch) {
+      lat1 = locMatch.lat;
+      lon1 = locMatch.lng;
+    } else {
+      const stMatch = BHUBANESWAR_STATIONS.find((s) => s.name.toLowerCase().includes(normOrig) || normOrig.includes(s.name.toLowerCase()));
+      if (stMatch) {
+        lat1 = stMatch.lat;
+        lon1 = stMatch.lng;
+      }
+    }
+  }
+
+  if (!lat2 || !lon2) {
+    const locMatch = BHUBANESWAR_LOCALITIES.find(
+      (l) => normDest.includes(l.id) || l.name.toLowerCase().includes(normDest) || normDest.includes(l.name.toLowerCase().split('/')[0].trim())
+    );
+    if (locMatch) {
+      lat2 = locMatch.lat;
+      lon2 = locMatch.lng;
+    } else {
+      const stMatch = BHUBANESWAR_STATIONS.find((s) => s.name.toLowerCase().includes(normDest) || normDest.includes(s.name.toLowerCase()));
+      if (stMatch) {
+        lat2 = stMatch.lat;
+        lon2 = stMatch.lng;
+      }
+    }
+  }
+
+  // 2. If both coordinates are resolved, calculate Great-Circle * 1.25 for road factor
+  if (lat1 && lon1 && lat2 && lon2) {
+    const R = 6371; // Earth radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const directKm = R * c;
+    const roadKm = Math.round(directKm * 1.28 * 10) / 10;
+    return Math.max(1.0, Math.min(60, roadKm));
+  }
+
+  // 3. Fallback heuristic
+  if (normOrig && normDest) {
+    if (normOrig === normDest) return 1.5;
+    return 8.5;
+  }
+
+  return 6.0;
 }
 
 export function calculateAreaFareMatrix(
