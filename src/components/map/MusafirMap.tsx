@@ -615,21 +615,6 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
-        {/* Amenities Markers */}
-        {!isOffline && amenities && amenities.map((am) => (
-          <Marker
-            key={am.id}
-            position={[am.lat, am.lng]}
-            icon={createPinIcon('#8B5CF6', '📍', am.name, 'Amenity')}
-          >
-            <Popup>
-              <div className="p-1 text-xs">
-                <span className="font-extrabold text-purple-600 block">{am.name}</span>
-                <span className="text-[11px] text-slate-600 dark:text-slate-300">{am.address}</span>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
 
         {/* Active Rides Across All India Routes */}
         {!isOffline &&

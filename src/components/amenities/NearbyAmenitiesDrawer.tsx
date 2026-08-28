@@ -51,10 +51,10 @@ export const NearbyAmenitiesDrawer: React.FC<NearbyAmenitiesDrawerProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                {t.nearbyStoresHotels || 'Nearby Stores, Food & Transit Amenities'}
+                Nearby Stores
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Google Maps-Style Real-Time Store & POI Discovery
+                Discover grocery stores, pharmacies, restaurants & essentials near your location
               </p>
             </div>
           </div>

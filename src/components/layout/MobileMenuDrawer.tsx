@@ -155,10 +155,10 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
 
           <button
             onClick={() => { onOpenNearbyStops(); onClose(); }}
-            className="p-2.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-bold flex items-center gap-2"
+            className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2"
           >
-            <Bus className="w-4 h-4 text-blue-600" />
-            <span>Nearby Stops</span>
+            <MapPin className="w-4 h-4 text-emerald-600" />
+            <span>Nearby Stores</span>
           </button>
         </div>
 
