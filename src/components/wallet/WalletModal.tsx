@@ -6,6 +6,7 @@ import {
 import { walletService } from '../../services/walletService';
 import { TransitPass, WalletTransaction } from '../../types/transit';
 import { TranslationDictionary } from '../../types/i18n';
+import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
 import confetti from 'canvas-confetti';
 
 interface WalletModalProps {
@@ -30,6 +31,9 @@ export const WalletModal: React.FC<WalletModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [viewingPass, setViewingPass] = useState<TransitPass | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>(walletService.getTransactions());
+  const [isGatewayOpen, setIsGatewayOpen] = useState(false);
+  const [gatewayAmount, setGatewayAmount] = useState(500);
+  const [gatewayPurpose, setGatewayPurpose] = useState('Mo-Wallet Top-up');
 
   if (!isOpen) return null;
 
@@ -231,23 +235,41 @@ export const WalletModal: React.FC<WalletModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="space-y-2 pt-1">
               <button
                 type="button"
-                onClick={() => handleTopup('Google Pay UPI')}
-                className="py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 transition"
+                onClick={() => {
+                  const finalAmount = customAmountStr ? parseFloat(customAmountStr) : selectedTopupAmount;
+                  if (isNaN(finalAmount) || finalAmount <= 0) {
+                    setErrorMessage('Please enter a valid amount.');
+                    return;
+                  }
+                  setGatewayAmount(finalAmount);
+                  setGatewayPurpose(`Mo-Wallet Top-up of ₹${finalAmount}`);
+                  setIsGatewayOpen(true);
+                }}
+                className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 text-white font-extrabold rounded-2xl text-xs shadow-md shadow-blue-600/30 flex items-center justify-center gap-2 transition"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                Pay via Google Pay
+                <Sparkles className="w-4 h-4" />
+                <span>Pay via Razorpay / Dynamic UPI / Bharat QR</span>
               </button>
-              <button
-                type="button"
-                onClick={() => handleTopup('PhonePe / Paytm UPI')}
-                className="py-3 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 transition"
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                Other UPI Apps
-              </button>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleTopup('Google Pay UPI')}
+                  className="py-2.5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 text-blue-700 dark:text-blue-300 font-bold rounded-xl text-xs border border-blue-200 dark:border-blue-800 flex items-center justify-center gap-1.5 transition"
+                >
+                  <span>Google Pay FastPay</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTopup('PhonePe / Paytm UPI')}
+                  className="py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1.5 transition"
+                >
+                  <span>PhonePe / Paytm</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -393,6 +415,26 @@ export const WalletModal: React.FC<WalletModalProps> = ({
           Close Wallet
         </button>
       </div>
+
+      {/* Unified Payment Gateway Modal for Razorpay, Direct UPI Apps and Bharat Dynamic QR */}
+      <PaymentGatewayModal
+        isOpen={isGatewayOpen}
+        onClose={() => setIsGatewayOpen(false)}
+        amount={gatewayAmount}
+        purpose={gatewayPurpose}
+        customerName="Traveller"
+        onPaymentSuccess={(result) => {
+          const res = walletService.addFunds(result.amount, result.method || 'Musafir Gateway');
+          if (res.success) {
+            onBalanceUpdated(res.newBalance);
+            setTransactions(walletService.getTransactions());
+            setTopupSuccessMessage(`₹${result.amount} credited to your Mo-Wallet successfully!`);
+            try {
+              confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
+            } catch {}
+          }
+        }}
+      />
     </div>
   );
 };

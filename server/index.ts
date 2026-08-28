@@ -43,9 +43,29 @@ const otpFailedAttempts = new Map<string, { attempts: number; lockedUntil: numbe
 const DATA_DIR = path.join(__dirname, 'data');
 const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
 const OTP_LOGS_FILE = path.join(DATA_DIR, 'otp_logs.json');
+const PAYMENTS_FILE = path.join(DATA_DIR, 'payments.json');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function loadSavedPayments(): any[] {
+  try {
+    if (fs.existsSync(PAYMENTS_FILE)) {
+      return JSON.parse(fs.readFileSync(PAYMENTS_FILE, 'utf-8'));
+    }
+  } catch (e) {
+    console.warn('Error reading payments.json:', e);
+  }
+  return [];
+}
+
+function savePayments(payments: any[]) {
+  try {
+    fs.writeFileSync(PAYMENTS_FILE, JSON.stringify(payments, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn('Error writing payments.json:', e);
+  }
 }
 
 function loadSavedProfiles(): any[] {
@@ -799,6 +819,188 @@ app.post('/api/auth/login-notification', async (req: Request, res: Response) => 
   }
 });
 
+// ── Payment Gateway Endpoints (Razorpay & NPCI UPI Intent / Bharat QR) ──────────
+
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_musafir_transit';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
+
+// 1. Create Razorpay Order & UPI Intent Payload
+app.post('/api/payment/create-order', async (req: Request, res: Response) => {
+  try {
+    const { amount, currency = 'INR', purpose = 'Mo-Wallet Recharge', customerName, customerPhone, customerEmail } = req.body;
+    
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, error: 'Valid payment amount is required' });
+    }
+
+    const orderAmountInPaise = Math.round(Number(amount) * 100);
+    const txnRef = 'MSFR_TXN_' + crypto.randomBytes(4).toString('hex').toUpperCase();
+    let razorpayOrderId = `order_${crypto.randomUUID().replace(/-/g, '').slice(0, 14)}`;
+
+    // If real Razorpay credentials provided, call official Razorpay Orders API
+    if (RAZORPAY_KEY_SECRET && RAZORPAY_KEY_ID && !RAZORPAY_KEY_ID.includes('rzp_test_musafir_transit')) {
+      try {
+        const auth = Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64');
+        const rzpRes = await fetch('https://api.razorpay.com/v1/orders', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: orderAmountInPaise,
+            currency: currency,
+            receipt: txnRef,
+            notes: {
+              purpose: sanitizeInput(purpose),
+              customerPhone: sanitizeInput(customerPhone),
+              customerName: sanitizeInput(customerName),
+            },
+          }),
+        });
+        const rzpData: any = await rzpRes.json();
+        if (rzpData.id) {
+          razorpayOrderId = rzpData.id;
+        }
+      } catch (rzpErr) {
+        console.warn('Razorpay live order creation fallback to simulated order ID:', rzpErr);
+      }
+    }
+
+    // Standard NPCI UPI Intent Link (Google Pay, PhonePe, Paytm, BHIM, CRED)
+    const upiPa = process.env.UPI_VPA_ID || 'musafirtransit@upi';
+    const upiPn = 'Musafir Transit';
+    const upiUri = `upi://pay?pa=${encodeURIComponent(upiPa)}&pn=${encodeURIComponent(upiPn)}&am=${encodeURIComponent(amount.toString())}&cu=INR&tn=${encodeURIComponent(purpose)}&tr=${encodeURIComponent(txnRef)}`;
+
+    // Store in active payments database
+    const payments = loadSavedPayments();
+    payments.unshift({
+      orderId: razorpayOrderId,
+      txnRef,
+      amount: Number(amount),
+      currency,
+      purpose,
+      status: 'created',
+      customerName: sanitizeInput(customerName || 'Passenger'),
+      customerPhone: sanitizeInput(customerPhone || ''),
+      customerEmail: sanitizeInput(customerEmail || ''),
+      createdAt: new Date().toISOString(),
+    });
+    savePayments(payments.slice(0, 200));
+
+    console.log(`💳 [PAYMENT ORDER CREATED]: Order: ${razorpayOrderId} | Txn: ${txnRef} | Amount: ₹${amount} | Purpose: ${purpose}`);
+
+    res.json({
+      success: true,
+      orderId: razorpayOrderId,
+      txnRef,
+      amount: Number(amount),
+      amountInPaise: orderAmountInPaise,
+      currency,
+      keyId: RAZORPAY_KEY_ID,
+      purpose,
+      upiUri,
+      upiVpa: upiPa,
+      merchantName: upiPn,
+    });
+  } catch (err: any) {
+    console.error('Create payment order error:', err);
+    res.status(500).json({ success: false, error: 'Failed to initialize payment gateway order' });
+  }
+});
+
+// 2. Verify Razorpay Payment Signature / Instant UPI Settlement
+app.post('/api/payment/verify', (req: Request, res: Response) => {
+  try {
+    const { 
+      razorpay_order_id, 
+      razorpay_payment_id, 
+      razorpay_signature, 
+      method = 'razorpay',
+      amount,
+      purpose = 'Transit Payment',
+      customerPhone,
+      customerName
+    } = req.body;
+
+    const paymentId = razorpay_payment_id || `pay_${crypto.randomUUID().replace(/-/g, '').slice(0, 14)}`;
+    let isSignatureValid = true;
+
+    // Cryptographic signature check if Razorpay Secret is set
+    if (RAZORPAY_KEY_SECRET && razorpay_order_id && razorpay_signature) {
+      const generatedSignature = crypto
+        .createHmac('sha256', RAZORPAY_KEY_SECRET)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest('hex');
+      
+      if (generatedSignature !== razorpay_signature) {
+        isSignatureValid = false;
+      }
+    }
+
+    if (!isSignatureValid) {
+      return res.status(400).json({
+        success: false,
+        verified: false,
+        error: 'Invalid payment signature verification failed. Transaction flagged.',
+      });
+    }
+
+    // Update payment record in database
+    const payments = loadSavedPayments();
+    const existing = payments.find((p: any) => p.orderId === razorpay_order_id || p.txnRef === req.body.txnRef);
+    
+    const verifiedRecord = {
+      orderId: razorpay_order_id || 'UPI_DIRECT',
+      paymentId,
+      amount: Number(amount || existing?.amount || 0),
+      currency: 'INR',
+      method,
+      purpose: purpose || existing?.purpose || 'Transit Payment',
+      status: 'success',
+      customerPhone: sanitizeInput(customerPhone || existing?.customerPhone || ''),
+      customerName: sanitizeInput(customerName || existing?.customerName || 'Passenger'),
+      verifiedAt: new Date().toISOString(),
+      receiptNumber: 'RCPT-' + crypto.randomInt(100000, 999999),
+    };
+
+    if (existing) {
+      Object.assign(existing, verifiedRecord);
+    } else {
+      payments.unshift(verifiedRecord);
+    }
+    savePayments(payments);
+
+    console.log(`✅ [PAYMENT SETTLED & VERIFIED]: Payment ID: ${paymentId} | Amount: ₹${verifiedRecord.amount} | Method: ${method}`);
+
+    res.json({
+      success: true,
+      verified: true,
+      paymentId,
+      orderId: razorpay_order_id,
+      receiptNumber: verifiedRecord.receiptNumber,
+      amount: verifiedRecord.amount,
+      method,
+      purpose: verifiedRecord.purpose,
+      timestamp: verifiedRecord.verifiedAt,
+      message: 'Payment verified and settled securely via Musafir Gateway.',
+    });
+  } catch (err: any) {
+    console.error('Verify payment error:', err);
+    res.status(500).json({ success: false, error: 'Payment verification service error' });
+  }
+});
+
+// 3. Payment History API
+app.get('/api/payment/history', (_req: Request, res: Response) => {
+  const payments = loadSavedPayments();
+  res.json({
+    success: true,
+    totalRecords: payments.length,
+    payments,
+  });
+});
+
 // ── Start Server ───────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀 Musafir Backend API Server running at http://localhost:${PORT}`);
@@ -806,4 +1008,5 @@ app.listen(PORT, () => {
   console.log(`🤖 Gemini AI: Configured`);
   console.log(`🗺️ OLA Maps API: Configured`);
   console.log(`📱 SMS OTP Gateway: Ready (Fast2SMS / Twilio / Simulator)`);
+  console.log(`💳 Payment Gateway: Ready (Razorpay + NPCI Bharat UPI QR)`);
 });

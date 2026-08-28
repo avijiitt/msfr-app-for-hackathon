@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Share2, Bus, Train, Footprints, Clock, Navigation, CheckCircle, ShieldCheck, Ticket, Plus, Trash2, Calendar, Calculator, Sparkles } from 'lucide-react';
 import { getNearbyLocationsAlongCorridor, findMatchingMoBusRoutes } from '../../data/cities/bhubaneswar';
 import { TranslationDictionary } from '../../types/i18n';
+import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
 
 interface JourneyDetailPanelProps {
   originName?: string;
@@ -36,6 +37,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   const [viaStops, setViaStops] = useState<string[]>([]);
   const [newStopInput, setNewStopInput] = useState('');
   const [showAddStop, setShowAddStop] = useState(false);
+  const [isTicketPaymentOpen, setIsTicketPaymentOpen] = useState(false);
 
   // Dynamic matched Mo Bus routes
   const matchedBus = React.useMemo(() => {
@@ -374,13 +376,26 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
         </button>
 
         <button
-          onClick={onBookPass}
-          className="w-full py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs transition flex items-center justify-center gap-1.5"
+          onClick={() => setIsTicketPaymentOpen(true)}
+          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white font-extrabold text-xs shadow-md shadow-blue-600/30 transition flex items-center justify-center gap-1.5"
         >
-          <Ticket className="w-3.5 h-3.5 text-blue-600" />
-          <span>{t?.buySingleTicket ? `${t.buySingleTicket} 35` : 'Book Multi-Modal QR Pass (₹35)'}</span>
+          <Ticket className="w-4 h-4" />
+          <span>{t?.buySingleTicket ? `${t.buySingleTicket} (₹${totalFareInr})` : `Book Live Transit QR Ticket (₹${totalFareInr})`}</span>
         </button>
       </div>
+
+      {/* Ticket Booking Payment Gateway Modal */}
+      <PaymentGatewayModal
+        isOpen={isTicketPaymentOpen}
+        onClose={() => setIsTicketPaymentOpen(false)}
+        amount={totalFareInr}
+        purpose={`Mo Bus Ticket: ${cleanFrom} ➔ ${cleanTo}`}
+        customerName="Traveller"
+        onPaymentSuccess={(result) => {
+          setIsTicketPaymentOpen(false);
+          alert(`🎉 Mo Bus Ticket Confirmed! Receipt: ${result.receiptNumber}. Live QR pass generated.`);
+        }}
+      />
     </div>
   );
 };

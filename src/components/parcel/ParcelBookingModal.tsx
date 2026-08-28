@@ -8,6 +8,7 @@ import { BHUBANESWAR_STATIONS, BHUBANESWAR_LOCALITIES, getHumanReadableLocationN
 import { supabaseService } from '../../services/supabaseClient';
 import { geolocationService } from '../../services/geolocationService';
 import { TranslationDictionary } from '../../types/i18n';
+import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
 
 interface ParcelBookingModalProps {
   isOpen: boolean;
@@ -38,14 +39,14 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
       if (!name && demoUser) {
         const u = JSON.parse(demoUser);
         name = u.fullName || u.full_name || '';
+        phone = u.phone || '';
       }
       return { name, phone };
     } catch { return { name: '', phone: '' }; }
   };
 
-  const userInfo = getUserInfo();
-  const [senderName, setSenderName] = useState(userInfo.name || 'Commuter');
-  const [senderPhone, setSenderPhone] = useState(userInfo.phone || '+91 90400 92069');
+  const [senderName, setSenderName] = useState(() => getUserInfo().name || 'Abhijit Sahoo');
+  const [senderPhone, setSenderPhone] = useState(() => getUserInfo().phone || '9876543210');
   const [recipientName, setRecipientName] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
   const [alternateRecipientPhone, setAlternateRecipientPhone] = useState('');
@@ -58,6 +59,7 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
   const [weightKg, setWeightKg] = useState(1.5);
   const [bookedSuccess, setBookedSuccess] = useState<ParcelBooking | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -80,6 +82,10 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
     }
 
     setValidationError(null);
+    setIsPaymentOpen(true);
+  };
+
+  const finalizeParcelBooking = (paymentReceipt?: string) => {
     const trackingCode = 'MSFR-TRK-' + Math.floor(100000 + Math.random() * 900000);
     const lockerPin = Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -115,6 +121,7 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
     supabaseService.saveParcelBooking(newParcel);
     setBookings(supabaseService.getParcelBookings());
     setBookedSuccess(newParcel);
+    setIsPaymentOpen(false);
   };
 
   return (
@@ -494,6 +501,19 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
           Close Hub
         </button>
       </div>
+
+      {/* Parcel Postage Payment Gateway */}
+      <PaymentGatewayModal
+        isOpen={isPaymentOpen}
+        onClose={() => setIsPaymentOpen(false)}
+        amount={totalFare}
+        purpose={`Bhubaneswar Intra-City Parcel: ${originLocation.split(',')[0]} ➔ ${destLocation.split(',')[0]}`}
+        customerName={senderName}
+        customerPhone={senderPhone}
+        onPaymentSuccess={(result) => {
+          finalizeParcelBooking(result.receiptNumber);
+        }}
+      />
     </div>
   );
 };
