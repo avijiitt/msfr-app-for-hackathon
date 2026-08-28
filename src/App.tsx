@@ -8,6 +8,7 @@ import { walletService } from './services/walletService';
 import { sosService } from './services/sosService';
 import { geolocationService, LiveLocationData } from './services/geolocationService';
 import { IndiaLocationResult } from './services/indiaGeocodingService';
+import { MOCK_AMENITIES } from './data/amenities';
 
 // Redesigned Musafir Layout & Core Components
 import { MusafirHeader } from './components/layout/MusafirHeader';
@@ -107,6 +108,20 @@ export const App: React.FC = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const t = translations[currentLang] || translations.en;
+
+  // Dynamic Amenities around Selected Origin
+  const dynamicAmenities = React.useMemo(() => {
+    const baseCoords = originCoords || destCoords || [20.3039, 85.8188];
+    return MOCK_AMENITIES.map((am, index) => {
+      const angle = (index / MOCK_AMENITIES.length) * Math.PI * 2;
+      const radius = 0.002 + (Math.random() * 0.005); // Approx 200m to 500m
+      return {
+        ...am,
+        lat: baseCoords[0] + Math.cos(angle) * radius,
+        lng: baseCoords[1] + Math.sin(angle) * radius,
+      };
+    });
+  }, [originCoords, destCoords]);
 
   // Track if any modal, drawer or search dropdown is currently open to hide floating map badges
   const isAnyModalOpen = Boolean(
@@ -404,11 +419,12 @@ export const App: React.FC = () => {
             onSelectLocationOnMap={handleSelectLocationOnMap}
             themeMode={themeMode}
             isOffline={isOffline}
-            destinationName={destQuery}
-            originName={originQuery}
             originCoords={originCoords}
             destCoords={destCoords}
+            originName={originQuery}
+            destinationName={destQuery}
             isAnyModalOpen={isAnyModalOpen}
+            amenities={dynamicAmenities}
           />
 
           {/* Best Routes for You Section (with 6 Smart Optimization Modes) */}
@@ -504,6 +520,7 @@ export const App: React.FC = () => {
         isOpen={isAmenitiesOpen}
         onClose={() => setIsAmenitiesOpen(false)}
         t={t}
+        amenities={dynamicAmenities}
       />
 
       <SOSModal

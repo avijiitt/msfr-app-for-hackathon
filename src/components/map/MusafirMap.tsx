@@ -5,7 +5,7 @@ import {
   Bus, Train, LocateFixed, Plus, Minus,
   AlertTriangle, Clock, Eye, WifiOff, Zap, Navigation, ShieldCheck, Layers, RotateCw, Check, X, MapPin
 } from 'lucide-react';
-import { Vehicle } from '../../types/transit';
+import { Vehicle, Amenity } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
 import { getRouteDirections, RouteDirectionsResult } from '../../services/olaRoutingService';
 import { getHumanReadableLocationName } from '../../data/cities/bhubaneswar';
@@ -199,6 +199,7 @@ interface MusafirMapProps {
   destCoords?: [number, number] | null;
   originName?: string;
   isAnyModalOpen?: boolean;
+  amenities?: Amenity[];
 }
 
 export const MusafirMap: React.FC<MusafirMapProps> = ({
@@ -212,6 +213,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   destCoords = null,
   originName = 'Departure',
   isAnyModalOpen = false,
+  amenities,
 }) => {
   const [isOptionsOpen, setIsOptionsOpen] = useState(true);
   const [showBuses, setShowBuses] = useState(true);
@@ -612,6 +614,22 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
             }}
           />
         )}
+
+        {/* Amenities Markers */}
+        {!isOffline && amenities && amenities.map((am) => (
+          <Marker
+            key={am.id}
+            position={[am.lat, am.lng]}
+            icon={createPinIcon('#8B5CF6', '📍', am.name, 'Amenity')}
+          >
+            <Popup>
+              <div className="p-1 text-xs">
+                <span className="font-extrabold text-purple-600 block">{am.name}</span>
+                <span className="text-[11px] text-slate-600 dark:text-slate-300">{am.address}</span>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
 
         {/* Active Rides Across All India Routes */}
         {!isOffline &&

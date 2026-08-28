@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { MapPin, PhoneCall, Star, Search, Navigation, X } from 'lucide-react';
-import { MOCK_AMENITIES } from '../../data/amenities';
 import { TranslationDictionary } from '../../types/i18n';
+import { Amenity } from '../../types/transit';
 
 interface NearbyAmenitiesDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   t: TranslationDictionary;
+  amenities: Amenity[];
 }
 
 export const NearbyAmenitiesDrawer: React.FC<NearbyAmenitiesDrawerProps> = ({
   isOpen,
   onClose,
   t,
+  amenities,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,7 +32,7 @@ export const NearbyAmenitiesDrawer: React.FC<NearbyAmenitiesDrawerProps> = ({
     { id: 'police', label: '👮 Police Help Kiosk', icon: '👮' },
   ];
 
-  const filteredAmenities = MOCK_AMENITIES.filter((a) => {
+  const filteredAmenities = amenities.filter((a) => {
     const matchesCategory = selectedCategory === 'all' || a.category === selectedCategory;
     const matchesSearch =
       a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
