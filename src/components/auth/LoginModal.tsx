@@ -3,7 +3,7 @@ import {
   Navigation2, Loader2, AlertCircle, CheckCircle2,
   Shield, Phone, User, Mail, ArrowLeft, Smartphone, RefreshCw, KeyRound, Sparkles, ChevronRight
 } from 'lucide-react';
-import { authService } from '../../services/supabaseClient';
+import { authService, supabase, isSupabaseConfigured } from '../../services/supabaseClient';
 import { walletService } from '../../services/walletService';
 import { sosService } from '../../services/sosService';
 import { dispatchMobileOTP } from '../../services/smsService';
@@ -254,20 +254,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
     // Sync to Backend Server & Supabase Database
     try {
-      await fetch('http://localhost:5000/api/users/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // Save to Supabase Database if configured
+      if (isSupabaseConfigured() && supabase) {
+        const currentUser = authService.getCurrentUser();
+        const userId = currentUser?.id || authObj.id;
+        await supabase.from('user_profiles').upsert({
+          id: userId,
           email: userData.email,
-          fullName: userData.name,
-          phone: userData.phone || '',
-          bloodGroup: userData.bloodGroup || 'B+',
-          homeCity: userData.homeAddress || 'Bhubaneswar, Odisha',
+          full_name: userData.name,
+          phone: userData.phone || null,
+          blood_group: userData.bloodGroup || 'B+',
+          home_city: userData.homeAddress || 'Bhubaneswar, Odisha',
           category: userData.category || 'general',
-          studentCollege: userData.studentCollege,
-          savedLocations: userData.savedLocations,
-        }),
-      });
+          student_college: userData.studentCollege || null,
+          wallet_balance: walletService.getBalance() || 100,
+          musafir_coins: 0,
+        });
+      }
 
       // Send login email notification (optional)
       if (userData.email.includes('@gmail.com') || userData.email.includes('@')) {

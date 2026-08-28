@@ -70,7 +70,7 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
     { id: 'parcel' as MusafirSidebarTab, label: t?.parcelDelivery || 'Parcel', icon: Package, color: 'text-amber-600' },
     { id: 'wallet' as MusafirSidebarTab, label: t?.navWallet || 'Wallet', icon: Wallet, color: 'text-blue-600', badge: `₹${walletBalance.toFixed(0)}` },
     { id: 'trips' as MusafirSidebarTab, label: t?.navActivity || 'Trips', icon: Clock, color: 'text-slate-600 dark:text-slate-300' },
-    { id: 'fare_calc' as MusafirSidebarTab, label: t?.fareBreakdown || 'Fare Calc', icon: Calculator, color: 'text-purple-600' },
+    { id: 'fare_calc' as MusafirSidebarTab, label: t?.fareBreakdown || 'Fare Calculator', icon: Calculator, color: 'text-purple-600' },
     { id: 'rewards' as MusafirSidebarTab, label: t?.quickPasses || 'Rewards', icon: Award, color: 'text-emerald-600', badge: '480 pts' },
     { id: 'refunds' as MusafirSidebarTab, label: 'Assurance', icon: RotateCcw, color: 'text-rose-600' },
     { id: 'alerts' as MusafirSidebarTab, label: t?.liveAnnouncements || 'Alerts', icon: Bell, color: 'text-rose-600', badge: '3' },

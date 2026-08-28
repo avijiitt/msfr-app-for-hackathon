@@ -69,7 +69,7 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
     { id: 'trips' as MusafirSidebarTab, label: t?.navActivity || 'Trips', icon: Clock },
     { id: 'saved' as MusafirSidebarTab, label: t?.storesAndMarkets || 'Saved', icon: Bookmark },
     { id: 'alerts' as MusafirSidebarTab, label: t?.liveAnnouncements || 'Alerts', icon: Bell, badge: '3' },
-    { id: 'fare_calc' as MusafirSidebarTab, label: t?.fareBreakdown || 'Fare Calc', icon: Calculator },
+    { id: 'fare_calc' as MusafirSidebarTab, label: t?.fareBreakdown || 'Fare Calculator', icon: Calculator },
     { id: 'rewards' as MusafirSidebarTab, label: t?.quickPasses || 'Rewards', icon: Award, badge: '480 pts' },
     { id: 'refunds' as MusafirSidebarTab, label: 'Assurance', icon: RotateCcw },
     { id: 'settings' as MusafirSidebarTab, label: t?.navProfile || 'Settings', icon: Settings },
