@@ -16,9 +16,28 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable CORS and JSON body parser
+// Enable CORS and JSON body parser with security headers
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
+
+// Enterprise Security Headers
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// Sanitization helper
+export function sanitizeInput(val: any): string {
+  if (typeof val !== 'string') return '';
+  return val.replace(/[<>]/g, '').trim();
+}
+
+// Security rate limiter stores
+const otpRequestRateLimits = new Map<string, { count: number; firstRequestTime: number }>();
+const otpFailedAttempts = new Map<string, { attempts: number; lockedUntil: number }>();
 
 // Persistent database files
 const DATA_DIR = path.join(__dirname, 'data');
@@ -534,6 +553,35 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Valid 10-digit Indian phone number required' });
     }
 
+    // Security Check: Lockout check
+    const failedLock = otpFailedAttempts.get(cleanPhone);
+    if (failedLock && failedLock.lockedUntil > Date.now()) {
+      const waitMin = Math.ceil((failedLock.lockedUntil - Date.now()) / 60000);
+      return res.status(429).json({
+        success: false,
+        error: `Security Lockout: Too many failed verification attempts. Please try again after ${waitMin} minutes.`,
+      });
+    }
+
+    // Security Check: Rate Limiting (Max 3 OTP requests in 5 minutes)
+    const rateLimit = otpRequestRateLimits.get(cleanPhone);
+    const now = Date.now();
+    if (rateLimit) {
+      if (now - rateLimit.firstRequestTime < 5 * 60 * 1000) {
+        if (rateLimit.count >= 4) {
+          return res.status(429).json({
+            success: false,
+            error: 'Security Notice: Too many OTP requests. Please wait 5 minutes before requesting again.',
+          });
+        }
+        rateLimit.count += 1;
+      } else {
+        otpRequestRateLimits.set(cleanPhone, { count: 1, firstRequestTime: now });
+      }
+    } else {
+      otpRequestRateLimits.set(cleanPhone, { count: 1, firstRequestTime: now });
+    }
+
     // Generate unique cryptographically random 6-digit OTP for this specific number
     const otp = crypto.randomInt(100000, 999999).toString();
     const otpId = 'otp-' + crypto.randomUUID().slice(0, 8);
@@ -644,7 +692,7 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
     res.json({
       success: true,
       phone: `+91 ${cleanPhone}`,
-      otp, // provided for on-screen SMS toast banner
+      otp,
       realSmsSent,
       smsProvider,
       message: realSmsSent
@@ -664,6 +712,18 @@ app.post('/api/auth/verify-sms-otp', (req: Request, res: Response) => {
   }
 
   const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+
+  // Security Check: Lockout check
+  const failedLock = otpFailedAttempts.get(cleanPhone);
+  if (failedLock && failedLock.lockedUntil > Date.now()) {
+    const waitMin = Math.ceil((failedLock.lockedUntil - Date.now()) / 60000);
+    return res.status(429).json({
+      success: false,
+      verified: false,
+      error: `Too many invalid attempts. This number is locked for ${waitMin} more minutes.`,
+    });
+  }
+
   const record = activeOtpStore.get(cleanPhone);
 
   if (!record) {
@@ -676,6 +736,9 @@ app.post('/api/auth/verify-sms-otp', (req: Request, res: Response) => {
   }
 
   if (record.otp === otp.trim()) {
+    // Clear failed attempts on success
+    otpFailedAttempts.delete(cleanPhone);
+
     // Update record in database to verified
     const logs = loadOtpLogs();
     const logItem = logs.find((l: any) => l.phone.includes(cleanPhone) && l.otp === otp.trim());
@@ -690,7 +753,24 @@ app.post('/api/auth/verify-sms-otp', (req: Request, res: Response) => {
     return res.json({ success: true, verified: true, message: 'OTP verified successfully against database record' });
   }
 
-  res.status(400).json({ success: false, verified: false, error: 'Invalid OTP code! Please enter the exact 6-digit code sent for your mobile number.' });
+  // Increment failed attempts
+  const currentAttempts = (failedLock?.attempts || 0) + 1;
+  if (currentAttempts >= 5) {
+    otpFailedAttempts.set(cleanPhone, { attempts: currentAttempts, lockedUntil: Date.now() + 10 * 60 * 1000 });
+    return res.status(429).json({
+      success: false,
+      verified: false,
+      error: 'Security Lockout: 5 consecutive invalid OTP attempts. Number locked for 10 minutes.',
+    });
+  } else {
+    otpFailedAttempts.set(cleanPhone, { attempts: currentAttempts, lockedUntil: 0 });
+  }
+
+  res.status(400).json({
+    success: false,
+    verified: false,
+    error: `Invalid OTP code (${5 - currentAttempts} attempts remaining). Please check the 6-digit code.`,
+  });
 });
 
 app.post('/api/auth/login-notification', async (req: Request, res: Response) => {

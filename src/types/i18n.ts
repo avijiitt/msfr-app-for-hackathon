@@ -34,28 +34,44 @@ export interface TranslationDictionary {
   // Route Filters
   filterFastest: string;
   filterCheapest: string;
-  filterSenior: string;
-  filterNightSafe: string;
-  filterEco: string;
-  filterWeatherAware: string;
+  filterSenior?: string;
+  filterNightSafe?: string;
+  filterEco?: string;
+  filterWeatherAware?: string;
+  filterFewestTransfers?: string;
+  filterSafest?: string;
+  filterEcoFriendly?: string;
+  filterAccessible?: string;
   
   // Route & Journey
-  origin: string;
-  destination: string;
-  addStop: string;
-  planJourney: string;
-  fare: string;
-  duration: string;
-  transfers: string;
-  co2Saved: string;
-  bookTicket: string;
-  startTripSync: string;
-  scheduleTrip: string;
-  transferSafety: string;
-  safeTransfer: string;
-  tightTransfer: string;
-  criticalTransfer: string;
-  missedTransfer: string;
+  origin?: string;
+  destination?: string;
+  addStop?: string;
+  planJourney?: string;
+  fare?: string;
+  duration?: string;
+  transfers?: string;
+  co2Saved?: string;
+  bookTicket?: string;
+  startTripSync?: string;
+  scheduleTrip?: string;
+  transferSafety?: string;
+  safeTransfer?: string;
+  tightTransfer?: string;
+  criticalTransfer?: string;
+  missedTransfer?: string;
+  suggestedRoutes?: string;
+  viewStopsTimeline?: string;
+  buySingleTicket?: string;
+  fareBreakdown?: string;
+  bookFeederLastMile?: string;
+  speedKmh?: string;
+  nextStop?: string;
+  eta?: string;
+  occupancyLow?: string;
+  occupancyModerate?: string;
+  occupancyCrowded?: string;
+  occupancyFull?: string;
   
   // Safety & SOS
   sosTitle: string;

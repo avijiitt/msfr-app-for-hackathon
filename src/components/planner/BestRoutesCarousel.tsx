@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Bus, Train, ChevronRight, RotateCw, RefreshCw, Shield, Bell, Zap, Wallet, Star, Leaf, Accessibility, Moon, CloudRain, Coins, MapPin, Sparkles } from 'lucide-react';
 import { RouteMode } from '../../types/transit';
 import { getNearbyLocationsAlongCorridor, findMatchingMoBusRoutes } from '../../data/cities/bhubaneswar';
+import { TranslationDictionary } from '../../types/i18n';
 
 export interface RouteCardOption {
   id: string;
@@ -35,6 +36,7 @@ interface BestRoutesCarouselProps {
   onOpenSafeJourney?: () => void;
   onOpenSaveMore?: () => void;
   onSelectDestination?: (dest: string) => void;
+  t?: TranslationDictionary;
 }
 
 export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
@@ -51,6 +53,7 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
   onOpenSafeJourney,
   onOpenSaveMore,
   onSelectDestination,
+  t,
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -76,12 +79,12 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
   };
 
   const filterTabs: { id: RouteMode; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { id: 'fastest', label: '⚡ Fastest AC', icon: Zap },
-    { id: 'cheapest', label: '💰 Lowest Fare', icon: Coins },
-    { id: 'eco', label: '🌿 Eco E-Ride', icon: Leaf },
-    { id: 'senior', label: '🧓 Senior Friendly', icon: Accessibility },
-    { id: 'weather', label: '🌧️ Weather-Aware', icon: CloudRain },
-    { id: 'night', label: '🌙 Night Travel', icon: Moon },
+    { id: 'fastest', label: t?.filterFastest ? `⚡ ${t.filterFastest}` : '⚡ Fastest AC', icon: Zap },
+    { id: 'cheapest', label: t?.filterCheapest ? `💰 ${t.filterCheapest}` : '💰 Lowest Fare', icon: Coins },
+    { id: 'eco', label: t?.filterEcoFriendly ? `🌿 ${t.filterEcoFriendly}` : '🌿 Eco E-Ride', icon: Leaf },
+    { id: 'senior', label: t?.filterAccessible ? `🧓 ${t.filterAccessible}` : '🧓 Senior Friendly', icon: Accessibility },
+    { id: 'weather', label: '🌧️ Monsoon Shield', icon: CloudRain },
+    { id: 'night', label: t?.filterSafest ? `🌙 ${t.filterSafest}` : '🌙 Night Travel', icon: Moon },
   ];
 
   // Match real Mo Bus routes from 82+ CRUT network lines

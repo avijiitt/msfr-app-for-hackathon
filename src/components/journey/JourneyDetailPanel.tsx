@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Share2, Bus, Train, Footprints, Clock, Navigation, CheckCircle, ShieldCheck, Ticket, Plus, Trash2, Calendar, Calculator, Sparkles } from 'lucide-react';
 import { getNearbyLocationsAlongCorridor, findMatchingMoBusRoutes } from '../../data/cities/bhubaneswar';
+import { TranslationDictionary } from '../../types/i18n';
 
 interface JourneyDetailPanelProps {
   originName?: string;
@@ -14,6 +15,7 @@ interface JourneyDetailPanelProps {
   onOpenTripAssurance: () => void;
   onOpenScheduleRide: () => void;
   onOpenFareDetails: () => void;
+  t?: TranslationDictionary;
 }
 
 export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
@@ -28,6 +30,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   onOpenTripAssurance,
   onOpenScheduleRide,
   onOpenFareDetails,
+  t,
 }) => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [viaStops, setViaStops] = useState<string[]>([]);
@@ -350,7 +353,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
             className="flex-1 flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold transition"
           >
             <Calculator className="w-3.5 h-3.5 text-blue-600" />
-            <span>Fare Breakdown</span>
+            <span>{t?.fareBreakdown || 'Fare Breakdown'}</span>
           </button>
 
           <button
@@ -375,7 +378,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
           className="w-full py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs transition flex items-center justify-center gap-1.5"
         >
           <Ticket className="w-3.5 h-3.5 text-blue-600" />
-          <span>Book Multi-Modal QR Pass (₹35)</span>
+          <span>{t?.buySingleTicket ? `${t.buySingleTicket} 35` : 'Book Multi-Modal QR Pass (₹35)'}</span>
         </button>
       </div>
     </div>

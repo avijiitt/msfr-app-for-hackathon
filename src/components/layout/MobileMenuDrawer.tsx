@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { MusafirSidebarTab } from './MusafirSidebar';
 import { ThemeMode } from '../../types/transit';
+import { TranslationDictionary } from '../../types/i18n';
 
 interface MobileMenuDrawerProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ interface MobileMenuDrawerProps {
   onLogout?: () => void;
   themeMode: ThemeMode;
   onToggleTheme: () => void;
+  t?: TranslationDictionary;
 }
 
 export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
@@ -39,6 +41,7 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
   onLogout,
   themeMode,
   onToggleTheme,
+  t,
 }) => {
   if (!isOpen) return null;
 
@@ -61,17 +64,17 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
   };
 
   const navItems = [
-    { id: 'plan' as MusafirSidebarTab, label: 'Plan Journey', icon: Navigation2, color: 'text-blue-600' },
-    { id: 'tracking' as MusafirSidebarTab, label: 'Live Vehicle Tracking', icon: MapPin, color: 'text-emerald-600' },
-    { id: 'schedule' as MusafirSidebarTab, label: 'Schedule Ride', icon: Calendar, color: 'text-indigo-600', badge: 'New' },
-    { id: 'parcel' as MusafirSidebarTab, label: 'Transit Parcel Hub', icon: Package, color: 'text-amber-600' },
-    { id: 'wallet' as MusafirSidebarTab, label: 'Mo-Wallet & Passes', icon: Wallet, color: 'text-blue-600', badge: `₹${walletBalance.toFixed(0)}` },
-    { id: 'trips' as MusafirSidebarTab, label: 'My Trips Record', icon: Clock, color: 'text-slate-600 dark:text-slate-300' },
-    { id: 'fare_calc' as MusafirSidebarTab, label: 'Fare Calculator', icon: Calculator, color: 'text-purple-600' },
-    { id: 'rewards' as MusafirSidebarTab, label: 'Rewards & Miles', icon: Award, color: 'text-emerald-600', badge: '480 pts' },
+    { id: 'plan' as MusafirSidebarTab, label: t?.navRoutes || 'Plan Journey', icon: Navigation2, color: 'text-blue-600' },
+    { id: 'tracking' as MusafirSidebarTab, label: t?.navMap || 'Live Vehicle Tracking', icon: MapPin, color: 'text-emerald-600' },
+    { id: 'schedule' as MusafirSidebarTab, label: t?.navSchedule || 'Schedule Ride', icon: Calendar, color: 'text-indigo-600', badge: 'New' },
+    { id: 'parcel' as MusafirSidebarTab, label: t?.parcelDelivery || 'Transit Parcel Hub', icon: Package, color: 'text-amber-600' },
+    { id: 'wallet' as MusafirSidebarTab, label: t?.navWallet || 'Mo-Wallet & Passes', icon: Wallet, color: 'text-blue-600', badge: `₹${walletBalance.toFixed(0)}` },
+    { id: 'trips' as MusafirSidebarTab, label: t?.navActivity || 'My Trips Record', icon: Clock, color: 'text-slate-600 dark:text-slate-300' },
+    { id: 'fare_calc' as MusafirSidebarTab, label: t?.fareBreakdown || 'Fare Calculator', icon: Calculator, color: 'text-purple-600' },
+    { id: 'rewards' as MusafirSidebarTab, label: t?.quickPasses || 'Rewards & Miles', icon: Award, color: 'text-emerald-600', badge: '480 pts' },
     { id: 'refunds' as MusafirSidebarTab, label: 'Refunds & Assurance', icon: RotateCcw, color: 'text-rose-600' },
-    { id: 'alerts' as MusafirSidebarTab, label: 'Live Alerts & Disruptions', icon: Bell, color: 'text-rose-600', badge: '3' },
-    { id: 'settings' as MusafirSidebarTab, label: 'Profile & Settings', icon: Settings, color: 'text-slate-600 dark:text-slate-300' },
+    { id: 'alerts' as MusafirSidebarTab, label: t?.liveAnnouncements || 'Live Alerts', icon: Bell, color: 'text-rose-600', badge: '3' },
+    { id: 'settings' as MusafirSidebarTab, label: t?.navProfile || 'Profile & Settings', icon: Settings, color: 'text-slate-600 dark:text-slate-300' },
   ];
 
   return (

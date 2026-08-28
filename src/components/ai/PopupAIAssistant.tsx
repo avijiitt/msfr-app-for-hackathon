@@ -5,20 +5,27 @@ import {
   GraduationCap, Calendar, Headphones, Navigation, MapPin
 } from 'lucide-react';
 import { aiAssistantService, AIMessage, AIActionType } from '../../services/aiAssistantService';
+import { TranslationDictionary } from '../../types/i18n';
 
 interface PopupAIAssistantProps {
   onExecuteAction: (actionType: AIActionType, payload?: string) => void;
+  t?: TranslationDictionary;
+  currentLang?: string;
 }
 
 export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
   onExecuteAction,
+  t,
+  currentLang = 'en',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<AIMessage[]>([
     {
       id: 'init-msg',
       sender: 'assistant',
-      text: 'Namaste! 🙏 I\'m **Musafir AI** — your smart voice-enabled Indian transit operator.\n\nTalk to me or ask anything:\n• "Book a parcel at Jayadev Vihar"\n• "Open my wallet / recharge ₹500"\n• "Find fastest bus to KIIT Square"\n• "Check student 50% discount"\n• "Emergency SOS / Women Safety"',
+      text: t?.aiTagline
+        ? `Namaste! 🙏 ${t.aiAssistantName || 'Musafir AI'} — ${t.aiTagline}\n\n• "${t.aiSuggestedPrompt1}"\n• "${t.aiSuggestedPrompt2}"\n• "${t.aiSuggestedPrompt3}"`
+        : 'Namaste! 🙏 I\'m **Musafir AI** — your smart voice-enabled Indian transit operator.\n\nTalk to me or ask anything:\n• "Book a parcel at Jayadev Vihar"\n• "Open my wallet / recharge ₹500"\n• "Find fastest bus to KIIT Square"\n• "Check student 50% discount"\n• "Emergency SOS / Women Safety"',
       timestamp: 'Just now',
     },
   ]);

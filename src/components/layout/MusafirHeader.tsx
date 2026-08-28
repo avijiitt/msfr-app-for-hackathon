@@ -4,6 +4,7 @@ import { indiaGeocodingService, geocodeAddressIndia, IndiaLocationResult, POPULA
 import { getNearbyLocationsAlongCorridor, BHUBANESWAR_LOCALITIES, BhubaneswarLocality } from '../../data/cities/bhubaneswar';
 import { sosService } from '../../services/sosService';
 import { ThemeMode, SavedLocation } from '../../types/transit';
+import { TranslationDictionary } from '../../types/i18n';
 
 interface MusafirHeaderProps {
   originQuery: string;
@@ -32,6 +33,7 @@ interface MusafirHeaderProps {
   onOpenBusRoutes?: () => void;
   currentLang?: string;
   onOpenLanguageModal?: () => void;
+  t?: TranslationDictionary;
 }
 
 export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
@@ -60,6 +62,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   onOpenBusRoutes,
   currentLang = 'en',
   onOpenLanguageModal,
+  t,
 }) => {
   const [originSuggestions, setOriginSuggestions] = useState<IndiaLocationResult[]>([]);
   const [destSuggestions, setDestSuggestions] = useState<IndiaLocationResult[]>([]);

@@ -375,6 +375,7 @@ export const App: React.FC = () => {
         onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
         currentLang={currentLang}
         onOpenLanguageModal={() => setIsLangSelectOpen(true)}
+        t={t}
       />
 
       {/* 2. Main 3-Column Dashboard Body (Mobile Optimized with pb-24 for bottom bar) */}
@@ -390,6 +391,7 @@ export const App: React.FC = () => {
             onOpenStudent={() => setIsStudentOpen(true)}
             onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
             onSelectSavedPlace={(place) => setDestQuery(place)}
+            t={t}
           />
         </div>
 
@@ -427,6 +429,7 @@ export const App: React.FC = () => {
               setDestQuery(dest);
               handleSearch(originQuery || 'Current Location', dest);
             }}
+            t={t}
           />
         </main>
 
@@ -443,12 +446,15 @@ export const App: React.FC = () => {
           onOpenTripAssurance={() => setIsTripAssuranceOpen(true)}
           onOpenScheduleRide={() => setIsScheduleOpen(true)}
           onOpenFareDetails={() => setIsFareCalcOpen(true)}
+          t={t}
         />
       </div>
 
       {/* 3. Floating Popup AI Assistant (Bottom Right) */}
       <PopupAIAssistant
         onExecuteAction={handleExecuteAIAction}
+        t={t}
+        currentLang={currentLang}
       />
 
       {/* 4. Modals */}
@@ -616,6 +622,11 @@ export const App: React.FC = () => {
         currentLang={currentLang}
         onSelectLanguage={(code) => {
           setCurrentLang(code);
+          localStorage.setItem('musafir_lang', code);
+          localStorage.setItem('musafir_lang_selected', 'true');
+          try {
+            document.documentElement.lang = code;
+          } catch {}
           setIsLangSelectOpen(false);
         }}
         onClose={() => setIsLangSelectOpen(false)}
@@ -651,6 +662,7 @@ export const App: React.FC = () => {
         onOpenWallet={() => setIsWalletOpen(true)}
         onOpenAI={() => handleExecuteAIAction('open_planner')}
         onOpenMenuDrawer={() => setIsMobileMenuOpen(true)}
+        t={t}
       />
 
       {/* 6. Mobile Slide-Over Navigation Drawer */}
@@ -669,6 +681,7 @@ export const App: React.FC = () => {
         onLogout={handleLogout}
         themeMode={themeMode}
         onToggleTheme={handleToggleTheme}
+        t={t}
       />
     </div>
   );
