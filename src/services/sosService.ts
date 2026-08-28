@@ -170,30 +170,74 @@ class SOSService {
   public triggerEmergencySOS(currentCoords: [number, number], nearestStationName: string): {
     dispatchId: string;
     alertMessage: string;
+    googleMapsLink: string;
     helplinesNotified: string[];
     familyContactsNotified: EmergencyContact[];
     medicalCardSummary: string;
   } {
     this.isSosActive = true;
-    audioService.startSiren();
 
     const dispatchId = 'SOS-MSFR-' + Math.floor(100000 + Math.random() * 900000);
+    const googleMapsLink = `https://maps.google.com/?q=${currentCoords[0].toFixed(5)},${currentCoords[1].toFixed(5)}`;
     const trackingLink = `https://msfr.app/live/sos/${dispatchId}`;
 
-    const alertMessage = `🚨 [MSFR EMERGENCY SOS ALERT] 🚨\nUser: ${this.profile.name} (${this.profile.phone})\nLocation: Lat ${currentCoords[0].toFixed(5)}, Lng ${currentCoords[1].toFixed(5)} near ${nearestStationName}.\nBlood Group: ${this.profile.bloodGroup}\nMedical Alert: ${this.profile.medicalNotes}\nLive GPS Tracking: ${trackingLink}\nImmediate response requested via MSFR Transit Safety Network.`;
+    const alertMessage = `🚨 [MSFR EMERGENCY SOS ALERT] 🚨\nUser: ${this.profile.name} (${this.profile.phone || 'Commuter'})\nLocation: Near ${nearestStationName} (GPS: ${currentCoords[0].toFixed(5)}, ${currentCoords[1].toFixed(5)})\nGoogle Maps: ${googleMapsLink}\nLive GPS Tracking: ${trackingLink}\nBlood Group: ${this.profile.bloodGroup || 'O+'}\nImmediate assistance requested via Musafir Transit Safety Network.`;
+
+    // Attempt direct SMS alert dispatch to family/emergency contacts
+    if (this.profile.emergencyContacts && this.profile.emergencyContacts.length > 0) {
+      this.profile.emergencyContacts.forEach(async (contact) => {
+        if (contact.phone) {
+          try {
+            const cleanPhone = contact.phone.replace(/\D/g, '').slice(-10);
+            const authHeader = (import.meta as any).env?.VITE_TWILIO_ACCOUNT_SID
+              ? btoa(
+                  `${(import.meta as any).env.VITE_TWILIO_ACCOUNT_SID}:${
+                    (import.meta as any).env.VITE_TWILIO_AUTH_TOKEN
+                  }`
+                )
+              : null;
+            if (authHeader) {
+              const bodyParams = new URLSearchParams();
+              bodyParams.append('To', `+91${cleanPhone}`);
+              bodyParams.append(
+                'From',
+                (import.meta as any).env?.VITE_TWILIO_PHONE_NUMBER || '+15053914056'
+              );
+              bodyParams.append(
+                'Body',
+                `EMERGENCY ALERT from ${this.profile.name}: I need urgent help! My location: ${googleMapsLink} near ${nearestStationName}.`
+              );
+              fetch(
+                `https://api.twilio.com/2010-04-01/Accounts/${
+                  (import.meta as any).env.VITE_TWILIO_ACCOUNT_SID
+                }/Messages.json`,
+                {
+                  method: 'POST',
+                  headers: {
+                    Authorization: `Basic ${authHeader}`,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                  },
+                  body: bodyParams.toString(),
+                }
+              ).catch((e) => console.log('Twilio SOS direct notice:', e));
+            }
+          } catch {}
+        }
+      });
+    }
 
     return {
       dispatchId,
       alertMessage,
+      googleMapsLink,
       helplinesNotified: ['112 (National Emergency)', '1091 (Women Safety Helpline)', '108 (Ambulance / Medical Response)'],
       familyContactsNotified: this.profile.emergencyContacts,
-      medicalCardSummary: `Blood Group: ${this.profile.bloodGroup} | Allergies: ${this.profile.allergies}`,
+      medicalCardSummary: `Blood Group: ${this.profile.bloodGroup || 'O+'} | Allergies: ${this.profile.allergies || 'None'}`,
     };
   }
 
   public cancelEmergencySOS() {
     this.isSosActive = false;
-    audioService.stopSiren();
   }
 
   public isEmergencyActive(): boolean {

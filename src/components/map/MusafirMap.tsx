@@ -347,23 +347,23 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
       {!isAnyModalOpen && routeInfo && (
         <div
           className={`absolute ${
-            isOffline ? 'top-10' : 'top-3'
-          } left-3 sm:left-4 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 text-xs flex items-center gap-3 transition-all`}
+            isOffline ? 'top-10' : 'top-2.5 sm:top-3'
+          } left-2.5 sm:left-4 z-[400] max-w-[calc(100%-85px)] sm:max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl shadow-lg border border-slate-200/90 dark:border-slate-800 text-xs flex items-center gap-2 sm:gap-2.5 transition-all`}
         >
-          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
-            <Bus className="w-4 h-4" />
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-600 text-white flex-shrink-0 flex items-center justify-center shadow-sm">
+            <Bus className="w-3.5 h-3.5" />
           </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <strong className="text-slate-900 dark:text-white font-black text-xs sm:text-sm">
-                Connected Transit Route
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1">
+              <strong className="text-slate-900 dark:text-white font-extrabold text-[11px] sm:text-xs truncate">
+                Mo Bus Route
               </strong>
-              <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] px-1.5 py-0.2 rounded-md font-bold">
-                Live Road Sync
+              <span className="hidden xs:inline-block bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 text-[9px] px-1 py-0.2 rounded font-bold">
+                Live
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              {routeInfo.distanceKm} km • ~{routeInfo.durationMinutes} min travel time
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              {routeInfo.distanceKm} km • ~{routeInfo.durationMinutes}m travel
             </p>
           </div>
         </div>
@@ -373,26 +373,26 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
       {!isAnyModalOpen && (
         <div
           className={`absolute ${
-            isOffline ? 'top-10' : 'top-3'
-          } right-3 sm:right-4 z-[400] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-2.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 text-xs transition-all`}
+            isOffline ? 'top-10' : 'top-2.5 sm:top-3'
+          } right-2.5 sm:right-4 z-[400] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-1.5 sm:p-2 rounded-xl sm:rounded-2xl shadow-lg border border-slate-200/90 dark:border-slate-700 text-xs transition-all`}
         >
           {isOptionsOpen ? (
-            <div className="space-y-2 min-w-[150px]">
+            <div className="space-y-2 min-w-[140px] p-1">
               <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-700">
-                <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px] uppercase tracking-wider">
-                  Transit Layers
+                <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px] uppercase tracking-wider">
+                  Layers
                 </span>
                 <button
                   onClick={() => setIsOptionsOpen(false)}
                   className="text-[10px] text-slate-400 hover:text-blue-600 font-bold"
                 >
-                  Hide ▲
+                  ✕
                 </button>
               </div>
               {[
                 { state: showBuses, setter: setShowBuses, icon: <Bus className="w-3.5 h-3.5 text-emerald-500" />, label: 'Mo Bus Fleet' },
-                { state: showAutos, setter: setShowAutos, icon: <Zap className="w-3.5 h-3.5 text-amber-500" />, label: 'Mo E-Ride & Autos' },
-                { state: showTraffic, setter: setShowTraffic, icon: <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />, label: 'Traffic & Alerts' },
+                { state: showAutos, setter: setShowAutos, icon: <Zap className="w-3.5 h-3.5 text-amber-500" />, label: 'Mo Autos' },
+                { state: showTraffic, setter: setShowTraffic, icon: <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />, label: 'Traffic' },
               ].map(({ state, setter, icon, label }) => (
                 <label
                   key={label}
@@ -405,17 +405,17 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
                     className="w-3.5 h-3.5 rounded text-blue-600 focus:ring-0 cursor-pointer"
                   />
                   {icon}
-                  <span className="font-semibold text-[11px]">{label}</span>
+                  <span className="font-semibold text-[10px]">{label}</span>
                 </label>
               ))}
             </div>
           ) : (
             <button
               onClick={() => setIsOptionsOpen(true)}
-              className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200 text-xs hover:text-blue-600"
+              className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200 text-[11px] hover:text-blue-600 px-1 py-0.5"
             >
-              <Layers className="w-3.5 h-3.5 text-blue-600" />
-              <span>Layers</span>
+              <Layers className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+              <span className="hidden xs:inline">Layers</span>
             </button>
           )}
         </div>
