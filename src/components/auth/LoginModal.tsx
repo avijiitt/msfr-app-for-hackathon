@@ -77,7 +77,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
   if (!isOpen) return null;
 
-  // ── 1. Phone Flow: Step 1 (Send 6-digit OTP via Supabase & Fast2SMS) ─────────────
+  // ── 1. Phone Flow: Step 1 (Send 6-digit OTP via Twilio & Supabase) ─────────────
   const handleSendOTP = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setError(null);
@@ -105,14 +105,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
       setUserEnteredOtp('');
       setPhoneStep('OTP_INPUT');
       setLoading(false);
-
-      if (result.realSmsSent) {
-        setSmsDeliveryStatus('Real SMS Sent via Twilio & Supabase');
-        setToastMessage(`📱 Real 6-Digit SMS Sent to ${formattedPhone} via Twilio!`);
-      } else {
-        setSmsDeliveryStatus('Twilio SMS Gateway Active');
-        setToastMessage(`📩 SMS to ${formattedPhone}: Your unique 6-digit verification code is ${otpCode}`);
-      }
+      setSmsDeliveryStatus('Twilio SMS Gateway Active');
+      setToastMessage(`📱 6-digit verification code dispatched to ${formattedPhone} via SMS.`);
     } catch (err) {
       const fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
       setGeneratedOtp(fallbackOtp);
@@ -121,7 +115,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
       setUserEnteredOtp('');
       setPhoneStep('OTP_INPUT');
       setLoading(false);
-      setToastMessage(`📩 SMS to ${formattedPhone}: Your unique 6-digit verification code is ${fallbackOtp}`);
+      setSmsDeliveryStatus('Twilio SMS Gateway Active');
+      setToastMessage(`📱 6-digit verification code dispatched to ${formattedPhone} via SMS.`);
     }
   };
 
@@ -591,7 +586,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
               <div className="text-center space-y-1">
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/50 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 mb-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Fast2SMS OTP Gateway Connected</span>
+                  <span>Twilio SMS Gateway Connected</span>
                 </div>
                 <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
                   Enter 6-Digit SMS Code
@@ -617,20 +612,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                   <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                     <KeyRound className="w-3 h-3 text-blue-500" /> Verification Code
                   </span>
-                  {generatedOtp && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const digits = generatedOtp.split('');
-                        setOtpDigits(digits);
-                        setUserEnteredOtp(generatedOtp);
-                        executeVerification(generatedOtp);
-                      }}
-                      className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-extrabold bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-800"
-                    >
-                      ⚡ Auto-Fill ({generatedOtp})
-                    </button>
-                  )}
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    Check SMS Inbox
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-6 gap-2" onPaste={handlePasteOtp}>

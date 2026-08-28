@@ -959,6 +959,6 @@ app.listen(PORT, () => {
   console.log(`📡 Supabase Database: ${SUPABASE_URL}`);
   console.log(`🤖 Gemini AI: Configured`);
   console.log(`🗺️ OLA Maps API: Configured`);
-  console.log(`📱 SMS OTP Gateway: Ready (Fast2SMS / Twilio / Simulator)`);
+  console.log(`📱 SMS OTP Gateway: Ready (Twilio SMS Gateway & Supabase)`);
   console.log(`💳 Payment Gateway: Ready (Razorpay + NPCI Bharat UPI QR)`);
 });
