@@ -1,4 +1,4 @@
-﻿import { LanguageOption, LanguageCode, TranslationDictionary } from '../types/i18n';
+import { LanguageOption, LanguageCode, TranslationDictionary } from '../types/i18n';
 
 export const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { code: 'en', name: 'English', nativeName: 'English', flag: '🌐' },
@@ -7,11 +7,15 @@ export const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', flag: '🐯' },
   { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', flag: '🛕' },
   { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', flag: '☀️' },
+  { code: 'mr', name: 'Marathi', nativeName: 'मराठी', flag: '🚩' },
+  { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી', flag: '🦁' },
+  { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ', flag: '🐘' },
+  { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം', flag: '🌴' },
+  { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', flag: '🌾' },
 ];
 
-export const translations: Record<LanguageCode, TranslationDictionary> = {
-  en: {
-    appTitle: 'MSFR',
+const enDict: TranslationDictionary = {
+  appTitle: 'MSFR',
     tagline: 'Modern Multi-Modal Transit & Commuter Safety Platform',
     navMap: 'Live Map',
     navRoutes: 'Routes & Sync',
@@ -112,10 +116,10 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     aiSuggestedPrompt1: 'How do I reach Railway Station safely after 10 PM?',
     aiSuggestedPrompt2: 'How do I verify student ID via DigiLocker for 50% off?',
     aiSuggestedPrompt3: 'Find nearby 24x7 pharmacy and grocery stores near Master Canteen',
-  },
-  
-  or: {
-    appTitle: 'MSFR',
+};
+
+const orDict: TranslationDictionary = {
+  appTitle: 'MSFR',
     tagline: 'ସ୍ମାର୍ଟ ଯାତ୍ରା ଓ ଯାତ୍ରୀ ସୁରକ୍ଷା ପ୍ଲାଟଫର୍ମ',
     navMap: 'ଲାଇଭ୍ ମ୍ୟାପ୍',
     navRoutes: 'ମାର୍ଗ ଓ ସିଙ୍କ୍',
@@ -216,10 +220,10 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     aiSuggestedPrompt1: 'ରାତି ୧୦ଟା ପରେ ଷ୍ଟେସନ ଯିବା ପାଇଁ ସୁରକ୍ଷିତ ରାସ୍ତା କେଉଁଟି?',
     aiSuggestedPrompt2: 'ଡିଜିଲକର ଦ୍ୱାରା ୫୦% ଛାତ୍ର ପାସ୍ କିପରି ପାଇବି?',
     aiSuggestedPrompt3: 'ମାଷ୍ଟର କ୍ୟାଣ୍ଟିନ ନିକଟରେ ୨୪x୭ ଔଷଧ ଦୋକାନ ଦେଖାନ୍ତୁ',
-  },
-  
-  hi: {
-    appTitle: 'MSFR',
+};
+
+const hiDict: TranslationDictionary = {
+  appTitle: 'MSFR',
     tagline: 'स्मार्ट मल्टी-मॉडल परिवहन एवं सुरक्षा प्लेटफॉर्म',
     navMap: 'लाइव मैप',
     navRoutes: 'रूट एवं सिंक',
@@ -320,10 +324,10 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     aiSuggestedPrompt1: 'रात 10 बजे के बाद रेलवे स्टेशन जाने का सबसे सुरक्षित रास्ता क्या है?',
     aiSuggestedPrompt2: 'डिजिलॉकर से 50% छात्र पास कैसे प्राप्त करें?',
     aiSuggestedPrompt3: 'मास्टर कैंटीन के पास 24x7 मेडिकल स्टोर दिखाएं',
-  },
-  
-  bn: {
-    appTitle: 'MSFR',
+};
+
+const bnDict: TranslationDictionary = {
+  appTitle: 'MSFR',
     tagline: 'স্মার্ট মাল্টি-মোডাল যাতায়াত ও সুরক্ষা প্ল্যাটফর্ম',
     navMap: 'লাইভ ম্যাপ',
     navRoutes: 'রুট ও সিঙ্ক',
@@ -424,10 +428,10 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     aiSuggestedPrompt1: 'রাত ১০টার পর স্টেশনে যাওয়ার নিরাপদ পথ কোনটি?',
     aiSuggestedPrompt2: 'ডিজিলকার দিয়ে ৫০% ছাত্র পাস কীভাবে পাব?',
     aiSuggestedPrompt3: 'নিকটবর্তী ওষুধের দোকান দেখান',
-  },
-  
-  ta: {
-    appTitle: 'MSFR',
+};
+
+const taDict: TranslationDictionary = {
+  appTitle: 'MSFR',
     tagline: 'ஸ்மார்ட் போக்குவரத்து மற்றும் பாதுகாப்பு தளம்',
     navMap: 'நேரலை வரைபடம்',
     navRoutes: 'பாதைகள் & சிங்க்',
@@ -528,10 +532,10 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     aiSuggestedPrompt1: 'இரவு 10 மணிக்கு மேல் ரயில் நிலையம் செல்ல பாதுகாப்பான வழி எது?',
     aiSuggestedPrompt2: 'டிஜிலாக்கர் மூலம் 50% மாணவர் பாஸ் பெறுவது எப்படி?',
     aiSuggestedPrompt3: 'அருகிலுள்ள மருந்தகங்களைக் காட்டு',
-  },
-  
-  te: {
-    appTitle: 'MSFR',
+};
+
+const teDict: TranslationDictionary = {
+  appTitle: 'MSFR',
     tagline: 'స్మార్ట్ ప్రయాణ మరియు భద్రతా ప్లాట్‌ఫారమ్',
     navMap: 'లైవ్ మ్యాప్',
     navRoutes: 'మార్గాలు & సింక్',
@@ -632,5 +636,18 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     aiSuggestedPrompt1: 'రాత్రి 10 గంటల తర్వాత స్టేషన్‌కు వెళ్లడానికి సురక్షితమైన మార్గం ఏది?',
     aiSuggestedPrompt2: 'డిజిలాకర్ ద్వారా 50% విద్యార్థి పాస్ ఎలా పొందాలి?',
     aiSuggestedPrompt3: 'సమీప మందుల దుకాణాలు చూపించు',
-  },
+  };
+
+export const translations: Record<LanguageCode, TranslationDictionary> = {
+  en: enDict,
+  or: orDict,
+  hi: hiDict,
+  bn: bnDict,
+  ta: taDict,
+  te: teDict,
+  mr: { ...hiDict, appTitle: 'MUSAFIR', tagline: 'आधुनिक बहु-मॉडल ट्रान्झिट आणि प्रवासी सुरक्षा' },
+  gu: { ...hiDict, appTitle: 'MUSAFIR', tagline: 'આધુનિક મલ્ટી-મોડલ ટ્રાન્ઝિટ અને મુસાફર સુરક્ષા' },
+  kn: { ...teDict, appTitle: 'MUSAFIR', tagline: 'ಆಧುನಿಕ ಮಲ್ಟಿ-ಮೋಡಲ್ ಸಾರಿಗೆ ಮತ್ತು ಪ್ರಯಾಣಿಕರ ಸುರಕ್ಷತೆ' },
+  ml: { ...taDict, appTitle: 'MUSAFIR', tagline: 'ആധുനിക മൾട്ടി-മോഡൽ യാത്രാ പ്ലാറ്റ്ഫോം' },
+  pa: { ...hiDict, appTitle: 'MUSAFIR', tagline: 'ਆਧੁਨਿਕ ਮਲਟੀ-ਮੋਡਲ ਟਰਾਂਜ਼ਿਟ ਅਤੇ ਸੁਰੱਖਿਆ' },
 };

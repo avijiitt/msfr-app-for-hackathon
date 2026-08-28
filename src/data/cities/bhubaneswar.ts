@@ -802,3 +802,46 @@ export function findMatchingMoBusRoutes(originQuery: string, destQuery: string):
     primarySuggestion: cleanDirect[0] || STANDARD_MO_BUS_ROUTES[1],
   };
 }
+
+/**
+ * Returns a clean, human-readable landmark name for any GPS coordinates in Bhubaneswar/Odisha
+ * e.g., "Near Institute of Physics, Sachivalaya Marg" instead of raw numbers.
+ */
+export function getHumanReadableLocationName(lat: number, lng: number): string {
+  let closestDist = Infinity;
+  let closestName = '';
+  let subArea = '';
+
+  for (const loc of BHUBANESWAR_LOCALITIES) {
+    const d = Math.hypot(loc.lat - lat, (loc.lng - lng) * Math.cos((lat * Math.PI) / 180));
+    if (d < closestDist) {
+      closestDist = d;
+      closestName = loc.name.split('/')[0].trim();
+      subArea = loc.popularLandmark || '';
+    }
+  }
+
+  for (const st of BHUBANESWAR_STATIONS) {
+    const d = Math.hypot(st.lat - lat, (st.lng - lng) * Math.cos((lat * Math.PI) / 180));
+    if (d < closestDist) {
+      closestDist = d;
+      closestName = st.name
+        .split('(')[0]
+        .replace('Bus Terminal & Railway Hub', '')
+        .replace('Transit Shelter', '')
+        .trim();
+      subArea = st.lines ? `Mo Bus Transit Hub` : '';
+    }
+  }
+
+  // If very close to Institute of Physics coordinates or similar tech area
+  if (Math.abs(lat - 20.300) < 0.015 && Math.abs(lng - 85.825) < 0.015) {
+    return 'Near Institute of Physics (Sachivalaya Marg)';
+  }
+
+  if (closestDist < 0.025 && closestName) {
+    return `Near ${closestName}${subArea ? ` (${subArea.split('&')[0].trim()})` : ''}`;
+  }
+
+  return `Pinned Location (Near ${closestName || 'Bhubaneswar Central'})`;
+}

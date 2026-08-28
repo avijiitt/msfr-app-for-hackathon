@@ -9,7 +9,8 @@ import { UserProfile, EmergencyContact, SavedLocation } from '../../types/transi
 import { sosService } from '../../services/sosService';
 import { authService } from '../../services/supabaseClient';
 import { tripService, TripRecord } from '../../services/tripService';
-import { TranslationDictionary } from '../../types/i18n';
+import { LanguageCode, TranslationDictionary } from '../../types/i18n';
+import { SUPPORTED_LANGUAGES } from '../../data/translations';
 
 interface UserProfileViewProps {
   userProfile: UserProfile;
@@ -19,6 +20,8 @@ interface UserProfileViewProps {
   onLogout?: () => void;
   onSelectLocation?: (address: string) => void;
   t: TranslationDictionary;
+  currentLang?: LanguageCode;
+  onLanguageChange?: (lang: LanguageCode) => void;
 }
 
 export const UserProfileView: React.FC<UserProfileViewProps> = ({
@@ -29,6 +32,8 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   onLogout,
   onSelectLocation,
   t,
+  currentLang = 'en',
+  onLanguageChange,
 }) => {
   const [profile, setProfile] = useState<UserProfile>(userProfile);
   const [newContactName, setNewContactName] = useState('');
@@ -244,6 +249,61 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
           <span>{syncMessage}</span>
         </div>
       )}
+
+      {/* Indian Language Preference Selector */}
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg">
+              🇮🇳
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                Preferred App Language / ଭାଷା ପସନ୍ଦ / भाषा चुनें
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Select your language for all transit routes, voice guidance & passes
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-bold bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-2.5 py-1 rounded-full">
+            {SUPPORTED_LANGUAGES.find((l) => l.code === currentLang)?.nativeName || 'English'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const isSelected = currentLang === lang.code;
+            return (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => {
+                  if (onLanguageChange) onLanguageChange(lang.code);
+                  localStorage.setItem('musafir_lang', lang.code);
+                  localStorage.setItem('musafir_lang_selected', 'true');
+                  setSyncMessage(`App language set to ${lang.nativeName} (${lang.name})! 🌐`);
+                  setTimeout(() => setSyncMessage(null), 3000);
+                }}
+                className={`p-3 rounded-2xl border text-left transition flex items-center justify-between gap-2 group ${
+                  isSelected
+                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold shadow-xs ring-1 ring-blue-500'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-lg">{lang.flag}</span>
+                  <div className="min-w-0">
+                    <strong className="text-xs block truncate">{lang.nativeName}</strong>
+                    <span className="text-[10px] text-slate-400 block truncate">{lang.name}</span>
+                  </div>
+                </div>
+                {isSelected && <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* ── Trips Record in Database Section ── */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">

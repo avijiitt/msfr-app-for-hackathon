@@ -3,11 +3,12 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents 
 import L from 'leaflet';
 import {
   Bus, Train, LocateFixed, Plus, Minus,
-  AlertTriangle, Clock, Eye, WifiOff, Zap, Navigation, ShieldCheck, Layers, RotateCw
+  AlertTriangle, Clock, Eye, WifiOff, Zap, Navigation, ShieldCheck, Layers, RotateCw, Check, X, MapPin
 } from 'lucide-react';
 import { Vehicle } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
 import { getRouteDirections, RouteDirectionsResult } from '../../services/olaRoutingService';
+import { getHumanReadableLocationName } from '../../data/cities/bhubaneswar';
 
 // Fix default Leaflet icon assets
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
@@ -92,7 +93,7 @@ const createPinIcon = (color: string, emoji: string, title: string, subtitle?: s
           box-shadow: 0 2px 8px rgba(0,0,0,0.2);
           border: 1px solid #e2e8f0;
           margin-top: 3px;
-          max-width: 160px;
+          max-width: 170px;
           overflow: hidden;
           text-overflow: ellipsis;
         ">
@@ -190,7 +191,7 @@ function ZoomControls({ onLocate }: { onLocate: () => void }) {
 interface MusafirMapProps {
   vehicles: Vehicle[];
   userLocation: LiveLocationData;
-  onSelectLocationOnMap: (lat: number, lng: number) => void;
+  onSelectLocationOnMap: (lat: number, lng: number, name?: string, type?: 'origin' | 'dest') => void;
   themeMode: string;
   isOffline?: boolean;
   destinationName?: string;
@@ -271,6 +272,38 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
     };
   }, [originCoords, destCoords]);
 
+  // Temporary Clicked Location for Confirmation (prevents accidental clicks from changing route)
+  const [pendingPin, setPendingPin] = useState<{ lat: number; lng: number; name: string } | null>(null);
+
+  const handleMapClick = (lat: number, lng: number) => {
+    const name = getHumanReadableLocationName(lat, lng);
+    setPendingPin({ lat, lng, name });
+  };
+
+  // Multi-Modal Polyline Segments: Dotted Gray Walk -> Solid Bus Transit -> Dotted Gray Walk
+  const routeSegments = React.useMemo(() => {
+    if (!routeInfo || routeInfo.coordinates.length < 2) return null;
+    const coords = routeInfo.coordinates;
+    const len = coords.length;
+
+    if (len < 5) {
+      return {
+        walkStart: coords.slice(0, 2),
+        transit: coords,
+        walkEnd: coords.slice(-2),
+      };
+    }
+
+    const startIdx = Math.max(1, Math.floor(len * 0.12));
+    const endIdx = Math.min(len - 1, Math.ceil(len * 0.88));
+
+    return {
+      walkStart: coords.slice(0, startIdx + 1),
+      transit: coords.slice(startIdx, endIdx + 1),
+      walkEnd: coords.slice(endIdx),
+    };
+  }, [routeInfo]);
+
   // Determine initial center and zoom
   let mapCenter: [number, number] = [20.2961, 85.8245]; // Bhubaneswar Master Canteen / Central Area
   let mapZoom = 13;
@@ -301,7 +334,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   });
 
   return (
-    <div className="relative w-full h-[480px] sm:h-[520px] lg:h-[560px] rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md bg-slate-100 dark:bg-slate-900 transition-all">
+    <div className="relative w-full h-[420px] sm:h-[500px] lg:h-[540px] rounded-3xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 transition-all bg-slate-100 dark:bg-slate-900">
       {/* Offline Banner */}
       {isOffline && !isAnyModalOpen && (
         <div className="absolute top-0 left-0 right-0 z-[400] bg-amber-500 text-white px-4 py-1.5 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-md">
@@ -310,39 +343,28 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         </div>
       )}
 
-      {/* Top Left: Route Summary Badge (Hidden when any modal/drawer is open) */}
-      {!isAnyModalOpen && originCoords && destCoords && (
+      {/* Top Left: Route Mode Badge */}
+      {!isAnyModalOpen && routeInfo && (
         <div
           className={`absolute ${
             isOffline ? 'top-10' : 'top-3'
-          } left-3 sm:left-4 z-[400] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md px-3.5 py-2.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex items-center gap-3 transition animate-in fade-in`}
+          } left-3 sm:left-4 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 text-xs flex items-center gap-3 transition-all`}
         >
-          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
-            🚌
+          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+            <Bus className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-xs text-slate-900 dark:text-white">
+            <div className="flex items-center gap-1.5">
+              <strong className="text-slate-900 dark:text-white font-black text-xs sm:text-sm">
                 Connected Transit Route
-              </span>
-              <span className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded">
-                Live Road Network
+              </strong>
+              <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] px-1.5 py-0.2 rounded-md font-bold">
+                Live Road Sync
               </span>
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-              {isLoadingRoute ? (
-                <span className="flex items-center gap-1">
-                  <RotateCw className="w-3 h-3 animate-spin text-blue-600" />
-                  Calculating optimal Mo Bus path...
-                </span>
-              ) : routeInfo ? (
-                <span>
-                  {routeInfo.distanceKm} km • ~{routeInfo.durationMinutes} min travel time
-                </span>
-              ) : (
-                <span>{originName} ➔ {destinationName}</span>
-              )}
-            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              {routeInfo.distanceKm} km • ~{routeInfo.durationMinutes} min travel time
+            </p>
           </div>
         </div>
       )}
@@ -408,7 +430,6 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         minZoom={10}
         maxZoom={18}
       >
-        {/* Dynamic Pan / Zoom / Bounds Controller */}
         <MapViewController
           center={mapCenter}
           zoom={mapZoom}
@@ -418,19 +439,64 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         {!isAnyModalOpen && (
           <ZoomControls
             onLocate={() => {
-              onSelectLocationOnMap(userLocation.lat, userLocation.lng);
+              onSelectLocationOnMap(userLocation.lat, userLocation.lng, 'Current Location (GPS)', 'origin');
             }}
           />
         )}
 
-        <MapClickHandler onMapClick={onSelectLocationOnMap} />
+        <MapClickHandler onMapClick={handleMapClick} />
 
-        {/* 100% Free, Reliable OpenStreetMap Tiles — Never requires an API key */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={19}
         />
+
+        {/* Temporary Clicked Pin with Interactive Confirmation */}
+        {pendingPin && (
+          <Marker
+            position={[pendingPin.lat, pendingPin.lng]}
+            icon={createPinIcon('#8B5CF6', '📍', pendingPin.name, 'Tap to Confirm')}
+          >
+            <Popup autoPan={false}>
+              <div className="p-2 text-xs space-y-2 min-w-[200px]">
+                <div>
+                  <strong className="text-slate-900 font-bold block text-xs">{pendingPin.name}</strong>
+                  <span className="text-[10px] text-slate-500">Choose action for selected pin:</span>
+                </div>
+                <div className="flex gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectLocationOnMap(pendingPin.lat, pendingPin.lng, pendingPin.name, 'dest');
+                      setPendingPin(null);
+                    }}
+                    className="flex-1 py-1.5 px-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[10px] font-bold transition shadow-xs flex items-center justify-center gap-1"
+                  >
+                    <span>📍 Destination</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectLocationOnMap(pendingPin.lat, pendingPin.lng, pendingPin.name, 'origin');
+                      setPendingPin(null);
+                    }}
+                    className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition shadow-xs flex items-center justify-center gap-1"
+                  >
+                    <span>🟢 Departure</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingPin(null)}
+                    className="py-1 px-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
 
         {/* User Current GPS Position */}
         {userLocation && (
@@ -479,31 +545,60 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           </Marker>
         )}
 
-        {/* Real OLA Road Route Polyline (Glow + Solid Path) */}
-        {routeInfo && routeInfo.coordinates.length > 1 && (
+        {/* ── Multi-Modal Route Geometry (Split Colors) ────────────────────────── */}
+        {routeSegments && (
           <>
-            {/* Outer Glow */}
-            <Polyline
-              positions={routeInfo.coordinates}
-              pathOptions={{
-                color: '#3B82F6',
-                weight: 8,
-                opacity: 0.35,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
-            />
-            {/* Core Solid Navigation Line */}
-            <Polyline
-              positions={routeInfo.coordinates}
-              pathOptions={{
-                color: '#2563EB',
-                weight: 5,
-                opacity: 0.95,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
-            />
+            {/* 1. Walk leg to Transit Stop: Dotted Gray Line */}
+            {routeSegments.walkStart.length > 1 && (
+              <Polyline
+                positions={routeSegments.walkStart}
+                pathOptions={{
+                  color: '#64748b',
+                  weight: 4.5,
+                  dashArray: '6, 8',
+                  lineCap: 'round',
+                }}
+              />
+            )}
+
+            {/* 2. Main Bus / Transit Leg: Thick Solid Blue / Emerald Glow Line */}
+            {routeSegments.transit.length > 1 && (
+              <>
+                <Polyline
+                  positions={routeSegments.transit}
+                  pathOptions={{
+                    color: '#3B82F6',
+                    weight: 8,
+                    opacity: 0.35,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                  }}
+                />
+                <Polyline
+                  positions={routeSegments.transit}
+                  pathOptions={{
+                    color: '#2563EB',
+                    weight: 5.5,
+                    opacity: 0.95,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                  }}
+                />
+              </>
+            )}
+
+            {/* 3. Walk leg from Transit Stop to Destination: Dotted Gray Line */}
+            {routeSegments.walkEnd.length > 1 && (
+              <Polyline
+                positions={routeSegments.walkEnd}
+                pathOptions={{
+                  color: '#64748b',
+                  weight: 4.5,
+                  dashArray: '6, 8',
+                  lineCap: 'round',
+                }}
+              />
+            )}
           </>
         )}
 

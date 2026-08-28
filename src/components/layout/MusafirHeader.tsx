@@ -30,6 +30,8 @@ interface MusafirHeaderProps {
   onOpenMobileMenu?: () => void;
   onSearchFocusChange?: (isFocused: boolean) => void;
   onOpenBusRoutes?: () => void;
+  currentLang?: string;
+  onOpenLanguageModal?: () => void;
 }
 
 export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
@@ -56,6 +58,8 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   onOpenMobileMenu,
   onSearchFocusChange,
   onOpenBusRoutes,
+  currentLang = 'en',
+  onOpenLanguageModal,
 }) => {
   const [originSuggestions, setOriginSuggestions] = useState<IndiaLocationResult[]>([]);
   const [destSuggestions, setDestSuggestions] = useState<IndiaLocationResult[]>([]);
@@ -592,6 +596,18 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
             <Wallet className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>₹{walletBalance.toFixed(0)}</span>
           </button>
+
+          {onOpenLanguageModal && (
+            <button
+              type="button"
+              onClick={onOpenLanguageModal}
+              title="Change Preferred App Language"
+              className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 hover:border-blue-400 hover:text-blue-600 transition active:scale-95"
+            >
+              <span>🇮🇳</span>
+              <span className="uppercase text-[11px] font-mono font-bold">{currentLang}</span>
+            </button>
+          )}
 
           <button
             onClick={onToggleTheme}

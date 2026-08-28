@@ -1,4 +1,6 @@
-﻿export interface LiveLocationData {
+import { getHumanReadableLocationName } from '../data/cities/bhubaneswar';
+
+export interface LiveLocationData {
   lat: number;
   lng: number;
   accuracy: number;
@@ -37,8 +39,30 @@ class GeolocationService {
     this.listeners.push(callback);
     callback(this.currentLocation);
     return () => {
-      this.listeners = this.listeners.filter(cb => cb !== callback);
+      this.listeners = this.listeners.filter((cb) => cb !== callback);
     };
+  }
+
+  public async getCurrentLivePosition(): Promise<LiveLocationData> {
+    return new Promise((resolve) => {
+      if (!('geolocation' in navigator)) {
+        resolve(this.currentLocation);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.updatePosition(pos);
+          resolve(this.currentLocation);
+        },
+        (err) => {
+          console.warn('Geolocation direct fetch error:', err.message);
+          // If browser GPS is denied/timeout, use central hub
+          resolve(this.currentLocation);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
   }
 
   public startLiveTracking(onError?: ErrorCallback): void {
@@ -97,6 +121,7 @@ class GeolocationService {
   }
 
   private updatePosition(pos: GeolocationPosition): void {
+    const readable = getHumanReadableLocationName(pos.coords.latitude, pos.coords.longitude);
     this.currentLocation = {
       lat: pos.coords.latitude,
       lng: pos.coords.longitude,
@@ -104,7 +129,7 @@ class GeolocationService {
       heading: pos.coords.heading,
       speed: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : null,
       timestamp: pos.timestamp,
-      address: `Live GPS: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`,
+      address: `Current Location (${readable.replace('Pinned Location ', '')})`,
     };
     this.notifyListeners();
   }

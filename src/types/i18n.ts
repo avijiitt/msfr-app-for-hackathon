@@ -1,4 +1,4 @@
-﻿export type LanguageCode = 'en' | 'or' | 'hi' | 'bn' | 'ta' | 'te';
+export type LanguageCode = 'en' | 'or' | 'hi' | 'bn' | 'ta' | 'te' | 'mr' | 'gu' | 'kn' | 'ml' | 'pa';
 
 export interface LanguageOption {
   code: LanguageCode;

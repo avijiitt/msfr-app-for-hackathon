@@ -247,20 +247,20 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
         </div>
 
         {/* Step-by-Step Interactive Timeline */}
-        <div className="py-3 space-y-4">
+        <div className="py-3 space-y-4 pr-2">
           {/* Step 1: Your Departure Location */}
           <div className="flex items-start gap-3 relative">
-            <div className="w-3 h-3 rounded-full border-2 border-blue-600 bg-white dark:bg-slate-900 mt-1 flex-shrink-0 z-10"></div>
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-600 bg-white dark:bg-slate-900 mt-1 flex-shrink-0 z-10 shadow-xs"></div>
             <div className="flex-1 flex items-center justify-between text-xs">
               <span className="font-bold text-slate-900 dark:text-white">Board at {cleanFrom}</span>
-              <span className="text-slate-400 font-mono">{formatTime(0)}</span>
+              <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-semibold">{formatTime(0)}</span>
             </div>
           </div>
 
           {/* Walk / Platform Access */}
           <div className="pl-1.5 ml-1 border-l-2 border-dashed border-slate-300 dark:border-slate-700 py-1 space-y-1">
-            <div className="pl-4 flex items-center gap-2 text-[11px] text-slate-400">
-              <Footprints className="w-3.5 h-3.5" />
+            <div className="pl-4 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              <Footprints className="w-3.5 h-3.5 text-blue-500" />
               <span>Walk 2 min (150 m) to Transit Bay</span>
             </div>
           </div>
@@ -275,7 +275,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
                 <span className="font-bold text-slate-900 dark:text-white">
                   {isEco ? 'Mo E-Ride Electric Auto' : isCheap ? 'Mo Bus Route 11 / 20 (Non-AC)' : 'Mo Bus Route 10 / 24 (AC Electric)'}
                 </span>
-                <span className="text-slate-400 font-mono">{formatTime(2)}</span>
+                <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-semibold">{formatTime(2)}</span>
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
                 {cleanFrom} ➔ {isEco ? 'CRUT Electric Interchange' : cleanTo}
@@ -296,7 +296,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
                 <div className="pl-4 flex items-center gap-2 text-[11px] text-slate-400">
                   <Clock className="w-3.5 h-3.5 text-pink-500" />
                   <span>Doorstep Feeder Connection • 3 min</span>
-                  <span className="text-slate-400 font-mono ml-auto">{formatTime(Math.round(totalDurationMins * 0.6) + 2)}</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-semibold ml-auto">{formatTime(Math.round(totalDurationMins * 0.6) + 2)}</span>
                 </div>
               </div>
 
@@ -308,7 +308,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-slate-900 dark:text-white">Pink Safe Mo Bus Feeder</span>
-                    <span className="text-slate-400 font-mono">{formatTime(Math.round(totalDurationMins * 0.6) + 5)}</span>
+                    <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-semibold">{formatTime(Math.round(totalDurationMins * 0.6) + 5)}</span>
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400">
                     Interchange ➔ {cleanTo}
@@ -332,7 +332,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
             <div className="flex-1 space-y-0.5">
               <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white">
                 <span>Alight at {cleanTo}</span>
-                <span className="text-slate-400 font-mono font-normal">{formatTime(totalDurationMins)}</span>
+                <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-semibold">{formatTime(totalDurationMins)}</span>
               </div>
               <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                 Destination reached • Total Fare ₹{totalFareInr}

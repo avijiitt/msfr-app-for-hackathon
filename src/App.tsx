@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { translations } from './data/translations';
 import { LanguageCode } from './types/i18n';
 import { Vehicle, Station, JourneyOption, UserProfile, ThemeMode, RouteMode } from './types/transit';
-import { BHUBANESWAR_STATIONS } from './data/cities/bhubaneswar';
+import { BHUBANESWAR_STATIONS, getHumanReadableLocationName } from './data/cities/bhubaneswar';
 import { transitSimulator } from './services/transitSimulator';
 import { walletService } from './services/walletService';
 import { sosService } from './services/sosService';
@@ -41,13 +41,17 @@ import { LoginModal } from './components/auth/LoginModal';
 import { authService, AuthUser } from './services/supabaseClient';
 import { PermissionsModal } from './components/auth/PermissionsModal';
 import { BusRoutesModal } from './components/routes/BusRoutesModal';
+import { LanguageSelectModal } from './components/language/LanguageSelectModal';
 import { tripService } from './services/tripService';
 
 
 export const App: React.FC = () => {
   // Theme & Language
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
-  const [currentLang, setCurrentLang] = useState<LanguageCode>('en');
+  const [currentLang, setCurrentLang] = useState<LanguageCode>(
+    () => (localStorage.getItem('musafir_lang') as LanguageCode) || 'en'
+  );
+  const [isLangSelectOpen, setIsLangSelectOpen] = useState(false);
 
   // Auth State — show login on first load if profile registration not completed
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(authService.getCurrentUser());
@@ -178,11 +182,14 @@ export const App: React.FC = () => {
     setThemeMode((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const handleUseLiveGps = () => {
+  const handleUseLiveGps = async () => {
     if (!isGpsActive) {
-      geolocationService.startLiveTracking();
       setIsGpsActive(true);
-      setOriginQuery('Current Location (GPS)');
+      geolocationService.startLiveTracking();
+      const livePos = await geolocationService.getCurrentLivePosition();
+      setOriginCoords([livePos.lat, livePos.lng]);
+      const readable = getHumanReadableLocationName(livePos.lat, livePos.lng);
+      setOriginQuery(`Current Location (${readable.replace('Pinned Location ', '')})`);
     } else {
       geolocationService.stopLiveTracking();
       setIsGpsActive(false);
@@ -205,11 +212,16 @@ export const App: React.FC = () => {
     setDestQuery(result.name);
   };
 
-  // Called when user clicks directly on the map
-  const handleSelectLocationOnMap = (lat: number, lng: number) => {
-    const pinned = `Pinned Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
-    setDestQuery(pinned);
-    setDestCoords([lat, lng]);
+  // Called when user sets a location on the map
+  const handleSelectLocationOnMap = (lat: number, lng: number, name?: string, type: 'origin' | 'dest' = 'dest') => {
+    const cleanName = name || getHumanReadableLocationName(lat, lng);
+    if (type === 'origin') {
+      setOriginCoords([lat, lng]);
+      setOriginQuery(cleanName);
+    } else {
+      setDestCoords([lat, lng]);
+      setDestQuery(cleanName);
+    }
   };
 
 
@@ -361,6 +373,8 @@ export const App: React.FC = () => {
         onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         onSearchFocusChange={setIsSearchFocused}
         onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
+        currentLang={currentLang}
+        onOpenLanguageModal={() => setIsLangSelectOpen(true)}
       />
 
       {/* 2. Main 3-Column Dashboard Body (Mobile Optimized with pb-24 for bottom bar) */}
@@ -569,6 +583,8 @@ export const App: React.FC = () => {
               }}
               onLogout={handleLogout}
               t={t}
+              currentLang={currentLang}
+              onLanguageChange={setCurrentLang}
             />
           </div>
         </div>
@@ -588,8 +604,21 @@ export const App: React.FC = () => {
           if (!hasAskedPerms) {
             setIsPermissionsOpen(true);
             localStorage.setItem('musafir_perms_asked', '1');
+          } else if (!localStorage.getItem('musafir_lang_selected')) {
+            setIsLangSelectOpen(true);
           }
         }}
+      />
+
+      {/* Indian Multi-Language Selection Modal (Post-login onboarding & Profile) */}
+      <LanguageSelectModal
+        isOpen={isLangSelectOpen}
+        currentLang={currentLang}
+        onSelectLanguage={(code) => {
+          setCurrentLang(code);
+          setIsLangSelectOpen(false);
+        }}
+        onClose={() => setIsLangSelectOpen(false)}
       />
 
       {/* Bus Routes Network Modal (82+ CRUT Mo Bus Lines) */}
@@ -606,7 +635,12 @@ export const App: React.FC = () => {
       {/* Permissions Request Modal (location, notifications) */}
       <PermissionsModal
         isOpen={isPermissionsOpen}
-        onComplete={() => setIsPermissionsOpen(false)}
+        onComplete={() => {
+          setIsPermissionsOpen(false);
+          if (!localStorage.getItem('musafir_lang_selected')) {
+            setIsLangSelectOpen(true);
+          }
+        }}
       />
 
       {/* 5. Mobile Native Bottom Navigation Bar (Visible on phones) */}

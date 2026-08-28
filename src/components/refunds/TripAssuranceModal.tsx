@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { ShieldCheck, RotateCcw, CheckCircle2, AlertCircle, X, ArrowRight, Wallet } from 'lucide-react';
 import { refundService, RefundClaim } from '../../services/refundService';
 
@@ -55,31 +55,93 @@ export const TripAssuranceModal: React.FC<TripAssuranceModalProps> = ({
 
         {/* Assurance Policy Pillars */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-          <div className="p-3 rounded-2xl bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 space-y-1">
+          <div className="p-3.5 rounded-2xl bg-blue-50/60 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 space-y-1">
             <div className="font-bold text-blue-800 dark:text-blue-200 flex items-center gap-1">
-              ⏱️ &gt;15 Min Delay
+              ⏱️ Punctuality Guarantee
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Automatic 100% fare refund to your wallet.</p>
+            <p className="text-[11px] text-slate-600 dark:text-slate-400">
+              If a <strong>Mo Bus</strong> is delayed by &gt;15 mins, get an automated <strong>₹5 Micro-Refund</strong> credited to your Mo-Wallet.
+            </p>
           </div>
 
-          <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 space-y-1">
+          <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 space-y-1">
             <div className="font-bold text-emerald-800 dark:text-emerald-200 flex items-center gap-1">
-              ⚡ Missed Transfer
+              ⚡ Missed Connection Assurance
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Alternate ride connector covered by Musafir.</p>
+            <p className="text-[11px] text-slate-600 dark:text-slate-400">
+              If an initial feeder/auto delay causes a missed bus, receive an instant <strong>Free Mo E-Ride Voucher</strong>.
+            </p>
           </div>
 
-          <div className="p-3 rounded-2xl bg-purple-50/60 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 space-y-1">
+          <div className="p-3.5 rounded-2xl bg-purple-50/60 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 space-y-1">
             <div className="font-bold text-purple-800 dark:text-purple-200 flex items-center gap-1">
-              💳 60-Sec Payout
+              💳 Instant 60-Sec Wallet Credit
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Instant credit to Musafir wallet or UPI.</p>
+            <p className="text-[11px] text-slate-600 dark:text-slate-400">Direct 1-tap automated credit to your Musafir Wallet or linked UPI.</p>
+          </div>
+        </div>
+
+        {/* 1-Tap Quick Assurance Actions (Punctuality Guarantee & Free Mo E-Ride Voucher) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Action 1: Punctuality Guarantee */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-extrabold text-xs text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                <span>⏱️</span> Punctuality Guarantee (Mo Bus)
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 font-bold text-[10px]">
+                +₹5 Instant
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300">
+              Detected route delay &gt;15 min on current corridor. Claim your automated ₹5 punctuality credit now.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                const res = refundService.fileInstantRefund('Mo Bus Route 10 / 24 (Punctuality Guarantee)', 5, 'Severe Delay (>15 mins)');
+                setClaims(refundService.getClaims());
+                setClaimSuccessMsg(`🎉 ₹5 Punctuality Guarantee micro-refund credited to your Mo-Wallet (Claim: ${res.claim.id})!`);
+                if (onRefundClaimed) onRefundClaimed(res.newBalance);
+              }}
+              className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
+            >
+              Claim ₹5 Delay Refund
+            </button>
+          </div>
+
+          {/* Action 2: Missed Connection Free Voucher */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-extrabold text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                <span>🛺</span> Missed Connection Voucher
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 font-bold text-[10px]">
+                100% Free
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300">
+              Missed connecting bus due to feeder delay? Get a complimentary <strong>Mo E-Ride EV Voucher</strong> code.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                const voucherCode = 'MOERIDE-FREE-' + Math.floor(1000 + Math.random() * 9000);
+                const res = refundService.fileInstantRefund('Multi-Modal Connection (Mo E-Ride Bridge)', 25, 'Missed Connecting Transfer');
+                setClaims(refundService.getClaims());
+                setClaimSuccessMsg(`🎟️ Free Mo E-Ride Voucher generated: ${voucherCode} (₹25 value credited)!`);
+                if (onRefundClaimed) onRefundClaimed(res.newBalance);
+              }}
+              className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
+            >
+              Get Free Mo E-Ride Voucher
+            </button>
           </div>
         </div>
 
         {/* Claim Success Banner */}
         {claimSuccessMsg && (
-          <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 flex items-center gap-3">
+          <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 flex items-center gap-3 animate-in zoom-in-95">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             <div className="text-xs text-emerald-800 dark:text-emerald-200 font-semibold">
               {claimSuccessMsg}
