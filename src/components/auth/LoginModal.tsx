@@ -325,23 +325,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
           {/* SMS Toast / Banner */}
           {toastMessage && (
-            <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/50 border-2 border-blue-400 dark:border-blue-700 text-blue-900 dark:text-blue-200 text-xs font-bold flex items-start gap-2.5 shadow-sm animate-in slide-in-from-top duration-300">
+            <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/50 border-2 border-blue-400 dark:border-blue-700 text-blue-900 dark:text-blue-200 text-xs font-bold flex items-center gap-2.5 shadow-sm animate-in slide-in-from-top duration-300">
               <span className="text-base">📩</span>
-              <div className="flex-1">
-                <span className="block">{toastMessage}</span>
-                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-normal mt-0.5 block">
-                  Click "Auto-Fill Code" to populate your code.
-                </span>
-              </div>
-              {generatedOtp && (
-                <button
-                  type="button"
-                  onClick={() => setUserEnteredOtp(generatedOtp)}
-                  className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700 transition"
-                >
-                  Auto-Fill
-                </button>
-              )}
+              <span>{toastMessage}</span>
             </div>
           )}
 
