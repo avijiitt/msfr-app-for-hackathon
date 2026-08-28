@@ -61,26 +61,26 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   t,
 }) => {
   const mainNav = [
-    { id: 'plan' as MusafirSidebarTab, label: t?.navRoutes || 'Plan Journey', icon: Navigation2 },
-    { id: 'tracking' as MusafirSidebarTab, label: t?.navMap || 'Live Tracking', icon: MapPin },
-    { id: 'schedule' as MusafirSidebarTab, label: t?.navSchedule || 'Schedule Ride', icon: Calendar, badge: 'New' },
-    { id: 'parcel' as MusafirSidebarTab, label: t?.parcelDelivery || 'Transit Parcel Hub', icon: Package },
-    { id: 'wallet' as MusafirSidebarTab, label: t?.navWallet || 'Mo-Wallet', icon: Wallet },
-    { id: 'trips' as MusafirSidebarTab, label: t?.navActivity || 'My Trips', icon: Clock },
-    { id: 'saved' as MusafirSidebarTab, label: t?.storesAndMarkets || 'Saved Places', icon: Bookmark },
+    { id: 'plan' as MusafirSidebarTab, label: t?.navRoutes || 'Plan', icon: Navigation2 },
+    { id: 'tracking' as MusafirSidebarTab, label: t?.navMap || 'Live Map', icon: MapPin },
+    { id: 'schedule' as MusafirSidebarTab, label: t?.navSchedule || 'Schedule', icon: Calendar, badge: 'New' },
+    { id: 'parcel' as MusafirSidebarTab, label: t?.parcelDelivery || 'Parcel', icon: Package },
+    { id: 'wallet' as MusafirSidebarTab, label: t?.navWallet || 'Wallet', icon: Wallet },
+    { id: 'trips' as MusafirSidebarTab, label: t?.navActivity || 'Trips', icon: Clock },
+    { id: 'saved' as MusafirSidebarTab, label: t?.storesAndMarkets || 'Saved', icon: Bookmark },
     { id: 'alerts' as MusafirSidebarTab, label: t?.liveAnnouncements || 'Alerts', icon: Bell, badge: '3' },
-    { id: 'fare_calc' as MusafirSidebarTab, label: t?.fareBreakdown || 'Fare Calculator', icon: Calculator },
+    { id: 'fare_calc' as MusafirSidebarTab, label: t?.fareBreakdown || 'Fare Calc', icon: Calculator },
     { id: 'rewards' as MusafirSidebarTab, label: t?.quickPasses || 'Rewards', icon: Award, badge: '480 pts' },
-    { id: 'refunds' as MusafirSidebarTab, label: 'Refunds & Assurance', icon: RotateCcw },
+    { id: 'refunds' as MusafirSidebarTab, label: 'Assurance', icon: RotateCcw },
     { id: 'settings' as MusafirSidebarTab, label: t?.navProfile || 'Settings', icon: Settings },
   ];
 
   const quickAccess = [
-    { label: 'Mo Bus (82 Routes)', icon: Bus, color: 'text-blue-600 font-bold', action: onOpenBusRoutes || onOpenNearbyStops },
-    { label: t?.nearbyStoresHotels || 'Nearby Stops', icon: MapPin, color: 'text-emerald-600', action: onOpenNearbyStops },
-    { label: t?.studentPass || 'Student Pass (50% Off)', icon: GraduationCap, color: 'text-purple-600', action: onOpenStudent },
-    { label: t?.shareLocationFamily || 'Share Location', icon: Share2, color: 'text-indigo-600', action: onOpenShareLocation },
-    { label: t?.emergencySOS || 'SOS / Safety', icon: ShieldAlert, color: 'text-red-500', action: onOpenSOS },
+    { label: 'Mo Bus (82 Lines)', icon: Bus, color: 'text-blue-600 font-bold', action: onOpenBusRoutes || onOpenNearbyStops },
+    { label: t?.nearbyStoresHotels || 'Nearby', icon: MapPin, color: 'text-emerald-600', action: onOpenNearbyStops },
+    { label: t?.studentPass || 'Student Pass', icon: GraduationCap, color: 'text-purple-600', action: onOpenStudent },
+    { label: t?.shareLocationFamily || 'Share Trip', icon: Share2, color: 'text-indigo-600', action: onOpenShareLocation },
+    { label: t?.emergencySOS || 'SOS', icon: ShieldAlert, color: 'text-red-500', action: onOpenSOS },
   ];
 
   const savedPlaces = [

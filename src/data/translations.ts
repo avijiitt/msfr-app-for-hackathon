@@ -100,7 +100,7 @@ const enDict: TranslationDictionary = {
     pharmacies: '24x7 Pharmacies & Medical Stores',
     policePosts: 'Police Help Desks & Booths',
     restrooms: 'Clean Public Restrooms',
-    parcelDelivery: 'Transit Parcel Sync & Lockers',
+    parcelDelivery: 'Parcel',
     alternatePhoneNotice: 'Mandatory alternate phone required for recipient delivery fallback.',
     stationLockers: 'Station Smart Lockers',
     
@@ -204,7 +204,7 @@ const orDict: TranslationDictionary = {
     pharmacies: '୨୪x୭ ଔଷଧ ଦୋକାନ',
     policePosts: 'ପୋଲିସ ସହାୟତା କେନ୍ଦ୍ର',
     restrooms: 'ପରିଷ୍କାର ଶୌଚାଳୟ',
-    parcelDelivery: 'ଟ୍ରାଞ୍ଜିଟ୍ ପାର୍ସଲ୍ ଲକର',
+    parcelDelivery: 'ପାର୍ସଲ',
     alternatePhoneNotice: 'ପାର୍ସଲ୍ ପାଇଁ ବିକଳ୍ପ ଫୋନ୍ ନମ୍ବର ବାଧ୍ୟତାମୂଳକ।',
     stationLockers: 'ଷ୍ଟେସନ ସ୍ମାର୍ଟ ଲକର',
     
@@ -308,7 +308,7 @@ const hiDict: TranslationDictionary = {
     pharmacies: '24x7 मेडिकल स्टोर / दवाइयां',
     policePosts: 'पुलिस बूथ व सहायता केंद्र',
     restrooms: 'स्वच्छ सार्वजनिक शौचालय',
-    parcelDelivery: 'ट्रांजिट पार्सल डिलीवरी',
+    parcelDelivery: 'पार्सल',
     alternatePhoneNotice: 'पार्सल के लिए वैकल्पिक फ़ोन नंबर अनिवार्य है।',
     stationLockers: 'स्टेशन स्मार्ट लॉकर',
     
@@ -412,7 +412,7 @@ const bnDict: TranslationDictionary = {
     pharmacies: '২৪x৭ ওষুধের দোকান',
     policePosts: 'পুলিশ সহায়তা বুথ',
     restrooms: 'পাবলিক টয়লেট',
-    parcelDelivery: 'ট্রানজিট পার্সেল',
+    parcelDelivery: 'পার্সেল',
     alternatePhoneNotice: 'পার্সেলের জন্য বিকল্প ফোন নম্বর বাধ্যতামূলক।',
     stationLockers: 'স্টেশন স্মার্ট লকার',
     
@@ -516,7 +516,7 @@ const taDict: TranslationDictionary = {
     pharmacies: '24x7 மருந்தகங்கள்',
     policePosts: 'காவல் உதவி மையம்',
     restrooms: 'கழிப்பறைகள்',
-    parcelDelivery: 'பார்சல் சேவை',
+    parcelDelivery: 'பார்சல்',
     alternatePhoneNotice: 'பார்சலுக்கு மாற்று தொலைபேசி எண் கட்டாயமாகும்.',
     stationLockers: 'ஸ்மார்ட் லாக்கர்',
     
@@ -620,7 +620,7 @@ const teDict: TranslationDictionary = {
     pharmacies: '24x7 మందుల దుకాణాలు',
     policePosts: 'పోలీస్ సహాయ కేంద్రాలు',
     restrooms: 'పబ్లిక్ టాయిలెట్లు',
-    parcelDelivery: 'పార్శిల్ డెలివరీ',
+    parcelDelivery: 'పార్శిల్',
     alternatePhoneNotice: 'పార్శిల్ కోసం ప్రత్యామ్నాయ ఫోన్ నంబర్ తప్పనిసరి.',
     stationLockers: 'స్మార్ట్ లాకర్లు',
     

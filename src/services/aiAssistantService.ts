@@ -162,37 +162,37 @@ class AIAssistantService {
     const q = query.toLowerCase();
 
     if (q.includes('parcel') || q.includes('courier') || q.includes('locker') || q.includes('package') || q.includes('delivery'))
-      return { label: '📦 Open Transit Parcel Hub', actionType: 'open_parcel_booking' };
+      return { label: '📦 Open Parcel', actionType: 'open_parcel_booking' };
     if (q.includes('wallet') || q.includes('recharge') || q.includes('top up') || q.includes('topup') || q.includes('balance') || q.includes('pass'))
-      return { label: '💳 Open Mo-Wallet', actionType: 'open_wallet' };
+      return { label: '💳 Open Wallet', actionType: 'open_wallet' };
     if (q.includes('women') || q.includes('pink') || q.includes('night safe') || q.includes('lady'))
-      return { label: '🌸 Women Safety & Pink Hub', actionType: 'open_women_safety' };
+      return { label: '🌸 Women Safety', actionType: 'open_women_safety' };
     if (q.includes('family') || q.includes('share location') || q.includes('track me') || q.includes('telemetry'))
-      return { label: '📡 Share Live Location', actionType: 'open_share_location' };
+      return { label: '📡 Share Trip', actionType: 'open_share_location' };
     if (q.includes('medical') || q.includes('blood') || q.includes('allergies') || q.includes('doctor') || q.includes('hospital'))
-      return { label: '🏥 Open Medical Card', actionType: 'open_medical_id' };
+      return { label: '🏥 Medical ID', actionType: 'open_medical_id' };
     if (q.includes('amenit') || q.includes('nearby') || q.includes('atm') || q.includes('charging') || q.includes('restroom') || q.includes('stop'))
-      return { label: '📍 View Nearby Amenities', actionType: 'open_amenities' };
+      return { label: '📍 Nearby Stops', actionType: 'open_amenities' };
     if (q.includes('alert') || q.includes('incident') || q.includes('strike') || q.includes('flood') || q.includes('traffic delay'))
-      return { label: '🔔 View Live Transit Alerts', actionType: 'open_alerts' };
+      return { label: '🔔 Live Alerts', actionType: 'open_alerts' };
     if (q.includes('trip') || q.includes('history') || q.includes('my trips') || q.includes('record'))
-      return { label: '📋 View My Trips History', actionType: 'open_my_trips' };
+      return { label: '📋 Trips', actionType: 'open_my_trips' };
     if (q.includes('fare') || q.includes('price') || q.includes('cost') || q.includes('ticket') || q.includes('calculator'))
-      return { label: '📊 Open Fare Calculator', actionType: 'open_fare' };
+      return { label: '📊 Fare Calc', actionType: 'open_fare' };
     if (q.includes('reward') || q.includes('coin') || q.includes('point') || q.includes('miles'))
-      return { label: '🏆 Open Rewards & Miles', actionType: 'open_rewards' };
+      return { label: '🏆 Rewards', actionType: 'open_rewards' };
     if (q.includes('refund') || q.includes('delay') || q.includes('late') || q.includes('assurance'))
-      return { label: '🛡️ Claim Instant Refund', actionType: 'open_refund' };
+      return { label: '🛡️ Trip Assurance', actionType: 'open_refund' };
     if (q.includes('student') || q.includes('concession') || q.includes('digilocker') || q.includes('college'))
-      return { label: '🎓 Student Concession Hub', actionType: 'open_student' };
+      return { label: '🎓 Student Pass', actionType: 'open_student' };
     if (q.includes('schedule') || q.includes('commute') || q.includes('daily ride') || q.includes('pre-book'))
-      return { label: '📅 Schedule Automated Ride', actionType: 'open_schedule' };
+      return { label: '📅 Schedule', actionType: 'open_schedule' };
     if (q.includes('support') || q.includes('complaint') || q.includes('lost') || q.includes('helpline'))
-      return { label: '💬 Customer Support & Help', actionType: 'open_support' };
+      return { label: '💬 Support', actionType: 'open_support' };
     if (q.includes('dark mode') || q.includes('light mode') || q.includes('theme'))
-      return { label: '🌓 Toggle Day / Night Theme', actionType: 'toggle_theme' };
+      return { label: '🌓 Toggle Theme', actionType: 'toggle_theme' };
     if (q.includes('route') || q.includes('how to reach') || q.includes('directions') || q.includes('travel') || q.includes('bus'))
-      return { label: '🗺️ Plan Journey', actionType: 'open_planner' };
+      return { label: '🗺️ Plan Trip', actionType: 'open_planner' };
 
     return undefined;
   }
@@ -201,8 +201,8 @@ class AIAssistantService {
     if (q.includes('parcel') || q.includes('locker')) {
       return {
         id, sender: 'assistant', timestamp: now,
-        text: `📦 **Transit Parcel Locker Hub:**\nDeliver and pick up packages securely at transit stations across India with OTP locker access and live SMS alerts.`,
-        actionButton: { label: '📦 Open Parcel Hub', actionType: 'open_parcel_booking' },
+        text: `📦 **Parcel Delivery & Lockers:**\nSend and pick up packages across Bhubaneswar with OTP locker access and live SMS alerts.`,
+        actionButton: { label: '📦 Open Parcel', actionType: 'open_parcel_booking' },
       };
     }
     if (q.includes('fare') || q.includes('price') || q.includes('cost')) {

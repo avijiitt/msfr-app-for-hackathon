@@ -134,14 +134,14 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
               <Package className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>{t.parcelDelivery || 'Bhubaneswar Intra-City Parcel & Courier'}</span>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>{t.parcelDelivery || 'Parcel'}</span>
                 <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-extrabold">
-                  All BBSR Covered
+                  BBSR
                 </span>
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Send packages to any address, doorstep, or locker across Bhubaneswar via Mo Bus network
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Send packages to any address, doorstep, or locker in Bhubaneswar
               </p>
             </div>
           </div>

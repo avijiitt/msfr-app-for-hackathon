@@ -38,11 +38,11 @@ export const ParcelSyncModal: React.FC<ParcelSyncModalProps> = ({
               <Package className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                {t.parcelDelivery || 'Transit Parcel Locker Network'}
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                {t.parcelDelivery || 'Parcel'}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Intra-City Bus/Metro Locker Delivery Network
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Lockers & Delivery
               </p>
             </div>
           </div>
