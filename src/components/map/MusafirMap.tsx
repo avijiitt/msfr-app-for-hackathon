@@ -427,8 +427,6 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         zoom={mapZoom}
         className={`w-full h-full ${themeMode === 'dark' ? 'dark-tiles' : ''}`}
         zoomControl={false}
-        minZoom={10}
-        maxZoom={18}
       >
         <MapViewController
           center={mapCenter}
