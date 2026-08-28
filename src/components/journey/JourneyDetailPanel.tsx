@@ -366,14 +366,17 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
             <span>Assurance</span>
           </button>
         </div>
-
-        <button
-          onClick={handleNavClick}
-          className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold text-sm shadow-md shadow-blue-600/30 transition flex items-center justify-center gap-2"
-        >
-          <Navigation className="w-4 h-4 fill-white" />
-          <span>{isNavigating ? 'Navigating in Real-Time...' : 'Start Navigation'}</span>
-        </button>
+        
+        {/* Actions */}
+        <div className="pt-2 flex flex-col gap-2">
+          <button
+            onClick={onStartNavigation}
+            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition active:scale-98"
+          >
+            <Navigation className="w-4 h-4 fill-white" />
+            <span>{t?.startTripSync || 'Track & Sync Trip'}</span>
+          </button>
+        </div>
 
         <button
           onClick={() => setIsTicketPaymentOpen(true)}
