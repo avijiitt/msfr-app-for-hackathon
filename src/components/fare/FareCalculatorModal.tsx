@@ -1,5 +1,5 @@
-﻿import React, { useState } from 'react';
-import { Calculator, X, ArrowRight, ShieldCheck, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calculator, X, ArrowRight, ShieldCheck, MapPin, Navigation, Shuffle, Bus, Sparkles } from 'lucide-react';
 import { calculateAreaFareMatrix, AreaFareComparison } from '../../services/fareMatrixService';
 
 interface FareCalculatorModalProps {
@@ -9,79 +9,177 @@ interface FareCalculatorModalProps {
   destName?: string;
 }
 
+const POPULAR_LOCALITIES = [
+  'Master Canteen',
+  'Jayadev Vihar',
+  'KIIT Square, Patia',
+  'Infocity IT Hub',
+  'Baramunda ISBT',
+  'Biju Patnaik Airport',
+  'Khandagiri Square',
+  'Cuttack Badambadi',
+  'Vani Vihar Square',
+];
+
 export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
   isOpen,
   onClose,
   originName = 'Jayadev Vihar',
-  destName = 'KIIT Square, Bhubaneswar',
+  destName = 'KIIT Square, Patia',
 }) => {
+  const [manualOrigin, setManualOrigin] = useState(originName);
+  const [manualDest, setManualDest] = useState(destName);
   const [distanceKm, setDistanceKm] = useState(8.5);
-  const [fareData, setFareData] = useState<AreaFareComparison>(
-    calculateAreaFareMatrix(originName, destName, distanceKm)
+
+  useEffect(() => {
+    if (originName) setManualOrigin(originName);
+    if (destName) setManualDest(destName);
+  }, [originName, destName]);
+
+  const [fareData, setFareData] = useState<AreaFareComparison>(() =>
+    calculateAreaFareMatrix(manualOrigin, manualDest, distanceKm)
   );
+
+  useEffect(() => {
+    setFareData(calculateAreaFareMatrix(manualOrigin, manualDest, distanceKm));
+  }, [manualOrigin, manualDest, distanceKm]);
 
   if (!isOpen) return null;
 
-  const handleDistanceChange = (dist: number) => {
-    setDistanceKm(dist);
-    setFareData(calculateAreaFareMatrix(originName, destName, dist));
+  const handleSwap = () => {
+    const temp = manualOrigin;
+    setManualOrigin(manualDest);
+    setManualDest(temp);
+  };
+
+  const handleQuickSelect = (place: string, target: 'origin' | 'dest') => {
+    if (target === 'origin') {
+      setManualOrigin(place);
+    } else {
+      setManualDest(place);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="max-w-3xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in">
+      <div className="max-w-3xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto transition-colors">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center text-xl">
-              <Calculator className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl shadow-xs">
+              <Calculator className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-lg text-slate-900 dark:text-white">
-                All Transit Fares in This Area
+              <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">
+                Transit Fare Calculator
               </h3>
-              <p className="text-xs text-slate-400">Compare official fares across all public & private modes for your trip</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Compare official Mo Bus, Auto, Cab & Bike fares for any manual route
+              </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+            className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Distance Slider & Route Info */}
-        <div className="dashboard-card p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-200">
-            <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0" />
-            <span>{fareData.origin} ➔ {fareData.destination}</span>
+        {/* 📍 Manual Location Input Section */}
+        <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3 shadow-xs">
+          <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Navigation className="w-3.5 h-3.5 text-blue-600" />
+            <span>Enter Route Locations Manually</span>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <span className="text-xs font-bold text-slate-500 whitespace-nowrap">Distance: {distanceKm} km</span>
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,1fr] items-center gap-2">
+            {/* Origin Input */}
+            <div className="relative">
+              <div className="absolute left-3 top-3 text-emerald-500 font-bold text-xs">🟢</div>
+              <input
+                type="text"
+                placeholder="From (e.g. Master Canteen)"
+                value={manualOrigin}
+                onChange={(e) => setManualOrigin(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 transition"
+              />
+            </div>
+
+            {/* Swap Button */}
+            <button
+              onClick={handleSwap}
+              className="p-2 self-center mx-auto rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 transition active:scale-95"
+              title="Swap Locations"
+            >
+              <Shuffle className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Destination Input */}
+            <div className="relative">
+              <div className="absolute left-3 top-3 text-rose-500 font-bold text-xs">📍</div>
+              <input
+                type="text"
+                placeholder="To (e.g. KIIT Square, Patia)"
+                value={manualDest}
+                onChange={(e) => setManualDest(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 transition"
+              />
+            </div>
+          </div>
+
+          {/* Quick Suggestion Chips */}
+          <div className="space-y-1 pt-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Quick Pick Destinations:
+            </span>
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+              {POPULAR_LOCALITIES.slice(0, 6).map((place) => (
+                <button
+                  key={place}
+                  onClick={() => handleQuickSelect(place, 'dest')}
+                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-[11px] font-medium transition"
+                >
+                  {place.split(',')[0]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 📏 Distance Slider & Route Info */}
+        <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+            <MapPin className="w-4 h-4 text-blue-600 flex-shrink-0" />
+            <span className="truncate">{manualOrigin || 'Origin'} ➔ {manualDest || 'Destination'}</span>
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto flex-shrink-0">
+            <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+              {distanceKm} km
+            </span>
             <input
               type="range"
               min="1"
-              max="40"
+              max="50"
               step="0.5"
               value={distanceKm}
-              onChange={(e) => handleDistanceChange(parseFloat(e.target.value))}
-              className="w-32 accent-blue-600 cursor-pointer"
+              onChange={(e) => setDistanceKm(parseFloat(e.target.value))}
+              className="w-36 accent-blue-600 cursor-pointer"
             />
           </div>
         </div>
 
-        {/* All Available Fares Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        {/* 💰 All Available Fares Grid (Mo Bus, Auto, Cab, Bike, Train) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {fareData.modes.map((mode, idx) => (
             <div
               key={idx}
-              className="dashboard-card p-4 rounded-2xl flex flex-col justify-between gap-3 hover:border-blue-400 dark:hover:border-blue-600 transition"
+              className="bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 p-4 rounded-2xl flex flex-col justify-between gap-3 hover:border-blue-500 dark:hover:border-blue-500 transition shadow-xs"
             >
               <div className="flex items-start justify-between">
                 <span className="text-2xl">{mode.icon}</span>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
                   {mode.badge}
                 </span>
               </div>
@@ -95,7 +193,7 @@ export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
                 </h4>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-baseline justify-between">
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex items-baseline justify-between">
                 <div>
                   <div className="text-2xl font-black text-slate-900 dark:text-white">
                     ₹{mode.fareInr}
@@ -108,13 +206,21 @@ export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
                 </div>
                 <div className="text-right text-[11px] text-slate-400 font-medium">
                   <div>⏱️ {mode.durationMins} mins</div>
-                  <div className="text-[10px] text-emerald-600">🌱 {mode.carbonGrams}g CO₂</div>
+                  <div className="text-[10px] text-emerald-600 font-bold">🌱 {mode.carbonGrams}g CO₂</div>
                 </div>
               </div>
             </div>
           ))}
         </div>
+
+        <button
+          onClick={onClose}
+          className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-slate-700 hover:opacity-90 text-white font-bold text-xs transition shadow-sm"
+        >
+          Close Calculator
+        </button>
       </div>
     </div>
   );
 };
+

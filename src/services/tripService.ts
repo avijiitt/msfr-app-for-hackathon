@@ -92,6 +92,11 @@ class TripService {
     return [...this.trips];
   }
 
+  public clearTrips(): void {
+    this.trips = [];
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
   /**
    * Save a new trip to Supabase Cloud Database and local storage
    */

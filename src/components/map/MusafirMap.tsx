@@ -118,7 +118,8 @@ function MapViewController({
   bounds: [number, number][] | null;
 }) {
   const map = useMap();
-  const prevCenterRef = useRef<string>('');
+  const prevBoundsKeyRef = useRef<string>('');
+  const prevCenterKeyRef = useRef<string>('');
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -128,21 +129,26 @@ function MapViewController({
   }, [map]);
 
   useEffect(() => {
-    if (bounds && bounds.length >= 2) {
-      try {
-        const leafletBounds = L.latLngBounds(bounds.map(([lat, lng]) => [lat, lng]));
-        map.fitBounds(leafletBounds, {
-          padding: [50, 50],
-          maxZoom: 15,
-          animate: true,
-          duration: 1.2,
-        });
-      } catch {}
-    } else {
-      const centerKey = `${center[0].toFixed(4)},${center[1].toFixed(4)},${zoom}`;
-      if (prevCenterRef.current !== centerKey) {
-        prevCenterRef.current = centerKey;
-        map.flyTo(center, zoom, { duration: 1.2, easeLinearity: 0.25 });
+    // Only fitBounds when the actual coordinate values change, NOT on every vehicle state render
+    if (bounds && bounds.length >= 2 && bounds[0] && bounds[1]) {
+      const boundsKey = `${bounds[0][0].toFixed(4)},${bounds[0][1].toFixed(4)}-${bounds[1][0].toFixed(4)},${bounds[1][1].toFixed(4)}`;
+      if (prevBoundsKeyRef.current !== boundsKey) {
+        prevBoundsKeyRef.current = boundsKey;
+        try {
+          const leafletBounds = L.latLngBounds(bounds.map(([lat, lng]) => [lat, lng]));
+          map.fitBounds(leafletBounds, {
+            padding: [50, 50],
+            maxZoom: 16,
+            animate: true,
+            duration: 0.8,
+          });
+        } catch {}
+      }
+    } else if (center) {
+      const centerKey = `${center[0].toFixed(4)},${center[1].toFixed(4)}`;
+      if (prevCenterKeyRef.current !== centerKey) {
+        prevCenterKeyRef.current = centerKey;
+        map.flyTo(center, map.getZoom() || zoom, { duration: 0.8, easeLinearity: 0.25 });
       }
     }
   }, [center, zoom, bounds, map]);
@@ -418,6 +424,19 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
               <span className="hidden xs:inline">Layers</span>
             </button>
           )}
+        </div>
+      )}
+
+      {/* Bottom Left: Live GPS Fleet Radar HUD */}
+      {!isAnyModalOpen && (
+        <div className="absolute bottom-3 left-3 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-lg border border-slate-200/90 dark:border-slate-800 text-xs flex items-center gap-2 transition-all">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-800 dark:text-slate-200">
+            Live Fleet Active • {visibleVehicles.length} Vehicles on Map
+          </span>
         </div>
       )}
 

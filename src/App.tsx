@@ -43,6 +43,7 @@ import { PermissionsModal } from './components/auth/PermissionsModal';
 import { BusRoutesModal } from './components/routes/BusRoutesModal';
 import { LanguageSelectModal } from './components/language/LanguageSelectModal';
 import { tripService } from './services/tripService';
+import { TripsHistoryModal } from './components/trips/TripsHistoryModal';
 
 
 export const App: React.FC = () => {
@@ -102,6 +103,7 @@ export const App: React.FC = () => {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isTripsOpen, setIsTripsOpen] = useState(false);
   const [isBusRoutesOpen, setIsBusRoutesOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -130,7 +132,8 @@ export const App: React.FC = () => {
     isParcelOpen ||
     isScheduleOpen ||
     isSupportOpen ||
-    isProfileOpen
+    isProfileOpen ||
+    isTripsOpen
   );
 
   // Simulator Lifecycle
@@ -243,6 +246,10 @@ export const App: React.FC = () => {
       setIsWalletOpen(true);
     } else if (tab === 'settings') {
       setIsProfileOpen(true);
+    } else if (tab === 'trips') {
+      setIsTripsOpen(true);
+    } else if (tab === 'tracking') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -306,7 +313,7 @@ export const App: React.FC = () => {
         setIsWomenSafetyOpen(true);
         break;
       case 'open_my_trips':
-        setIsProfileOpen(true);
+        setIsTripsOpen(true);
         break;
       case 'trigger_sos':
         setIsSosOpen(true);
@@ -563,6 +570,17 @@ export const App: React.FC = () => {
       <CustomerSupportModal
         isOpen={isSupportOpen}
         onClose={() => setIsSupportOpen(false)}
+        t={t}
+      />
+
+      <TripsHistoryModal
+        isOpen={isTripsOpen}
+        onClose={() => setIsTripsOpen(false)}
+        onSelectTripRoute={(orig, dest) => {
+          setOriginQuery(orig);
+          setDestQuery(dest);
+          handleSearch(orig, dest);
+        }}
         t={t}
       />
 

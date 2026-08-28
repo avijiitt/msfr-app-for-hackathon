@@ -1,4 +1,4 @@
-﻿export interface TransitModeFare {
+export interface TransitModeFare {
   mode: 'bus' | 'metro' | 'train' | 'auto' | 'cab' | 'bike' | 'ferry';
   title: string;
   category: 'Public Transit' | 'Shared Mobility' | 'On-Demand';
@@ -38,19 +38,7 @@ export function calculateAreaFareMatrix(
       color: '#10B981',
       icon: '🚍',
     },
-    {
-      mode: 'metro',
-      title: 'Metro Rail (AC Elevated / Underground Rapid)',
-      category: 'Public Transit',
-      fareInr: Math.max(20, Math.round(distanceKm * 3.5)),
-      concessionFareInr: Math.max(15, Math.round(distanceKm * 2.5)),
-      durationMins: Math.round(distanceKm * 1.6) + 3,
-      carbonGrams: 180,
-      availability: 'High Frequency (Every 3-5 mins)',
-      badge: '⚡ Fastest',
-      color: '#2563EB',
-      icon: '🚇',
-    },
+
     {
       mode: 'train',
       title: 'Suburban Local Train (Fast Passenger)',
