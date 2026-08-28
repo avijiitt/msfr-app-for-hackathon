@@ -5,7 +5,7 @@ import {
   Bus, Train, LocateFixed, Plus, Minus,
   AlertTriangle, Clock, Eye, WifiOff, Zap, Navigation, ShieldCheck, Layers, RotateCw, Check, X, MapPin
 } from 'lucide-react';
-import { Vehicle, Amenity } from '../../types/transit';
+import { Vehicle } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
 import { getRouteDirections, RouteDirectionsResult } from '../../services/olaRoutingService';
 import { getHumanReadableLocationName } from '../../data/cities/bhubaneswar';
@@ -199,7 +199,6 @@ interface MusafirMapProps {
   destCoords?: [number, number] | null;
   originName?: string;
   isAnyModalOpen?: boolean;
-  amenities?: Amenity[];
 }
 
 export const MusafirMap: React.FC<MusafirMapProps> = ({
@@ -213,7 +212,6 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   destCoords = null,
   originName = 'Departure',
   isAnyModalOpen = false,
-  amenities,
 }) => {
   const [isOptionsOpen, setIsOptionsOpen] = useState(true);
   const [showBuses, setShowBuses] = useState(true);

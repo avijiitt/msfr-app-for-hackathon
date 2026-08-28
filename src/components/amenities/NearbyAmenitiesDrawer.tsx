@@ -1,23 +1,54 @@
-import React, { useState } from 'react';
-import { MapPin, PhoneCall, Star, Search, Navigation, X } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { MapPin, PhoneCall, Star, Search, Navigation, X, Store, CheckCircle2 } from 'lucide-react';
 import { TranslationDictionary } from '../../types/i18n';
 import { Amenity } from '../../types/transit';
+import { generateAmenitiesForLocation } from '../../data/amenities';
 
 interface NearbyAmenitiesDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   t: TranslationDictionary;
-  amenities: Amenity[];
+  originName?: string;
+  destName?: string;
+  originCoords?: [number, number] | null;
+  destCoords?: [number, number] | null;
 }
 
 export const NearbyAmenitiesDrawer: React.FC<NearbyAmenitiesDrawerProps> = ({
   isOpen,
   onClose,
   t,
-  amenities,
+  originName = 'Bhubaneswar Central',
+  destName = '',
+  originCoords = null,
+  destCoords = null,
 }) => {
+  const [activeLocationMode, setActiveLocationMode] = useState<'origin' | 'dest'>('origin');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Determine current active location and coordinates
+  const effectiveLocationName = useMemo(() => {
+    if (activeLocationMode === 'dest' && destName) {
+      return destName;
+    }
+    return originName || 'Bhubaneswar Central';
+  }, [activeLocationMode, originName, destName]);
+
+  const effectiveCoords = useMemo((): [number, number] => {
+    if (activeLocationMode === 'dest' && destCoords) {
+      return destCoords;
+    }
+    if (originCoords) {
+      return originCoords;
+    }
+    return [20.2961, 85.8245];
+  }, [activeLocationMode, originCoords, destCoords]);
+
+  // Generate dynamic amenities strictly within 500m of the selected location
+  const dynamicAmenities = useMemo(() => {
+    return generateAmenitiesForLocation(effectiveLocationName, effectiveCoords);
+  }, [effectiveLocationName, effectiveCoords]);
 
   if (!isOpen) return null;
 
@@ -32,7 +63,7 @@ export const NearbyAmenitiesDrawer: React.FC<NearbyAmenitiesDrawerProps> = ({
     { id: 'police', label: '👮 Police Help Kiosk', icon: '👮' },
   ];
 
-  const filteredAmenities = amenities.filter((a) => {
+  const filteredAmenities = dynamicAmenities.filter((a) => {
     const matchesCategory = selectedCategory === 'all' || a.category === selectedCategory;
     const matchesSearch =
       a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -54,7 +85,7 @@ export const NearbyAmenitiesDrawer: React.FC<NearbyAmenitiesDrawerProps> = ({
                 Nearby Stores
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Discover grocery stores, pharmacies, restaurants & essentials near your location
+                Live stores, groceries & essential services within 500m
               </p>
             </div>
           </div>
@@ -64,6 +95,45 @@ export const NearbyAmenitiesDrawer: React.FC<NearbyAmenitiesDrawerProps> = ({
           >
             <X className="w-4 h-4" />
           </button>
+        </div>
+
+        {/* Selected Location Selector (Origin vs Destination) */}
+        {destName && destName !== originName && (
+          <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-xs">
+            <button
+              onClick={() => setActiveLocationMode('origin')}
+              className={`flex-1 py-1.5 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition ${
+                activeLocationMode === 'origin'
+                  ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>🟢 Near Departure</span>
+              <span className="truncate max-w-[120px] opacity-75 font-normal">({originName.split(',')[0]})</span>
+            </button>
+            <button
+              onClick={() => setActiveLocationMode('dest')}
+              className={`flex-1 py-1.5 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition ${
+                activeLocationMode === 'dest'
+                  ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>📍 Near Destination</span>
+              <span className="truncate max-w-[120px] opacity-75 font-normal">({destName.split(',')[0]})</span>
+            </button>
+          </div>
+        )}
+
+        {/* Active Location Info Banner */}
+        <div className="flex items-center justify-between px-3 py-2 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 rounded-xl text-xs">
+          <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-semibold truncate">
+            <Store className="w-4 h-4 flex-shrink-0 text-purple-600" />
+            <span className="truncate">Showing stores within <strong>500m</strong> of <strong>{effectiveLocationName.split(',')[0]}</strong></span>
+          </div>
+          <span className="text-[10px] bg-purple-200/80 dark:bg-purple-800/60 text-purple-900 dark:text-purple-200 font-bold px-2 py-0.5 rounded-full flex-shrink-0">
+            {filteredAmenities.length} Found
+          </span>
         </div>
 
         {/* Search Bar */}
