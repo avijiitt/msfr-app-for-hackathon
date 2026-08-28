@@ -57,6 +57,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
   const [studentCollege, setStudentCollege] = useState('OUTR / KIIT University');
 
   // Google / Gmail Flow
+  const [emailStep, setEmailStep] = useState<'EMAIL_INPUT' | 'OTP_INPUT' | 'NAME_INPUT'>('EMAIL_INPUT');
   const [googleEmailInput, setGoogleEmailInput] = useState('');
   const [googleNameInput, setGoogleNameInput] = useState('');
   const [googleCategory, setGoogleCategory] = useState<'general' | 'student' | 'senior' | 'women'>('general');
@@ -282,34 +283,93 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
     });
   };
 
-  // ── 4. Google / Gmail Flow: 1-Tap Login ─────────────────────────────────────
-  const handleGoogleLogin = (e: React.FormEvent) => {
+  // ── 4. Google / Gmail Flow: Email OTP Login ─────────────────────────────────────
+  const handleSendEmailOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
     const email = googleEmailInput.trim().toLowerCase();
-    const name = googleNameInput.trim();
-
     if (!email || !email.includes('@')) {
-      setError('Please enter a valid Google / Gmail address.');
+      setError('Please enter a valid email address.');
       return;
     }
-    if (!name) {
-      setError('Please enter your Full Name.');
+    setLoading(true);
+    try {
+      const result = await authService.signInWithEmailOtp(email);
+      if (result.success) {
+        setToastMessage(`OTP sent to ${email}`);
+        setOtpDigits(['', '', '', '', '', '']);
+        setUserEnteredOtp('');
+        setEmailStep('OTP_INPUT');
+        setResendTimer(60);
+      } else {
+        setError(result.error || 'Failed to send OTP to email.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error sending Email OTP');
+    }
+    setLoading(false);
+  };
+
+  const executeEmailVerification = async (codeToVerify: string) => {
+    setError(null);
+    const cleanOtp = codeToVerify.trim();
+    if (cleanOtp.length !== 6) {
+      setError('Please enter the full 6-digit OTP code.');
       return;
     }
+    const email = googleEmailInput.trim().toLowerCase();
+    setLoading(true);
 
-    // Check if user already exists
-    const existing = getStoredProfile(email);
+    try {
+      const result = await authService.verifyEmailOtp(email, cleanOtp);
+      if (result.success) {
+        const existingProfile = getStoredProfile(email);
+        if (existingProfile && existingProfile.name && existingProfile.name !== 'Traveller') {
+          // Returning User
+          finalizeLogin({
+            name: existingProfile.name,
+            phone: existingProfile.phone || '',
+            email: email,
+            category: existingProfile.category || 'general',
+            savedLocations: existingProfile.savedLocations || sosService.getSavedLocations(),
+            bloodGroup: existingProfile.bloodGroup || 'B+',
+            homeAddress: existingProfile.homeAddress || 'Bhubaneswar, Odisha',
+          });
+          return;
+        }
+        // Brand New User
+        setLoading(false);
+        setToastMessage('');
+        setEmailStep('NAME_INPUT');
+      } else {
+        setError(result.error || 'Invalid OTP code.');
+        setLoading(false);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error verifying OTP');
+      setLoading(false);
+    }
+  };
 
+  const handleVerifyEmailOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    executeEmailVerification(userEnteredOtp || otpDigits.join(''));
+  };
+
+  const handleSaveEmailProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!googleNameInput.trim()) {
+      setError('Please enter your Name.');
+      return;
+    }
     finalizeLogin({
-      name: existing?.name || name,
-      email: email,
-      phone: existing?.phone || '',
-      category: existing?.category || googleCategory,
-      savedLocations: existing?.savedLocations || sosService.getSavedLocations(),
-      bloodGroup: existing?.bloodGroup || 'B+',
-      homeAddress: existing?.homeAddress || 'Bhubaneswar, Odisha',
+      name: googleNameInput.trim(),
+      phone: '',
+      email: googleEmailInput.trim().toLowerCase(),
+      category: googleCategory,
+      savedLocations: sosService.getSavedLocations(),
+      bloodGroup: 'B+',
+      homeAddress: 'Bhubaneswar, Odisha',
     });
   };
 
@@ -768,89 +828,165 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
           {/* ────────────────── METHOD 2: GOOGLE / GMAIL LOGIN ────────────────── */}
           {authMethod === 'GOOGLE' && (
-            <form onSubmit={handleGoogleLogin} className="space-y-4 py-1">
-              <div className="text-center space-y-1">
-                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                  Sign in with Google Account
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Instant login via Gmail without requiring a phone number.
-                </p>
-              </div>
+            <div className="space-y-4 py-1">
+              {emailStep === 'EMAIL_INPUT' && (
+                <form onSubmit={handleSendEmailOTP} className="space-y-4">
+                  <div className="text-center space-y-1">
+                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                      Sign in with Google Account
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      We'll send a 6-digit verification code to your email.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                      <Mail className="w-3 h-3 text-red-500" /> Google Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      autoFocus
+                      placeholder="yourname@gmail.com"
+                      value={googleEmailInput}
+                      onChange={(e) => setGoogleEmailInput(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition active:scale-98 flex items-center justify-center gap-2 text-sm"
+                  >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span>Send Verification Code</span>}
+                  </button>
+                </form>
+              )}
 
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  <Mail className="w-3 h-3 text-red-500" /> Google Email Address *
-                </label>
-                <input
-                  type="email"
-                  required
-                  autoFocus
-                  placeholder="yourname@gmail.com"
-                  value={googleEmailInput}
-                  onChange={(e) => setGoogleEmailInput(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                  <User className="w-3 h-3 text-blue-500" /> Full Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Abhijit Sahoo"
-                  value={googleNameInput}
-                  onChange={(e) => setGoogleNameInput(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
-                  Passenger Category
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                  {[
-                    { id: 'general', label: 'General', icon: '🚆' },
-                    { id: 'student', label: 'Student', icon: '🎓' },
-                    { id: 'senior', label: 'Senior', icon: '🧓' },
-                    { id: 'women', label: 'Women', icon: '🌸' },
-                  ].map((cat) => (
+              {emailStep === 'OTP_INPUT' && (
+                <form onSubmit={handleVerifyEmailOTP} className="space-y-5 animate-in slide-in-from-right-4">
+                  <div className="text-center space-y-2">
+                    <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center justify-center gap-2">
+                      <KeyRound className="w-5 h-5 text-blue-500" />
+                      Verify Email
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[250px] mx-auto leading-relaxed">
+                      Enter the 6-digit secure OTP sent to <strong className="text-slate-700 dark:text-slate-200">{googleEmailInput}</strong>
+                    </p>
+                  </div>
+                  <div className="flex justify-center gap-2 my-6">
+                    {otpDigits.map((d, idx) => (
+                      <input
+                        key={idx}
+                        id={`otp-email-${idx}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={d}
+                        onPaste={handlePasteOtp}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          const newDigits = [...otpDigits];
+                          newDigits[idx] = val;
+                          setOtpDigits(newDigits);
+                          setUserEnteredOtp(newDigits.join(''));
+                          if (val && idx < 5) {
+                            document.getElementById(`otp-email-${idx + 1}`)?.focus();
+                          }
+                          if (val && idx === 5) {
+                            executeEmailVerification(newDigits.join(''));
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Backspace' && !d && idx > 0) {
+                            document.getElementById(`otp-email-${idx - 1}`)?.focus();
+                          }
+                        }}
+                        className="w-11 h-12 text-center text-xl font-black bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-blue-50 dark:focus:bg-blue-900/20 text-slate-900 dark:text-white transition"
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading || userEnteredOtp.length !== 6}
+                    className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-bold rounded-2xl shadow-lg transition active:scale-98 flex items-center justify-center gap-2 text-sm"
+                  >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span>Verify & Continue</span>}
+                  </button>
+                  <div className="text-center pt-2">
                     <button
-                      key={cat.id}
                       type="button"
-                      onClick={() => setGoogleCategory(cat.id as any)}
-                      className={`p-2 rounded-xl text-center font-bold border transition flex flex-col items-center gap-0.5 ${
-                        googleCategory === cat.id
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400'
-                      }`}
+                      disabled={resendTimer > 0 || loading}
+                      onClick={handleSendEmailOTP}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700 disabled:text-slate-400 flex items-center justify-center gap-1.5 w-full transition"
                     >
-                      <span className="text-sm">{cat.icon}</span>
-                      <span className="text-[10px]">{cat.label}</span>
+                      <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                      {resendTimer > 0 ? `Resend code in 00:${resendTimer.toString().padStart(2, '0')}` : 'Resend OTP Code'}
                     </button>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                </form>
+              )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition active:scale-98 flex items-center justify-center gap-2 text-sm"
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    <Mail className="w-4 h-4 text-red-300" />
-                    <span>Continue with Google (+ ₹100 Bonus)</span>
-                  </>
-                )}
-              </button>
-            </form>
+              {emailStep === 'NAME_INPUT' && (
+                <form onSubmit={handleSaveEmailProfile} className="space-y-4 animate-in slide-in-from-right-4">
+                  <div className="text-center space-y-1">
+                    <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                      Complete Your Profile
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      You're almost there! Set up your commuter pass details.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                      <User className="w-3 h-3 text-blue-500" /> Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Abhijit Sahoo"
+                      value={googleNameInput}
+                      onChange={(e) => setGoogleNameInput(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
+                      Passenger Category
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                      {[
+                        { id: 'general', label: 'General', icon: '🚆' },
+                        { id: 'student', label: 'Student', icon: '🎓' },
+                        { id: 'senior', label: 'Senior', icon: '🧓' },
+                        { id: 'women', label: 'Women', icon: '🌸' },
+                      ].map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setGoogleCategory(cat.id as any)}
+                          className={`p-2 rounded-xl text-center font-bold border transition flex flex-col items-center gap-0.5 ${
+                            googleCategory === cat.id
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                              : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400'
+                          }`}
+                        >
+                          <span className="text-sm">{cat.icon}</span>
+                          <span className="text-[10px]">{cat.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition active:scale-98 flex items-center justify-center gap-2 text-sm"
+                  >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><span>Start Commuting (+ ₹100 Bonus)</span><ChevronRight className="w-4 h-4" /></>}
+                  </button>
+                </form>
+              )}
+            </div>
           )}
 
           {/* Privacy Note */}

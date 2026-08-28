@@ -156,6 +156,26 @@ class AuthService {
     return { success: true, user: this.mapUser(data.user) };
   }
 
+  // ── Email OTP Sign In ─────────────────────────────────────────────────────
+  public async signInWithEmailOtp(email: string): Promise<{ success: boolean; error?: string }> {
+    if (!isSupabaseConfigured() || !supabase) {
+      return { success: true };
+    }
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  }
+
+  public async verifyEmailOtp(email: string, token: string): Promise<AuthResult> {
+    if (!isSupabaseConfigured() || !supabase) {
+      return this.demoSignIn(email, email.split('@')[0]);
+    }
+    const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+    if (error) return { success: false, error: error.message };
+    if (!data.user) return { success: false, error: 'Verification failed.' };
+    return { success: true, user: this.mapUser(data.user) };
+  }
+
   // ── Google OAuth Sign In ──────────────────────────────────────────────────
   public async signInWithGoogle(): Promise<AuthResult> {
     if (!isSupabaseConfigured() || !supabase) {
