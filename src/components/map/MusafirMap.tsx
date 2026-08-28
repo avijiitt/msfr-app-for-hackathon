@@ -224,6 +224,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   const [showMetro, setShowMetro] = useState(true);
   const [showAutos, setShowAutos] = useState(true);
   const [showTraffic, setShowTraffic] = useState(true);
+  const [isLiveFleetEnabled, setIsLiveFleetEnabled] = useState(true);
   const [currentTimeStr, setCurrentTimeStr] = useState('');
 
   // Routing State
@@ -427,16 +428,43 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         </div>
       )}
 
-      {/* Bottom Left: Live GPS Fleet Radar HUD */}
+      {/* Bottom Left: Live GPS Fleet Radar HUD with Interactive ON/OFF Switch */}
       {!isAnyModalOpen && (
-        <div className="absolute bottom-3 left-3 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-lg border border-slate-200/90 dark:border-slate-800 text-xs flex items-center gap-2 transition-all">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-          </span>
-          <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-800 dark:text-slate-200">
-            Live Fleet Active • {visibleVehicles.length} Vehicles on Map
-          </span>
+        <div className="absolute bottom-3 left-3 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-xl border border-slate-200/90 dark:border-slate-800 text-xs flex items-center gap-2.5 transition-all">
+          <button
+            type="button"
+            onClick={() => setIsLiveFleetEnabled(!isLiveFleetEnabled)}
+            className="flex items-center gap-2 cursor-pointer group"
+            title={isLiveFleetEnabled ? 'Click to Turn Off Live Fleet GPS' : 'Click to Turn On Live Fleet GPS'}
+          >
+            {isLiveFleetEnabled ? (
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+            ) : (
+              <span className="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
+            )}
+            <div className="text-left">
+              <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 transition">
+                {isLiveFleetEnabled
+                  ? `Live Fleet: ON (${visibleVehicles.length} Moving)`
+                  : 'Live Fleet: OFF (Paused)'}
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsLiveFleetEnabled(!isLiveFleetEnabled)}
+            className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition cursor-pointer ${
+              isLiveFleetEnabled
+                ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300'
+            }`}
+          >
+            {isLiveFleetEnabled ? 'ON' : 'OFF'}
+          </button>
         </div>
       )}
 
@@ -635,6 +663,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
 
         {/* Active Rides Across All India Routes */}
         {!isOffline &&
+          isLiveFleetEnabled &&
           visibleVehicles.map((v) => (
             <Marker
               key={v.id}
