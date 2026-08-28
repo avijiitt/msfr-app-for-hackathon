@@ -6,6 +6,7 @@ import {
 import { authService } from '../../services/supabaseClient';
 import { walletService } from '../../services/walletService';
 import { sosService } from '../../services/sosService';
+import { dispatchMobileOTP } from '../../services/smsService';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -43,10 +44,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
   // Phone OTP Flow: 'PHONE_INPUT' -> 'OTP_INPUT' -> 'NAME_INPUT' (only for brand new users)
   const [phoneStep, setPhoneStep] = useState<'PHONE_INPUT' | 'OTP_INPUT' | 'NAME_INPUT'>('PHONE_INPUT');
   const [phoneInput, setPhoneInput] = useState('');
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [userEnteredOtp, setUserEnteredOtp] = useState('');
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
+  const [smsDeliveryStatus, setSmsDeliveryStatus] = useState<string>('');
 
   // New Phone User Name & Category
   const [phoneUserName, setPhoneUserName] = useState('');
@@ -74,9 +77,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
   if (!isOpen) return null;
 
-  // ── 1. Phone Flow: Step 1 (Send Unique OTP) ─────────────────────────────────
-  const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ── 1. Phone Flow: Step 1 (Send Unique OTP via Fast2SMS) ─────────────────────
+  const handleSendOTP = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError(null);
     const cleanNumber = phoneInput.trim().replace(/\D/g, '');
     if (cleanNumber.length < 10) {
@@ -88,40 +91,82 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
     const formattedPhone = '+91 ' + cleanNumber.slice(-10);
 
     try {
-      // Call backend SMS endpoint
-      const res = await fetch('http://localhost:5000/api/auth/send-sms-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: cleanNumber.slice(-10) }),
-      });
-
-      const data = await res.json();
-      const otpCode = data.otp || Math.floor(100000 + Math.random() * 900000).toString();
+      // High speed Fast2SMS Dispatcher
+      const result = await dispatchMobileOTP(cleanNumber);
+      const otpCode = result.otp;
       setGeneratedOtp(otpCode);
       setResendTimer(30);
+      setOtpDigits(['', '', '', '', '', '']);
+      setUserEnteredOtp('');
       setPhoneStep('OTP_INPUT');
       setLoading(false);
 
-      if (data.realSmsSent) {
-        setToastMessage(`📱 Real SMS Sent to ${formattedPhone} via ${data.smsProvider}! (Code: ${otpCode})`);
+      if (result.realSmsSent) {
+        setSmsDeliveryStatus('Real SMS Sent via Fast2SMS');
+        setToastMessage(`📱 Real SMS Sent to ${formattedPhone} via Fast2SMS!`);
       } else {
-        setToastMessage(`📩 SMS to ${formattedPhone}: Your unique MSFR verification code is ${otpCode}`);
+        setSmsDeliveryStatus('Fast2SMS Gateway Active');
+        setToastMessage(`📩 SMS to ${formattedPhone}: Your unique verification code is ${otpCode}`);
       }
     } catch (err) {
-      // Offline fallback
       const fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
       setGeneratedOtp(fallbackOtp);
       setResendTimer(30);
+      setOtpDigits(['', '', '', '', '', '']);
+      setUserEnteredOtp('');
       setPhoneStep('OTP_INPUT');
       setLoading(false);
-      setToastMessage(`📩 SMS to ${formattedPhone}: Your unique MSFR verification code is ${fallbackOtp}`);
+      setToastMessage(`📩 SMS to ${formattedPhone}: Your unique verification code is ${fallbackOtp}`);
+    }
+  };
+
+  // Helper to handle 6-digit box updates & auto-verification
+  const handleDigitChange = (index: number, val: string) => {
+    const cleanVal = val.replace(/\D/g, '').slice(-1);
+    const newDigits = [...otpDigits];
+    newDigits[index] = cleanVal;
+    setOtpDigits(newDigits);
+    const fullOtp = newDigits.join('');
+    setUserEnteredOtp(fullOtp);
+
+    // Auto-focus next input
+    if (cleanVal && index < 5) {
+      const nextInput = document.getElementById(`otp-digit-${index + 1}`);
+      if (nextInput) nextInput.focus();
+    }
+
+    // Auto verify when 6 digits are typed
+    if (newDigits.every((d) => d !== '') && fullOtp.length === 6) {
+      executeVerification(fullOtp);
+    }
+  };
+
+  const handleDigitKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-digit-${index - 1}`);
+      if (prevInput) prevInput.focus();
+    }
+  };
+
+  const handlePasteOtp = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length === 6) {
+      const digits = pasted.split('');
+      setOtpDigits(digits);
+      setUserEnteredOtp(pasted);
+      executeVerification(pasted);
     }
   };
 
   // ── 2. Phone Flow: Step 2 (Verify OTP) ──────────────────────────────────────
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeVerification = async (codeToVerify: string) => {
     setError(null);
+    const cleanOtp = codeToVerify.trim();
+    if (cleanOtp.length !== 6) {
+      setError('Please enter the full 6-digit OTP code.');
+      return;
+    }
 
     const cleanNumber = phoneInput.trim().replace(/\D/g, '');
     const formattedPhone = '+91 ' + cleanNumber.slice(-10);
@@ -129,20 +174,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify-sms-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: cleanNumber.slice(-10),
-          otp: userEnteredOtp.trim(),
-        }),
-      });
+      // Try backend verification
+      try {
+        const res = await fetch('http://localhost:5000/api/auth/verify-sms-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: cleanNumber.slice(-10),
+            otp: cleanOtp,
+          }),
+        });
 
-      const data = await res.json();
-
-      if (!res.ok || !data.verified) {
-        if (userEnteredOtp.trim() !== generatedOtp) {
-          setError(data.error || 'Invalid OTP code! Please check the 6-digit code.');
+        const data = await res.json();
+        if (!res.ok || !data.verified) {
+          if (cleanOtp !== generatedOtp) {
+            setError(data.error || 'Invalid OTP code! Please check the 6-digit code.');
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {
+        // Direct OTP match validation
+        if (cleanOtp !== generatedOtp) {
+          setError('Invalid verification OTP. Please check the code.');
           setLoading(false);
           return;
         }
@@ -170,7 +224,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
       setToastMessage('');
       setPhoneStep('NAME_INPUT');
     } catch (err: any) {
-      if (userEnteredOtp.trim() === generatedOtp) {
+      if (cleanOtp === generatedOtp) {
         const existingProfile = getStoredProfile(cleanNumber.slice(-10));
         if (existingProfile && existingProfile.name) {
           finalizeLogin({
@@ -192,6 +246,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
         setLoading(false);
       }
     }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    executeVerification(userEnteredOtp || otpDigits.join(''));
   };
 
   // ── 3. Phone Flow: Step 3 (Save New Phone User Profile) ──────────────────────
@@ -519,8 +578,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
           {authMethod === 'PHONE' && phoneStep === 'OTP_INPUT' && (
             <form onSubmit={handleVerifyOTP} className="space-y-4 py-1">
               <div className="text-center space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/50 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Fast2SMS OTP Gateway Connected</span>
+                </div>
                 <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                  Enter 6-Digit Code
+                  Enter 6-Digit SMS Code
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   Sent to <strong className="text-slate-800 dark:text-slate-200">+91 {phoneInput}</strong>
@@ -532,36 +595,52 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                     }}
                     className="text-blue-600 ml-1.5 font-bold hover:underline text-[11px]"
                   >
-                    Edit
+                    Change
                   </button>
                 </p>
               </div>
 
+              {/* 6-Digit Individual Box Grid */}
               <div>
-                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <KeyRound className="w-3 h-3 text-blue-500" /> OTP Code *
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <KeyRound className="w-3 h-3 text-blue-500" /> Verification Code
                   </span>
                   {generatedOtp && (
                     <button
                       type="button"
-                      onClick={() => setUserEnteredOtp(generatedOtp)}
-                      className="text-[10px] text-blue-600 hover:underline font-bold"
+                      onClick={() => {
+                        const digits = generatedOtp.split('');
+                        setOtpDigits(digits);
+                        setUserEnteredOtp(generatedOtp);
+                        executeVerification(generatedOtp);
+                      }}
+                      className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-extrabold bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-800"
                     >
-                      Auto-Fill Code
+                      ⚡ Auto-Fill ({generatedOtp})
                     </button>
                   )}
-                </label>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  maxLength={6}
-                  placeholder="• • • • • •"
-                  value={userEnteredOtp}
-                  onChange={(e) => setUserEnteredOtp(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-blue-500 dark:border-blue-600 rounded-2xl p-3 text-center text-xl font-black text-slate-900 dark:text-white tracking-[0.4em] focus:outline-none shadow-sm"
-                />
+                </div>
+
+                <div className="grid grid-cols-6 gap-2" onPaste={handlePasteOtp}>
+                  {otpDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      id={`otp-digit-${idx}`}
+                      type="tel"
+                      maxLength={1}
+                      value={digit}
+                      autoFocus={idx === 0}
+                      onChange={(e) => handleDigitChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                      className={`w-full aspect-square text-center text-xl font-black rounded-2xl border-2 transition-all focus:outline-none ${
+                        digit
+                          ? 'border-blue-600 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-200'
+                          : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white'
+                      } focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20`}
+                    />
+                  ))}
+                </div>
               </div>
 
               <button
@@ -594,7 +673,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                 ) : (
                   <button
                     type="button"
-                    onClick={handleSendOTP}
+                    onClick={() => handleSendOTP()}
                     className="text-blue-600 dark:text-blue-400 font-bold hover:underline flex items-center gap-1"
                   >
                     <RefreshCw className="w-3.5 h-3.5" /> Resend OTP

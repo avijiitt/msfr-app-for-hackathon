@@ -557,22 +557,46 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
     let smsProvider = 'Simulated SMS Gateway (Local)';
 
     // 1. Check for Fast2SMS Indian SMS Gateway
-    const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY;
+    const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY || 'd8DXNCKBsuvb5TU6GHoLFE049hnVzrZpYgiIyS2RqjMAtlJw3Or5w1y8kGZNatABz0vSjQY2HDeKImRl';
     if (FAST2SMS_API_KEY && FAST2SMS_API_KEY.length > 10) {
       try {
-        // Try Route OTP
-        const smsRes = await fetch(`https://www.fast2sms.com/dev/bulkV2?authorization=${FAST2SMS_API_KEY}&route=otp&variables_values=${otp}&flash=0&numbers=${cleanPhone}`);
+        // Fast2SMS Official POST JSON OTP Route
+        const smsRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+          method: 'POST',
+          headers: {
+            'authorization': FAST2SMS_API_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            variables_values: otp,
+            route: 'otp',
+            numbers: cleanPhone,
+          }),
+        });
         const smsData: any = await smsRes.json();
         
-        if (smsData.return || smsData.status_code === 200 || smsData.message?.includes?.('SMS sent')) {
+        if (smsData.return === true || smsData.status_code === 200 || smsData.message?.includes?.('SMS sent')) {
           realSmsSent = true;
-          smsProvider = 'Fast2SMS Gateway';
+          smsProvider = 'Fast2SMS OTP Gateway';
           console.log(`📱 [REAL SMS DELIVERED] to +91 ${cleanPhone} via Fast2SMS. OTP: ${otp}`);
         } else {
-          // Try Route Q fallback
-          const qRes = await fetch(`https://www.fast2sms.com/dev/bulkV2?authorization=${FAST2SMS_API_KEY}&route=q&message=Your MSFR verification code is ${otp}&language=english&flash=0&numbers=${cleanPhone}`);
+          // Fallback to Fast2SMS Quick Route (Route Q)
+          const qRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+            method: 'POST',
+            headers: {
+              'authorization': FAST2SMS_API_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              route: 'q',
+              message: `Your MSFR verification OTP is ${otp}. Valid for 5 minutes.`,
+              language: 'english',
+              flash: 0,
+              numbers: cleanPhone,
+            }),
+          });
           const qData: any = await qRes.json();
-          if (qData.return || qData.status_code === 200) {
+          if (qData.return === true || qData.status_code === 200) {
             realSmsSent = true;
             smsProvider = 'Fast2SMS Quick Gateway';
             console.log(`📱 [REAL SMS DELIVERED] to +91 ${cleanPhone} via Fast2SMS Quick Route.`);
