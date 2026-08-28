@@ -96,7 +96,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
         console.warn('Supabase phone auth background notice:', err);
       });
 
-      // 2. High-speed Fast2SMS Real SMS Gateway Dispatcher
+      // 2. High-speed Twilio Real SMS Gateway Dispatcher
       const result = await dispatchMobileOTP(cleanNumber);
       const otpCode = result.otp;
       setGeneratedOtp(otpCode);
@@ -107,10 +107,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
       setLoading(false);
 
       if (result.realSmsSent) {
-        setSmsDeliveryStatus('Real SMS Sent via Supabase & Fast2SMS');
-        setToastMessage(`📱 Real 6-Digit SMS Sent to ${formattedPhone}!`);
+        setSmsDeliveryStatus('Real SMS Sent via Twilio & Supabase');
+        setToastMessage(`📱 Real 6-Digit SMS Sent to ${formattedPhone} via Twilio!`);
       } else {
-        setSmsDeliveryStatus('Supabase & Fast2SMS Active');
+        setSmsDeliveryStatus('Twilio SMS Gateway Active');
         setToastMessage(`📩 SMS to ${formattedPhone}: Your unique 6-digit verification code is ${otpCode}`);
       }
     } catch (err) {

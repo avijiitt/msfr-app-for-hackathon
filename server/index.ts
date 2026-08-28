@@ -622,72 +622,20 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
     saveOtpLogs(logs.slice(0, 100)); // retain last 100 records
 
     let realSmsSent = false;
-    let smsProvider = 'Simulated SMS Gateway (Local)';
+    let smsProvider = 'Twilio SMS Gateway';
 
-    // 1. Check for Fast2SMS Indian SMS Gateway
-    const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY || 'd8DXNCKBsuvb5TU6GHoLFE049hnVzrZpYgiIyS2RqjMAtlJw3Or5w1y8kGZNatABz0vSjQY2HDeKImRl';
-    if (FAST2SMS_API_KEY && FAST2SMS_API_KEY.length > 10) {
-      try {
-        // Fast2SMS Official POST JSON OTP Route
-        const smsRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-          method: 'POST',
-          headers: {
-            'authorization': FAST2SMS_API_KEY,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            variables_values: otp,
-            route: 'otp',
-            numbers: cleanPhone,
-          }),
-        });
-        const smsData: any = await smsRes.json();
-        
-        if (smsData.return === true || smsData.status_code === 200 || smsData.message?.includes?.('SMS sent')) {
-          realSmsSent = true;
-          smsProvider = 'Fast2SMS OTP Gateway';
-          console.log(`📱 [REAL SMS DELIVERED] to +91 ${cleanPhone} via Fast2SMS. OTP: ${otp}`);
-        } else {
-          // Fallback to Fast2SMS Quick Route (Route Q)
-          const qRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-            method: 'POST',
-            headers: {
-              'authorization': FAST2SMS_API_KEY,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              route: 'q',
-              message: `Your MSFR verification OTP is ${otp}. Valid for 5 minutes.`,
-              language: 'english',
-              flash: 0,
-              numbers: cleanPhone,
-            }),
-          });
-          const qData: any = await qRes.json();
-          if (qData.return === true || qData.status_code === 200) {
-            realSmsSent = true;
-            smsProvider = 'Fast2SMS Quick Gateway';
-            console.log(`📱 [REAL SMS DELIVERED] to +91 ${cleanPhone} via Fast2SMS Quick Route.`);
-          } else {
-            console.log(`ℹ️ [Fast2SMS Notice]: ${smsData.message || qData.message}.`);
-          }
-        }
-      } catch (smsErr) {
-        console.warn('Fast2SMS gateway delivery notice:', smsErr);
-      }
-    }
+    // Twilio SMS Gateway Integration
+    const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID || '';
+    const TWILIO_AUTH = process.env.TWILIO_AUTH_TOKEN || '';
+    const TWILIO_FROM = process.env.TWILIO_PHONE_NUMBER || '';
 
-    // 2. Check for Twilio SMS Gateway (if configured in .env)
-    const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
-    const TWILIO_AUTH = process.env.TWILIO_AUTH_TOKEN;
-    const TWILIO_FROM = process.env.TWILIO_PHONE_NUMBER;
-    if (!realSmsSent && TWILIO_SID && TWILIO_AUTH && TWILIO_FROM) {
+    if (TWILIO_SID && TWILIO_AUTH && TWILIO_FROM) {
       try {
         const authHeader = 'Basic ' + Buffer.from(`${TWILIO_SID}:${TWILIO_AUTH}`).toString('base64');
         const params = new URLSearchParams();
         params.append('To', `+91${cleanPhone}`);
         params.append('From', TWILIO_FROM);
-        params.append('Body', `Your unique musafir transit verification code is: ${otp}. Valid for 5 minutes.`);
+        params.append('Body', `Your Musafir verification code is: ${otp}. Valid for 5 minutes. Do not share this code.`);
 
         const twilioRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
           method: 'POST',
@@ -697,17 +645,21 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
           },
           body: params.toString(),
         });
-        if (twilioRes.ok) {
+        const twilioData: any = await twilioRes.json();
+
+        if (twilioRes.ok && (twilioData.sid || twilioData.status === 'queued' || twilioData.status === 'sent')) {
           realSmsSent = true;
-          smsProvider = 'Twilio SMS Gateway';
-          console.log(`📱 [REAL SMS DELIVERED] to +91 ${cleanPhone} via Twilio.`);
+          smsProvider = 'Twilio SMS Gateway (Live)';
+          console.log(`📱 [REAL SMS DELIVERED] to +91 ${cleanPhone} via Twilio! SID: ${twilioData.sid}`);
+        } else {
+          console.warn('Twilio Gateway notice:', twilioData.message || twilioData);
         }
       } catch (twErr) {
         console.warn('Twilio delivery notice:', twErr);
       }
     }
 
-    console.log(`📩 [UNIQUE OTP GENERATED & STORED IN DB]: Mobile: +91 ${cleanPhone} | OTP: ${otp} | Provider: ${smsProvider}`);
+    console.log(`📩 [OTP DISPATCHED & STORED IN DB]: Mobile: +91 ${cleanPhone} | OTP: ${otp} | Provider: ${smsProvider}`);
 
     res.json({
       success: true,
@@ -716,8 +668,8 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
       realSmsSent,
       smsProvider,
       message: realSmsSent
-        ? `Real SMS dispatched to +91 ${cleanPhone} via ${smsProvider}`
-        : `Unique OTP generated and stored in database for +91 ${cleanPhone}`,
+        ? `Real SMS dispatched to +91 ${cleanPhone} via Twilio`
+        : `OTP generated and stored in database for +91 ${cleanPhone}`,
     });
   } catch (err: any) {
     console.error('Send OTP error:', err);
