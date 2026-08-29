@@ -8,6 +8,8 @@ import { Vehicle } from '../../types/transit';
 import { LanguageCode } from '../../types/i18n';
 import { LiveLocationData } from '../../services/geolocationService';
 
+import { IndiaLocationResult } from '../../services/indiaGeocodingService';
+
 interface MobileAppViewProps {
   originQuery: string;
   destQuery: string;
@@ -34,6 +36,10 @@ interface MobileAppViewProps {
   originCoords: [number, number] | null;
   destCoords: [number, number] | null;
   onSelectLocationOnMap: (lat: number, lng: number, name?: string, type?: 'origin' | 'dest') => void;
+  onOriginSelected?: (result: IndiaLocationResult) => void;
+  onDestSelected?: (result: IndiaLocationResult) => void;
+  onUseLiveGps?: () => void;
+  isGpsActive?: boolean;
 }
 
 export const MobileAppView: React.FC<MobileAppViewProps> = ({
@@ -62,7 +68,12 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   originCoords,
   destCoords,
   onSelectLocationOnMap,
+  onOriginSelected,
+  onDestSelected,
+  onUseLiveGps,
+  isGpsActive,
 }) => {
+
   const [activeTab, setActiveTab] = useState<MobileTab>('home');
   const [isRideDetailsOpen, setIsRideDetailsOpen] = useState(false);
 
@@ -133,7 +144,14 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
             onSelectDestination={onSelectDestination}
             onOpenFareCalc={onOpenFareCalc}
             onTrackTrip={() => setIsRideDetailsOpen(true)}
+            onOriginSelected={onOriginSelected}
+            onDestSelected={onDestSelected}
+            onOpenBusRoutes={onOpenBusRoutes}
+            onOpenAlerts={onOpenAlerts}
+            onUseLiveGps={onUseLiveGps}
+            isGpsActive={isGpsActive}
           />
+
         )}
       </main>
 

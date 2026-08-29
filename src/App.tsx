@@ -394,7 +394,12 @@ export const App: React.FC = () => {
           originCoords={originCoords}
           destCoords={destCoords}
           onSelectLocationOnMap={handleSelectLocationOnMap}
+          onOriginSelected={handleOriginSelected}
+          onDestSelected={handleDestSelected}
+          onUseLiveGps={handleUseLiveGps}
+          isGpsActive={isGpsActive}
         />
+
       </div>
 
       {/* ─── Tablet & Desktop 3-Column Modern Workspace ─── */}

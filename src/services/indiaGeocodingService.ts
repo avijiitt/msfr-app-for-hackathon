@@ -16,13 +16,30 @@ const isOlaMapsConfigured = (): boolean =>
 
 // ── Popular India locations for instant autocomplete (offline & instant lookup) ─────────
 export const POPULAR_INDIAN_LOCATIONS: IndiaLocationResult[] = [
-  // Bhubaneswar & Odisha
+  // Bhubaneswar & Odisha (Institutes, Colleges, Hospitals & Transit Hubs)
+  { id: 'bbs-trident', name: 'Trident College / Trident Academy of Creative Technology', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3582, lng: 85.8086, type: 'university', formattedAddress: 'Near Infocity Square, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-kiit', name: 'KIIT Square, Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3541, lng: 85.8175, type: 'university', formattedAddress: 'KIIT Square, Patia, Bhubaneswar, Odisha' },
+  { id: 'bbs-iter', name: 'ITER / SOA University (Siksha \'O\' Anusandhan)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2505, lng: 85.7972, type: 'university', formattedAddress: 'Jagamara, Khandagiri, Bhubaneswar, Odisha' },
+  { id: 'bbs-silicon', name: 'Silicon University / SiliconTech', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3533, lng: 85.8055, type: 'university', formattedAddress: 'Silicon Hills, Patia, Bhubaneswar, Odisha' },
+  { id: 'bbs-cvrce', name: 'C.V. Raman Global University (CVRCE)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2198, lng: 85.7363, type: 'university', formattedAddress: 'Bidyanagar, Mahura, Janla, Bhubaneswar, Odisha' },
+  { id: 'bbs-outr', name: 'OUTR / CET Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2764, lng: 85.7725, type: 'university', formattedAddress: 'Techno Campus, Ghatikia, Kalinga Nagar, Bhubaneswar, Odisha' },
   { id: 'bbs-jayadev', name: 'Jayadev Vihar, Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3039, lng: 85.8188, type: 'landmark', formattedAddress: 'Jayadev Vihar Square, NH16, Bhubaneswar, Odisha' },
-  { id: 'bbs-master-canteen', name: 'Master Canteen, Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2668, lng: 85.8436, type: 'station', formattedAddress: 'Master Canteen Station Plaza, Bhubaneswar, Odisha' },
+  { id: 'bbs-master-canteen', name: 'Master Canteen, Bhubaneswar Railway Station', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2668, lng: 85.8436, type: 'station', formattedAddress: 'Master Canteen Station Plaza, Bhubaneswar, Odisha' },
+  { id: 'bbs-baramunda', name: 'Baramunda ISBT Bus Terminal (Babasaheb Ambedkar Bus Terminal)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2818, lng: 85.7938, type: 'station', formattedAddress: 'ISBT Baramunda, NH16, Bhubaneswar, Odisha' },
+  { id: 'bbs-patia', name: 'Patia Square / Patia Station', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3567, lng: 85.8166, type: 'station', formattedAddress: 'Patia, Bhubaneswar, Odisha' },
+  { id: 'bbs-damana', name: 'Damana Square / Chandrasekharpur', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3341, lng: 85.8202, type: 'landmark', formattedAddress: 'Damana Chhak, CSPUR, Bhubaneswar, Odisha' },
+  { id: 'bbs-khandagiri', name: 'Khandagiri & Udayagiri Caves Square', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2605, lng: 85.7865, type: 'landmark', formattedAddress: 'Khandagiri Square, NH16, Bhubaneswar, Odisha' },
+  { id: 'bbs-rasulgarh', name: 'Rasulgarh Square / Cuttack Road', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2982, lng: 85.8643, type: 'landmark', formattedAddress: 'Rasulgarh Flyover, NH16, Bhubaneswar, Odisha' },
+  { id: 'bbs-vanivihar', name: 'Vani Vihar Square / Utkal University', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2974, lng: 85.8475, type: 'university', formattedAddress: 'Utkal University, Vani Vihar, Bhubaneswar, Odisha' },
   { id: 'bbs-airport', name: 'Biju Patnaik International Airport (BBI)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2524, lng: 85.8178, type: 'airport', formattedAddress: 'Airport Road, Bhubaneswar, Odisha' },
   { id: 'bbs-aiims', name: 'AIIMS Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2312, lng: 85.7761, type: 'hospital', formattedAddress: 'Sijua, Patrapada, Bhubaneswar, Odisha' },
-  { id: 'bbs-infocity', name: 'Infocity IT Park, Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3602, lng: 85.8035, type: 'landmark', formattedAddress: 'Infocity Road, Patia, Bhubaneswar, Odisha' },
+  { id: 'bbs-infocity', name: 'Infocity IT Park & DLF Cybercity', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3602, lng: 85.8035, type: 'landmark', formattedAddress: 'Infocity Road, Patia, Bhubaneswar, Odisha' },
+  { id: 'bbs-utkal-hosp', name: 'Utkal Hospital, Niladri Vihar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3448, lng: 85.8062, type: 'hospital', formattedAddress: 'Niladri Vihar, Chandrasekharpur, Bhubaneswar, Odisha' },
+  { id: 'bbs-care-hosp', name: 'CARE Hospitals / Chandrasekharpur', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3245, lng: 85.8172, type: 'hospital', formattedAddress: 'Chandrasekharpur, Bhubaneswar, Odisha' },
+  { id: 'bbs-kalinga-hosp', name: 'Kalinga Hospital Square', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3168, lng: 85.8185, type: 'hospital', formattedAddress: 'Kalinganagar, Chandrasekharpur, Bhubaneswar, Odisha' },
+  { id: 'bbs-sum-hosp', name: 'SUM Hospital / IMS & SUM', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2798, lng: 85.7621, type: 'hospital', formattedAddress: 'Kalinga Nagar, Ghatikia, Bhubaneswar, Odisha' },
+  { id: 'bbs-nandankanan', name: 'Nandankanan Zoological Park & Botanical Garden', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3958, lng: 85.8248, type: 'landmark', formattedAddress: 'Nandankanan, Bhubaneswar, Odisha' },
+  { id: 'bbs-lingaraj', name: 'Lingaraj Temple & Old Town Plaza', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2382, lng: 85.8338, type: 'landmark', formattedAddress: 'Old Town, Bhubaneswar, Odisha' },
   { id: 'bbs-puri', name: 'Puri Railway Station & Jagannath Temple', city: 'Puri', state: 'Odisha', lat: 19.8038, lng: 85.8201, type: 'station', formattedAddress: 'Puri Railway Station, Puri, Odisha' },
   { id: 'bbs-cuttack', name: 'Badambadi Bus Stand, Cuttack', city: 'Cuttack', state: 'Odisha', lat: 20.4625, lng: 85.8828, type: 'station', formattedAddress: 'Badambadi, Cuttack, Odisha' },
 
