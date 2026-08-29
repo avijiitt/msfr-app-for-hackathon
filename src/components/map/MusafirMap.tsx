@@ -341,33 +341,35 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         </div>
       )}
 
-      {/* 2. Top Center: Route Distance Pill (Strictly shows distance, no corridor jargon) */}
+      {/* 2. Route Distance Pill (Placed cleanly below mobile search bar at top-15, centered on desktop at sm:top-3) */}
       {!isAnyModalOpen && routeInfo && !isOffline && (
-        <div className="absolute top-2.5 sm:top-3 left-1/2 -translate-x-1/2 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-lg border border-slate-200/90 dark:border-slate-800 flex items-center gap-2 transition-all">
-          <div className="w-6 h-6 rounded-lg bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-            <Navigation className="w-3.5 h-3.5 text-blue-600" />
+        <div className="absolute top-15 sm:top-3 left-3 sm:left-1/2 sm:-translate-x-1/2 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 sm:px-3.5 py-1.5 rounded-2xl shadow-lg border border-slate-200/90 dark:border-slate-800 flex items-center gap-1.5 sm:gap-2 transition-all max-w-[190px] sm:max-w-none">
+          <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+            <Navigation className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600" />
           </div>
-          <div className="text-xs font-black text-slate-900 dark:text-white truncate">
+          <div className="text-[11px] sm:text-xs font-black text-slate-900 dark:text-white truncate">
             {routeInfo.distanceKm} km • ~{routeInfo.durationMinutes} mins
           </div>
         </div>
       )}
 
-      {/* 3. Top Right: Live Clock & Layers */}
+      {/* 3. Live Clock & Layers (Placed at top-15 on mobile, sm:top-3 on desktop) */}
       {!isAnyModalOpen && !isOffline && (
-        <div className="absolute top-2.5 sm:top-3 right-2.5 sm:right-3 z-[400] flex flex-col items-end gap-1.5">
+        <div className="absolute top-15 sm:top-3 right-3 z-[400] flex flex-col items-end gap-1.5">
           <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-xl shadow-lg border border-slate-200/90 dark:border-slate-800 text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-blue-600 flex-shrink-0 animate-pulse" />
-            <span>{currentTimeStr || 'Live Sync'}</span>
+            <span className="hidden xs:inline">{currentTimeStr || 'Live Sync'}</span>
+            <span className="xs:hidden">{currentTimeStr ? currentTimeStr.split(',')[1]?.trim() || currentTimeStr : 'Live'}</span>
           </div>
 
           <button
             onClick={() => setIsOptionsOpen(!isOptionsOpen)}
-            className="p-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-xl shadow-lg border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 active:scale-95 transition"
+            className="p-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-xl shadow-lg border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 active:scale-95 transition shadow-xs"
             title="Map Layers"
           >
             <Layers className="w-4 h-4" />
           </button>
+
 
           {isOptionsOpen && (
             <div className="w-48 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 text-xs flex flex-col gap-2">
