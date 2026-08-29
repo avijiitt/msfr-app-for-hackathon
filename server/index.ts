@@ -953,6 +953,176 @@ app.get('/api/payment/history', (_req: Request, res: Response) => {
   });
 });
 
+// ── 5. Mo Bus Routes & Stoppages API ───────────────────────────────────────
+app.get('/api/routes', async (_req: Request, res: Response) => {
+  try {
+    const { MO_BUS_DETAILED_ROUTES } = await import('../src/data/busRoutesData.js');
+    res.json({
+      success: true,
+      totalRoutes: MO_BUS_DETAILED_ROUTES.length,
+      routes: MO_BUS_DETAILED_ROUTES,
+    });
+  } catch {
+    // Fallback if dynamic import needs ts
+    try {
+      const { MO_BUS_DETAILED_ROUTES } = await import('../src/data/busRoutesData.ts');
+      res.json({
+        success: true,
+        totalRoutes: MO_BUS_DETAILED_ROUTES.length,
+        routes: MO_BUS_DETAILED_ROUTES,
+      });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: 'Failed to load routes dataset', details: e.message });
+    }
+  }
+});
+
+app.get('/api/routes/:routeId', async (req: Request, res: Response) => {
+  try {
+    const { routeId } = req.params;
+    let routesData: any[] = [];
+    try {
+      const { MO_BUS_DETAILED_ROUTES } = await import('../src/data/busRoutesData.ts');
+      routesData = MO_BUS_DETAILED_ROUTES;
+    } catch {
+      const { MO_BUS_DETAILED_ROUTES } = await import('../src/data/busRoutesData.js');
+      routesData = MO_BUS_DETAILED_ROUTES;
+    }
+
+    const cleanRoute = (routeId || '').trim().replace(/^Route\s*/i, '');
+    const found = routesData.find((r) => r.route.toLowerCase() === cleanRoute.toLowerCase());
+
+    if (!found) {
+      return res.status(404).json({ success: false, error: `Mo Bus Route ${routeId} not found` });
+    }
+
+    res.json({ success: true, route: found });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── 6. Digital QR Ticketing & Validation Engine ───────────────────────────
+app.post('/api/tickets/book', async (req: Request, res: Response) => {
+  try {
+    const { 
+      origin, 
+      destination, 
+      routeNumber = '10', 
+      fare = 15, 
+      passengerCount = 1, 
+      passengerCategory = 'general',
+      paymentMethod = 'wallet',
+      userId 
+    } = req.body;
+
+    const totalFare = Number(fare) * Number(passengerCount);
+    
+    // Check and debit wallet if paid with wallet
+    if (paymentMethod === 'wallet') {
+      if (memoryStore.walletBalance < totalFare) {
+        return res.status(400).json({
+          success: false,
+          error: `Insufficient Mo-Wallet balance (₹${memoryStore.walletBalance}). Required: ₹${totalFare}.`,
+        });
+      }
+      memoryStore.walletBalance -= totalFare;
+      memoryStore.transactions.unshift({
+        id: 'tx-tkt-' + Date.now(),
+        amount: totalFare,
+        type: 'ticket',
+        title: `Mo Bus ${routeNumber}: ${origin} ➔ ${destination}`,
+        timestamp: 'Just now',
+        balanceAfter: memoryStore.walletBalance,
+        status: 'success',
+        routeOrMethod: `Mo Bus Route ${routeNumber}`,
+      });
+    }
+
+    const ticketId = 'TKT-' + crypto.randomInt(100000, 999999);
+    const bookingCode = 'MSFR-OD-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+    const qrPayload = JSON.stringify({
+      tkt: ticketId,
+      code: bookingCode,
+      r: routeNumber,
+      f: totalFare,
+      exp: Date.now() + 4 * 3600 * 1000, // 4 hours validity
+    });
+    const qrSignature = crypto.createHmac('sha256', 'musafir_secret_salt').update(qrPayload).digest('hex').slice(0, 16);
+
+    const ticketRecord = {
+      id: ticketId,
+      bookingCode,
+      origin: origin || 'Master Canteen',
+      destination: destination || 'Patia Square',
+      routeNumber,
+      fare: totalFare,
+      passengerCount: Number(passengerCount),
+      passengerCategory,
+      paymentMethod,
+      status: 'active',
+      qrHash: `${qrPayload}#${qrSignature}`,
+      issuedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 4 * 3600 * 1000).toISOString(),
+      userId: userId || null,
+    };
+
+    memoryStore.tickets.unshift(ticketRecord);
+
+    console.log(`🎫 [TICKET ISSUED]: Ticket ID: ${ticketId} | Route: Mo Bus ${routeNumber} | Fare: ₹${totalFare}`);
+
+    res.status(201).json({
+      success: true,
+      ticket: ticketRecord,
+      walletBalance: memoryStore.walletBalance,
+      message: `Digital Ticket #${ticketId} successfully issued with dynamic QR code.`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/tickets/active', (_req: Request, res: Response) => {
+  const active = memoryStore.tickets.filter((t: any) => t.status === 'active' && new Date(t.expiresAt).getTime() > Date.now());
+  res.json({
+    success: true,
+    count: active.length,
+    tickets: active,
+  });
+});
+
+app.post('/api/tickets/validate', (req: Request, res: Response) => {
+  const { ticketId, conductorId = 'COND-BBI-04' } = req.body;
+  const ticket = memoryStore.tickets.find((t: any) => t.id === ticketId || t.bookingCode === ticketId);
+
+  if (!ticket) {
+    return res.status(404).json({ success: false, verified: false, message: 'Invalid or non-existent ticket' });
+  }
+
+  if (ticket.status === 'validated') {
+    return res.status(400).json({ success: false, verified: false, message: 'Ticket already validated and used' });
+  }
+
+  if (new Date(ticket.expiresAt).getTime() < Date.now()) {
+    ticket.status = 'expired';
+    return res.status(400).json({ success: false, verified: false, message: 'Ticket has expired' });
+  }
+
+  ticket.status = 'validated';
+  ticket.validatedAt = new Date().toISOString();
+  ticket.validatedBy = conductorId;
+
+  console.log(`✅ [TICKET VALIDATED]: Ticket ${ticket.id} validated by ${conductorId}`);
+
+  res.json({
+    success: true,
+    verified: true,
+    message: `Ticket #${ticket.id} valid. Boarding confirmed for ${ticket.passengerCount} passenger(s).`,
+    ticket,
+  });
+});
+
+
 // ── Start Server ───────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀 Musafir Backend API Server running at http://localhost:${PORT}`);
