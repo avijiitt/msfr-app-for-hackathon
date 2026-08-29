@@ -149,7 +149,7 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
             onClick={() => { onOpenWomenSafety(); onClose(); }}
             className="p-2.5 rounded-2xl bg-pink-50 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-800 text-pink-700 dark:text-pink-300 text-xs font-bold flex items-center gap-2"
           >
-            <span>🌸</span>
+            <span>🛡️</span>
             <span>Women Safety</span>
           </button>
 

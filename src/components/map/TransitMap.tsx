@@ -20,7 +20,7 @@ const createVehicleIcon = (vehicle: Vehicle) => {
   const isPink = vehicle.routeId === 'PINK-EV';
   const isMetro = vehicle.mode === 'metro';
   const isTrain = vehicle.mode === 'train';
-  const emoji = isPink ? '🌸' : isMetro ? '🚇' : isTrain ? '🚆' : '🚍';
+  const emoji = isPink ? '⚡' : isMetro ? '🚇' : isTrain ? '🚆' : '🚍';
   const ringColor = isDelayed ? '#ffb4ab' : isPink ? '#ffb2be' : isMetro ? '#ffc107' : '#fabd00';
 
   return L.divIcon({
@@ -326,8 +326,9 @@ export const TransitMap: React.FC<TransitMapProps> = ({
         <MapLocationPicker onLocationPicked={handleMapClick} />
 
         <TileLayer
-          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          className="dark:dark-tiles"
         />
 
         {/* Real-Time User GPS Live Pin & Accuracy Circle */}

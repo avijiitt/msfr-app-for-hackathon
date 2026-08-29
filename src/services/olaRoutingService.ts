@@ -103,7 +103,7 @@ export async function getRouteDirections(
                 coordinates: decoded,
                 distanceKm: roadDistance,
                 durationMinutes: estMins,
-                summary: mainRoute.summary || 'via Primary Transit Corridor',
+                summary: `${roadDistance} km • ~${estMins} mins`,
                 source: 'ola_maps',
               };
             }
@@ -132,7 +132,7 @@ export async function getRouteDirections(
           coordinates: leafletCoords,
           distanceKm: distKm,
           durationMinutes: durMins,
-          summary: 'via Highway & Arterial Roads',
+          summary: `${distKm} km • ~${durMins} mins`,
           source: 'osrm_fallback',
         };
       }

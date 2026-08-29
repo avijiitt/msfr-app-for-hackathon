@@ -203,7 +203,7 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
     { label: '💳 Open Wallet', query: 'Open Mo-Wallet and check balance' },
     { label: '🗺️ Plan Route', query: 'Best route from Jayadev Vihar to KIIT Square' },
     { label: '🎓 Student 50% Off', query: 'How to get student concession pass?' },
-    { label: '🌸 Women Safety', query: 'Show women reserved pink buses and safety hub' },
+    { label: '🛡️ Women Safety', query: 'Show women reserved pink buses and safety hub' },
     { label: '🛡️ Claim Refund', query: 'My bus was delayed by 20 minutes, refund claim' },
   ];
 

@@ -474,7 +474,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                         { id: 'general', label: 'General', icon: '🚆' },
                         { id: 'student', label: 'Student', icon: '🎓' },
                         { id: 'senior', label: 'Senior', icon: '🧓' },
-                        { id: 'women', label: 'Women', icon: '🌸' },
+                        { id: 'women', label: 'Women', icon: '👩' },
                       ].map((cat) => (
                         <button
                           key={cat.id}

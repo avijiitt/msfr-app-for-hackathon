@@ -26,14 +26,14 @@ export const WomenSafetyHub: React.FC<WomenSafetyHubProps> = ({
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-900/40 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl">
-              🌸
+              <Shield className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                {t.womenBooking || 'Women Safety & Pink Transit Hub'}
+                {t.womenBooking || 'Women Safety & Night-Safe Escort System'}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Safe Multi-Modal Commute & Women Reserved Transit
+                CRUT Pink Transit, CCTV Live Monitoring & Emergency Police Linkage
               </p>
             </div>
           </div>
@@ -45,12 +45,12 @@ export const WomenSafetyHub: React.FC<WomenSafetyHubProps> = ({
           </button>
         </div>
 
-        {/* Feature 1: Dedicated Women Coaches & Pink Buses */}
-        <div className="bg-pink-50 dark:bg-pink-950/30 border border-pink-200 dark:border-pink-800/50 rounded-2xl p-4 space-y-2.5 shadow-sm">
+        {/* Pink Bus Status Card */}
+        <div className="rounded-2xl p-4 bg-pink-50 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-800 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-sm text-pink-900 dark:text-pink-200 flex items-center gap-1.5">
-              🌸 Dedicated Women Pink Transit Coaches
-            </span>
+            <h3 className="font-bold text-sm text-pink-900 dark:text-pink-200 flex items-center gap-1.5">
+              🛡️ Dedicated Women Pink Transit Coaches
+            </h3>
             <span className="text-[10px] bg-pink-100 dark:bg-pink-900/60 text-pink-800 dark:text-pink-300 px-2 py-0.5 rounded-full font-mono font-bold">
               ● Active Fleet
             </span>

@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import {
-  Bus, LocateFixed, Plus, Minus,
-  Clock, WifiOff, Layers, X, Navigation
+  Clock, WifiOff, Layers, X, Navigation, MapPin, CheckCircle2, ArrowRight
 } from 'lucide-react';
 import { Vehicle } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
@@ -18,13 +17,13 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Custom Neon Bus Icon
+// Custom Clean Vehicle Icon (No cherry blossom)
 const createVehicleIcon = (vehicle: Vehicle) => {
   const isDelayed = vehicle.delaySeconds > 60;
   const isPink = vehicle.routeId === 'PINK-EV';
   const isMetro = vehicle.mode === 'metro';
   const isTrain = vehicle.mode === 'train';
-  const emoji = isPink ? '🌸' : isMetro ? '🚇' : isTrain ? '🚆' : '🚍';
+  const emoji = isPink ? '⚡' : isMetro ? '🚇' : isTrain ? '🚆' : '🚍';
   const ringColor = isDelayed ? '#ef4444' : isPink ? '#ec4899' : isMetro ? '#f59e0b' : '#3b82f6';
 
   return L.divIcon({
@@ -142,7 +141,7 @@ interface MusafirMapProps {
   isAnyModalOpen?: boolean;
 }
 
-// Internal Map Controller Component (handles bounds, clicks & controls)
+// Internal Map Controller Component (handles bounds & clicks)
 const MapController: React.FC<{
   originCoords: [number, number] | null;
   destCoords: [number, number] | null;
@@ -189,12 +188,18 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   originName = 'Departure',
   isAnyModalOpen = false,
 }) => {
-  const [isLiveFleetEnabled, setIsLiveFleetEnabled] = useState(true);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [showBuses, setShowBuses] = useState(true);
   const [showAutos, setShowAutos] = useState(true);
   const [currentTimeStr, setCurrentTimeStr] = useState('');
   const [routeInfo, setRouteInfo] = useState<RouteDirectionsResult | null>(null);
+
+  // Pin Choice Confirmation State
+  const [pendingPinChoice, setPendingPinChoice] = useState<{
+    lat: number;
+    lng: number;
+    name: string;
+  } | null>(null);
 
   // Live Digital Clock
   useEffect(() => {
@@ -238,13 +243,20 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
 
   const defaultCenter: [number, number] = originCoords || [20.2961, 85.8245];
 
+  // User clicked on map -> ask whether to set as Origin or Destination
   const handleMapClick = (lat: number, lng: number) => {
     const locationName = getHumanReadableLocationName(lat, lng);
-    onSelectLocationOnMap(lat, lng, locationName, originCoords ? 'dest' : 'origin');
+    setPendingPinChoice({ lat, lng, name: locationName });
+  };
+
+  const handleConfirmPin = (type: 'origin' | 'dest') => {
+    if (!pendingPinChoice) return;
+    onSelectLocationOnMap(pendingPinChoice.lat, pendingPinChoice.lng, pendingPinChoice.name, type);
+    setPendingPinChoice(null);
   };
 
   const filteredVehicles = vehicles.filter((v) => {
-    if (!isLiveFleetEnabled) return false;
+    if (isOffline) return false;
     if (v.mode === 'bus' && !showBuses) return false;
     if (v.mode === 'auto' && !showAutos) return false;
     return true;
@@ -252,56 +264,28 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
 
   return (
     <div className="relative w-full h-[420px] sm:h-[500px] lg:h-[540px] rounded-3xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950">
-      {/* Offline Mode HUD Indicator */}
+      {/* 1. Offline Mode Notice Banner (Shows ONLY downloaded route) */}
       {isOffline && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400] bg-amber-500/95 text-slate-950 px-3.5 py-1 rounded-full text-xs font-black shadow-lg flex items-center gap-1.5 backdrop-blur-md animate-pulse">
-          <WifiOff className="w-3.5 h-3.5" />
-          <span>OFFLINE LOCAL TRANSIT CACHE</span>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400] bg-slate-900/95 text-white px-4 py-1.5 rounded-full text-xs font-black shadow-xl flex items-center gap-2 backdrop-blur-md border border-amber-400/60 animate-pulse">
+          <WifiOff className="w-4 h-4 text-amber-400" />
+          <span>📥 Offline Mode: Downloaded Local Route Cache</span>
         </div>
       )}
 
-      {/* Top Left: Live Fleet HUD Toggle Switch */}
-      {!isAnyModalOpen && (
-        <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 z-[400] flex items-center gap-2">
-          <button
-            onClick={() => setIsLiveFleetEnabled(!isLiveFleetEnabled)}
-            className={`px-3 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 shadow-md backdrop-blur-md transition-all active:scale-95 border ${
-              isLiveFleetEnabled
-                ? 'bg-emerald-600 text-white border-emerald-400/50 shadow-emerald-600/30'
-                : 'bg-slate-800/90 text-slate-300 border-slate-700'
-            }`}
-            title="Toggle Live Radar Fleet Tracking"
-          >
-            <span className={`w-2 h-2 rounded-full ${isLiveFleetEnabled ? 'bg-white animate-ping' : 'bg-slate-400'}`}></span>
-            <span>{isLiveFleetEnabled ? 'Live Fleet: ON' : 'Live Fleet: OFF'}</span>
-          </button>
-        </div>
-      )}
-
-      {/* Top Center: Route Information Pill */}
-      {!isAnyModalOpen && routeInfo && (
-        <div className="absolute top-2.5 sm:top-3 left-1/2 -translate-x-1/2 z-[400] max-w-[90%] sm:max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-lg border border-slate-200/90 dark:border-slate-800 flex items-center gap-2.5 transition-all">
-          <div className="w-7 h-7 rounded-xl bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-            <Navigation className="w-4 h-4 text-blue-600" />
+      {/* 2. Top Center: Route Distance Pill (Strictly shows distance, no corridor jargon) */}
+      {!isAnyModalOpen && routeInfo && !isOffline && (
+        <div className="absolute top-2.5 sm:top-3 left-1/2 -translate-x-1/2 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-lg border border-slate-200/90 dark:border-slate-800 flex items-center gap-2 transition-all">
+          <div className="w-6 h-6 rounded-lg bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+            <Navigation className="w-3.5 h-3.5 text-blue-600" />
           </div>
-          <div className="min-w-0 pr-1">
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-slate-900 dark:text-white truncate text-[11px] sm:text-xs">
-                {routeInfo.summary || 'Smart Corridor Route'}
-              </span>
-              <span className="hidden sm:inline-flex px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
-                Leaflet Live
-              </span>
-            </div>
-            <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
-              {routeInfo.distanceKm} km • ~{routeInfo.durationMinutes} mins via Smart Transit
-            </div>
+          <div className="text-xs font-black text-slate-900 dark:text-white truncate">
+            {routeInfo.distanceKm} km • ~{routeInfo.durationMinutes} mins
           </div>
         </div>
       )}
 
-      {/* Top Right: Live Clock & Layers Options */}
-      {!isAnyModalOpen && (
+      {/* 3. Top Right: Live Clock & Layers */}
+      {!isAnyModalOpen && !isOffline && (
         <div className="absolute top-2.5 sm:top-3 right-2.5 sm:right-3 z-[400] flex flex-col items-end gap-1.5">
           <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-xl shadow-lg border border-slate-200/90 dark:border-slate-800 text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-blue-600 flex-shrink-0 animate-pulse" />
@@ -347,7 +331,53 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         </div>
       )}
 
-      {/* Leaflet MapContainer */}
+      {/* 4. Interactive Map Pin Confirmation Dialog Modal */}
+      {pendingPinChoice && (
+        <div className="absolute inset-0 z-[500] bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-2xl border border-slate-200 dark:border-slate-800 max-w-sm w-full space-y-4 text-center">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/60 rounded-full flex items-center justify-center mx-auto text-blue-600 dark:text-blue-400 shadow-inner">
+              <MapPin className="w-6 h-6" />
+            </div>
+
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                MAP LOCATION CLICKED
+              </span>
+              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white mt-1">
+                {pendingPinChoice.name}
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                What would you like to set this location as?
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                onClick={() => handleConfirmPin('origin')}
+                className="py-2.5 px-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition"
+              >
+                <span>Set as Origin</span>
+              </button>
+
+              <button
+                onClick={() => handleConfirmPin('dest')}
+                className="py-2.5 px-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-600/30 flex items-center justify-center gap-1.5 active:scale-95 transition"
+              >
+                <span>Set as Dest</span>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setPendingPinChoice(null)}
+              className="w-full py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Leaflet Map Container */}
       <MapContainer
         center={defaultCenter}
         zoom={13}
@@ -361,21 +391,28 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           onMapClick={handleMapClick}
         />
 
-        {/* Tile Layer (Clean OpenStreetMap / Carto Positron & Dark Matter) */}
-        {themeMode === 'dark' ? (
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          />
-        ) : (
+        {/* Tile Layer (Clean OpenStreetMap with dark-tiles CSS filter for zero-key dark mode) */}
+        {!isOffline && (
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            className={themeMode === 'dark' ? 'dark-tiles' : ''}
           />
         )}
 
+        {/* Offline Vector Grid Background */}
+        {isOffline && (
+          <div className="absolute inset-0 bg-slate-900 flex items-center justify-center pointer-events-none">
+            <div className="text-center p-6 text-slate-400 space-y-2">
+              <WifiOff className="w-8 h-8 text-amber-400 mx-auto animate-pulse" />
+              <div className="text-sm font-bold text-white">Local Offline Cache Active</div>
+              <div className="text-xs">Showing saved transit route corridor & stops</div>
+            </div>
+          </div>
+        )}
+
         {/* User GPS Location Marker */}
-        {userLocation && userLocation.lat && userLocation.lng && (
+        {!isOffline && userLocation && userLocation.lat && userLocation.lng && (
           <Marker
             position={[userLocation.lat, userLocation.lng]}
             icon={createUserPinIcon(true)}
@@ -419,13 +456,13 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           </Marker>
         )}
 
-        {/* Real Road Route Polyline */}
+        {/* Route Polyline (Shown in both Online & Offline Mode) */}
         {routeInfo && routeInfo.coordinates && routeInfo.coordinates.length > 0 && (
           <>
             <Polyline
               positions={routeInfo.coordinates}
               pathOptions={{
-                color: '#2563eb',
+                color: isOffline ? '#10b981' : '#2563eb',
                 weight: 6,
                 opacity: 0.85,
                 lineCap: 'round',
@@ -435,7 +472,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
             <Polyline
               positions={routeInfo.coordinates}
               pathOptions={{
-                color: '#60a5fa',
+                color: isOffline ? '#6ee7b7' : '#60a5fa',
                 weight: 2,
                 opacity: 0.9,
                 dashArray: '8, 8',
@@ -444,8 +481,8 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           </>
         )}
 
-        {/* Live Moving Transit Vehicles */}
-        {filteredVehicles.map((v) => (
+        {/* Live Moving Transit Vehicles (Online only) */}
+        {!isOffline && filteredVehicles.map((v) => (
           <Marker
             key={v.id}
             position={[v.lat, v.lng]}

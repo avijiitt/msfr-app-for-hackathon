@@ -166,7 +166,7 @@ class AIAssistantService {
     if (q.includes('wallet') || q.includes('recharge') || q.includes('top up') || q.includes('topup') || q.includes('balance') || q.includes('pass'))
       return { label: '💳 Open Wallet', actionType: 'open_wallet' };
     if (q.includes('women') || q.includes('pink') || q.includes('night safe') || q.includes('lady'))
-      return { label: '🌸 Women Safety', actionType: 'open_women_safety' };
+      return { label: '🛡️ Women Safety', actionType: 'open_women_safety' };
     if (q.includes('family') || q.includes('share location') || q.includes('track me') || q.includes('telemetry'))
       return { label: '📡 Share Trip', actionType: 'open_share_location' };
     if (q.includes('medical') || q.includes('blood') || q.includes('allergies') || q.includes('doctor') || q.includes('hospital'))
@@ -242,7 +242,7 @@ class AIAssistantService {
     }
     return {
       id, sender: 'assistant', timestamp: now,
-      text: `Namaste! 🙏 I'm **Musafir AI**, your smart India transit companion.\n\nI can do everything within the app for you:\n• 🗺️ Plan journeys & find fastest routes\n• 💳 Open Mo-Wallet & UPI recharge\n• 📦 Book transit parcel lockers\n• 🎓 DigiLocker student 50% concession\n• 🛡️ Claim delay refunds\n• 🌸 Women safety & night-safe routing\n• 🚨 Instant SOS dispatch`,
+      text: `Namaste! 🙏 I'm **Musafir AI**, your smart India transit companion.\n\nI can do everything within the app for you:\n• 🗺️ Plan journeys & find fastest routes\n• 💳 Open Mo-Wallet & UPI recharge\n• 📦 Book transit parcel lockers\n• 🎓 DigiLocker student 50% concession\n• 🛡️ Claim delay refunds\n• 🛡️ Women safety & night-safe routing\n• 🚨 Instant SOS dispatch`,
       actionButton: { label: '🗺️ Plan Journey', actionType: 'open_planner' },
     };
   }

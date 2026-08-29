@@ -229,7 +229,7 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
         },
         {
           id: 'route-night-2',
-          badge: '🌸 Pink Safe Night',
+          badge: '🛡️ Pink Safe Night',
           badgeColor: 'bg-pink-50 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300 border border-pink-200 dark:border-pink-800',
           modeType: 'night',
           serviceType: 'Women Pink Mo Bus Night Shuttle',

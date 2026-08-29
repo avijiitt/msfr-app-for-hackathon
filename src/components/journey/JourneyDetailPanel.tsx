@@ -308,7 +308,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
               {/* Step 3: Pink Safe Shuttle Leg */}
               <div className="flex items-start gap-3 relative">
                 <div className="w-6 h-6 rounded-lg bg-pink-600 text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm text-xs">
-                  🌸
+                  ⚡
                 </div>
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center justify-between text-xs">

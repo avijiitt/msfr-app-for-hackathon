@@ -1,4 +1,4 @@
-﻿import { JourneyOption, RouteMode, Station } from '../types/transit';
+import { JourneyOption, RouteMode, Station } from '../types/transit';
 
 export function calculateJourneyOptions(
   originStation: Station,
@@ -144,7 +144,7 @@ export function calculateJourneyOptions(
       accessibilityScore: 95,
       weatherResilienceScore: 92,
       transfersCount: 0,
-      badges: ['🛡️ 100% CCTV & Security Marshals', '🌸 Women Pink Mo Bus', '💡 High-Lux Streetlit Route'],
+      badges: ['🛡️ 100% CCTV & Security Marshals', '🛡️ Women Pink Mo Bus', '💡 High-Lux Streetlit Route'],
       legs: [
         {
           id: 'leg-n1',
