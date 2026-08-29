@@ -94,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </div>
               <p className="text-[10px] text-on-surface-variant hidden lg:block">
-                Unified Multi-Modal Transit System Across India (Metro • Bus • Train • Ferry)
+                Unified Multi-Modal Transit System (Mo Bus • Metro • Mo E-Ride • EV Shuttle)
               </p>
             </div>
           </div>

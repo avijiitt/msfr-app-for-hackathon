@@ -821,6 +821,63 @@ export function getRouteStopsWithCoordinates(route: MoBusDetailRoute): Array<{
   });
 }
 
+// Area alias table for comprehensive Bhubaneswar, Cuttack, and Khordha corridor matching
+const TRANSIT_AREA_ALIASES: Record<string, string[]> = {
+  "cda": ["cda", "markatnagar", "markatanagar", "biju patnaik park", "sati chaura", "satichaura", "justice sq", "judicial academy", "cda 6 park", "cda 9 market sq", "cda sector 6", "cda sector 7", "cda sector 9", "cda sector 10", "cda sector 11", "cda sector 13", "cda 6", "cda 7", "cda 9", "cda 10", "cda 11", "cda 13"],
+  "markatnagar": ["markatnagar", "markatanagar", "cda", "cda sector 6", "cda sector 7", "cda 7", "cda 6", "cda 9"],
+  "kiit": ["kiit", "kiit sq", "kiit square", "kiit campus", "kiit university", "koel campus", "patia", "sikharchandi"],
+  "patia": ["patia", "patia sq", "patia square", "kiit", "infocity", "dlf", "silicon", "trident", "cipet"],
+  "trident": ["trident college", "trident", "infocity", "cipet", "patia", "silicon"],
+  "royal lagoon": ["royal lagoon", "royal lagoon apartments", "raghunathpur", "mani tribhuvan", "nandan vihar", "sikharchandi vihar"],
+  "airport": ["biju patnaik", "airport", "new airport", "capital hospital", "ag sq", "ag square"],
+  "railway station": ["master canteen", "bhubaneswar railway station", "railway station", "janpath", "sriya sq", "ram mandir", "station"],
+  "master canteen": ["master canteen", "master canteen janpath", "bhubaneswar railway station", "sriya sq", "ram mandir", "janpath"],
+  "baramunda": ["baramunda", "baramunda bsabt", "bsabt", "rajdhani college", "fire station", "crpf"],
+  "cuttack": ["badambadi", "cnbt", "link road", "omp sq", "scb medical", "cuttack railway station", "cda"],
+  "badambadi": ["badambadi", "cnbt", "link road", "pala mandap", "cuttack railway station"],
+  "sum": ["sum hospital", "sum ultimate", "k8 dream palace", "nuagoan", "malipada", "ghangapatna"],
+  "aiims": ["aiims", "patrapada", "khandagiri", "kalinga vihar"],
+  "khandagiri": ["khandagiri", "khandagiri sq", "khandagiri bypass", "baramunda", "aiims", "patrapada"],
+  "jaydev vihar": ["jaydev vihar", "jayadev vihar", "pal heights", "pal height", "mayfair", "janta maidan", "xavier square"],
+  "acharya vihar": ["acharya vihar", "acharyavihar", "acharay vihar", "immt", "vani vihar", "satsang vihar"],
+  "puri": ["puri", "puri bus stand", "shree mandir", "shree mandira", "sakhigopal", "pipili", "uttara", "dhauli"],
+  "nandankanan": ["nandankanan", "nandan kannan", "nandan kannana", "barang", "raghunathpur", "nandan vihar"],
+};
+
+function expandSearchTokens(query: string): string[] {
+  if (!query) return [];
+  const normalized = query.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ").trim();
+  const words = normalized.split(/\s+/).filter(Boolean);
+  const tokenSet = new Set<string>([normalized, ...words]);
+
+  for (const [key, aliases] of Object.entries(TRANSIT_AREA_ALIASES)) {
+    if (normalized.includes(key) || words.some(w => key.includes(w) || w.includes(key))) {
+      aliases.forEach(a => tokenSet.add(a));
+    }
+  }
+
+  return Array.from(tokenSet);
+}
+
+function findBestStopIndex(stopsClean: string[], startClean: string, destClean: string, tokens: string[]): number {
+  for (let i = 0; i < stopsClean.length; i++) {
+    const s = stopsClean[i];
+    for (const t of tokens) {
+      if (s === t || s.includes(t) || t.includes(s)) {
+        return i;
+      }
+    }
+  }
+
+  // Check start and dest
+  for (const t of tokens) {
+    if (startClean === t || startClean.includes(t) || t.includes(startClean)) return 0;
+    if (destClean === t || destClean.includes(t) || t.includes(destClean)) return stopsClean.length - 1;
+  }
+
+  return -1;
+}
+
 /**
  * Intelligent Dynamic Routing: Find matching Mo Bus routes between Any Origin and Any Destination
  */
@@ -835,10 +892,10 @@ export function findMoBusRoutesDynamic(originQuery: string, destQuery: string): 
   }>;
   allRoutes: MoBusDetailRoute[];
 } {
-  const cleanO = (originQuery || '').split(',')[0].toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
-  const cleanD = (destQuery || '').split(',')[0].toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+  const oTokens = expandSearchTokens(originQuery);
+  const dTokens = expandSearchTokens(destQuery);
 
-  if (!cleanO && !cleanD) {
+  if (oTokens.length === 0 && dTokens.length === 0) {
     return {
       matchedRoutes: [],
       allRoutes: MO_BUS_DETAILED_ROUTES,
@@ -864,22 +921,12 @@ export function findMoBusRoutesDynamic(originQuery: string, destQuery: string): 
   }> = [];
 
   for (const r of MO_BUS_DETAILED_ROUTES) {
-    const stopsClean = r.stopsList.map(s => s.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim());
-    const startClean = r.start.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
-    const destClean = r.destination.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+    const stopsClean = r.stopsList.map(s => s.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ").trim());
+    const startClean = r.start.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ").trim();
+    const destClean = r.destination.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ").trim();
 
-    let oIdx = -1;
-    let dIdx = -1;
-
-    for (let i = 0; i < stopsClean.length; i++) {
-      const s = stopsClean[i];
-      if (oIdx === -1 && cleanO && (s.includes(cleanO) || cleanO.includes(s) || startClean.includes(cleanO) || cleanO.includes(startClean))) {
-        oIdx = i;
-      }
-      if (dIdx === -1 && cleanD && (s.includes(cleanD) || cleanD.includes(s) || destClean.includes(cleanD) || cleanD.includes(destClean))) {
-        dIdx = i;
-      }
-    }
+    const oIdx = oTokens.length > 0 ? findBestStopIndex(stopsClean, startClean, destClean, oTokens) : -1;
+    const dIdx = dTokens.length > 0 ? findBestStopIndex(stopsClean, startClean, destClean, dTokens) : -1;
 
     if (oIdx !== -1 && dIdx !== -1) {
       const startI = Math.min(oIdx, dIdx);
@@ -889,33 +936,52 @@ export function findMoBusRoutesDynamic(originQuery: string, destQuery: string): 
         route: r,
         fromStop: r.stopsList[oIdx] || r.start,
         toStop: r.stopsList[dIdx] || r.destination,
-        stopCount: sub.length,
-        subStops: sub,
+        stopCount: Math.max(2, sub.length),
+        subStops: sub.length > 0 ? sub : [r.start, r.destination],
         isDirect: true,
       });
     } else if (oIdx !== -1) {
+      const sub = r.stopsList.slice(oIdx);
       partialMatches.push({
         route: r,
-        fromStop: r.stopsList[oIdx],
+        fromStop: r.stopsList[oIdx] || r.start,
         toStop: r.destination,
-        stopCount: r.stopsList.length - oIdx,
-        subStops: r.stopsList.slice(oIdx),
+        stopCount: Math.max(2, sub.length),
+        subStops: sub,
         isDirect: false,
       });
     } else if (dIdx !== -1) {
+      const sub = r.stopsList.slice(0, dIdx + 1);
       partialMatches.push({
         route: r,
         fromStop: r.start,
-        toStop: r.stopsList[dIdx],
-        stopCount: dIdx + 1,
-        subStops: r.stopsList.slice(0, dIdx + 1),
+        toStop: r.stopsList[dIdx] || r.destination,
+        stopCount: Math.max(2, sub.length),
+        subStops: sub,
         isDirect: false,
       });
     }
   }
 
-  // Combine direct matches first, then partials
-  const allMatches = [...directMatches, ...partialMatches];
+  // Deduplicate by route number
+  const seenRoutes = new Set<string>();
+  const uniqueDirect: typeof directMatches = [];
+  for (const m of directMatches) {
+    if (!seenRoutes.has(m.route.route)) {
+      seenRoutes.add(m.route.route);
+      uniqueDirect.push(m);
+    }
+  }
+
+  const uniquePartial: typeof partialMatches = [];
+  for (const m of partialMatches) {
+    if (!seenRoutes.has(m.route.route)) {
+      seenRoutes.add(m.route.route);
+      uniquePartial.push(m);
+    }
+  }
+
+  const allMatches = [...uniqueDirect, ...uniquePartial];
 
   return {
     matchedRoutes: allMatches.length > 0 ? allMatches : MO_BUS_DETAILED_ROUTES.slice(0, 3).map(r => ({
@@ -929,4 +995,5 @@ export function findMoBusRoutesDynamic(originQuery: string, destQuery: string): 
     allRoutes: MO_BUS_DETAILED_ROUTES,
   };
 }
+
 

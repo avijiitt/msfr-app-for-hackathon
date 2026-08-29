@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Station, RouteMode, JourneyOption } from '../../types/transit';
 import { calculateJourneyOptions } from '../../services/routeOptimizer';
 import { TranslationDictionary } from '../../types/i18n';
@@ -96,7 +96,7 @@ export const RoutePlanner: React.FC<RoutePlannerProps> = ({
             Multi-Modal Route Optimizer
           </h1>
           <p className="text-on-surface-variant text-xs sm:text-sm mt-1">
-            Plan your journey with multi-modal options, real-time GPS tracking, and AI insights across India (Metro, Bus, Train, Ferry).
+            Plan your journey with multi-modal options, real-time GPS tracking, and live Mo Bus CRUT sync.
           </p>
         </div>
         <span className="text-xs text-tertiary flex items-center gap-1 font-label-caps">
