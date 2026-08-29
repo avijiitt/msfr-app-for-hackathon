@@ -95,6 +95,14 @@ body {
   filter: brightness(0.65) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
 }
 
+/* Completely suppress Leaflet brand attribution label */
+.leaflet-control-attribution {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* Custom Marker Styling */
 .custom-vehicle-icon,
 .custom-station-icon,

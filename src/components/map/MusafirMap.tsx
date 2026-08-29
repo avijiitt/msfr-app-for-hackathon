@@ -466,6 +466,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         zoom={mapZoom}
         className={`w-full h-full ${themeMode === 'dark' ? 'dark-tiles' : ''}`}
         zoomControl={false}
+        attributionControl={false}
       >
         <MapViewController
           center={mapCenter}
@@ -488,14 +489,10 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
-        {/* High-Definition Vector / Raster Map Tiles */}
+        {/* High-Definition Map Tiles */}
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap contributors'
-          url={
-            themeMode === 'dark'
-              ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-              : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-          }
+          attribution=""
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           maxZoom={19}
         />
 
