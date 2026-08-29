@@ -13,7 +13,6 @@ import { getStopCoordinates } from './data/busRoutesData';
 // Redesigned Musafir Layout & Core Components
 import { MusafirHeader } from './components/layout/MusafirHeader';
 import { MusafirSidebar, MusafirSidebarTab } from './components/layout/MusafirSidebar';
-import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { MobileMenuDrawer } from './components/layout/MobileMenuDrawer';
 import { MusafirMap } from './components/map/MusafirMap';
 import { BestRoutesCarousel } from './components/planner/BestRoutesCarousel';
@@ -721,16 +720,7 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* 5. Mobile Native Bottom Navigation Bar (Visible on phones) */}
-      <MobileBottomNav
-        activeTab={activeTab}
-        onTabChange={handleSidebarTabChange}
-        walletBalance={walletBalance}
-        onOpenWallet={() => setIsWalletOpen(true)}
-        onOpenAI={() => handleExecuteAIAction('open_planner')}
-        onOpenMenuDrawer={() => setIsMobileMenuOpen(true)}
-        t={t}
-      />
+
 
       {/* 6. Mobile Slide-Over Navigation Drawer */}
       <MobileMenuDrawer

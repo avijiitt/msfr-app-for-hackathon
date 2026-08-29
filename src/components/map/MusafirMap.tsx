@@ -332,7 +332,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   });
 
   return (
-    <div className="relative w-full h-[420px] sm:h-[500px] lg:h-[540px] rounded-3xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950">
+    <div className="relative w-full h-full min-h-[360px] sm:min-h-[480px] lg:min-h-[520px] rounded-3xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950">
       {/* 1. Offline Mode Notice Banner (Shows ONLY downloaded route) */}
       {isOffline && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400] bg-slate-900/95 text-white px-4 py-1.5 rounded-full text-xs font-black shadow-xl flex items-center gap-2 backdrop-blur-md border border-amber-400/60 animate-pulse">

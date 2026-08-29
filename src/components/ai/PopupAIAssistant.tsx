@@ -209,20 +209,21 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
 
   return (
     <>
-      {/* Floating Launcher Bubble (Repositioned above Mobile Bottom Nav: bottom-24 on mobile, bottom-6 on desktop) */}
+      {/* Floating Launcher Bubble (Hidden on mobile to avoid overlapping CTAs, bottom-6 right-6 on desktop) */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-40 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-xl shadow-blue-600/40 flex items-center gap-2 transition-all animate-bounce"
+          className="fixed hidden md:flex bottom-6 right-6 z-40 px-4 py-3 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-sm shadow-xl shadow-blue-600/40 items-center gap-2 transition-all animate-bounce"
           title="Open Musafir AI Voice & Chat Assistant"
         >
-          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/20 flex items-center justify-center text-sm sm:text-base">
+          <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-base">
             🤖
           </div>
           <span>Musafir AI</span>
-          <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-400 animate-ping" />
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
         </button>
       )}
+
 
       {/* Popup Dialog Window */}
       {isOpen && (
