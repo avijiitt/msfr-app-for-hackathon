@@ -79,7 +79,86 @@ body {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* Leaflet Clean Map Styling */
+/* ─── Modern Mobile Design System Classes ──────────────────────── */
+.backdrop-blur-glass {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.neumorphic-inset {
+  background: #f7f9fb;
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.05), inset -3px -3px 6px rgba(255, 255, 255, 0.9);
+}
+
+.dark .neumorphic-inset {
+  background: #0f172a;
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.4), inset -3px -3px 6px rgba(255, 255, 255, 0.04);
+}
+
+.neumorphic-extrude,
+.neumorphic-raised {
+  background: #ffffff;
+  box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.04), -3px -3px 8px rgba(255, 255, 255, 0.9);
+}
+
+.dark .neumorphic-extrude,
+.dark .neumorphic-raised {
+  background: #1e293b;
+  box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3), -3px -3px 8px rgba(255, 255, 255, 0.03);
+}
+
+.timeline-line {
+  position: absolute;
+  left: 23px;
+  top: 24px;
+  bottom: 24px;
+  width: 3px;
+  background: linear-gradient(to bottom, #2563eb 50%, #e0e3e5 50%);
+  z-index: 0;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.3);
+}
+
+.dark .timeline-line {
+  background: linear-gradient(to bottom, #3b82f6 50%, #334155 50%);
+}
+
+.timeline-node {
+  position: relative;
+  z-index: 1;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ─── Leaflet Map & Custom Markers ────────────────────────────── */
 .leaflet-container {
   width: 100%;
   height: 100%;
@@ -95,15 +174,6 @@ body {
   filter: brightness(0.65) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
 }
 
-/* Completely suppress Leaflet brand attribution label */
-.leaflet-control-attribution {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* Custom Marker Styling */
 .custom-vehicle-icon,
 .custom-station-icon,
 .custom-user-pin,

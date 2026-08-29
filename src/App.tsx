@@ -44,6 +44,7 @@ import { BusRoutesModal } from './components/routes/BusRoutesModal';
 import { LanguageSelectModal } from './components/language/LanguageSelectModal';
 import { tripService } from './services/tripService';
 import { TripsHistoryModal } from './components/trips/TripsHistoryModal';
+import { MobileAppView } from './components/mobile/MobileAppView';
 
 
 export const App: React.FC = () => {
@@ -355,107 +356,142 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
-      {/* 1. Top Header */}
-      <MusafirHeader
-        originQuery={originQuery}
-        setOriginQuery={setOriginQuery}
-        destQuery={destQuery}
-        setDestQuery={setDestQuery}
-        onSearch={handleSearch}
-        onUseLiveGps={handleUseLiveGps}
-        isGpsActive={isGpsActive}
-        isOffline={isOffline}
-        onToggleOffline={() => setIsOffline(!isOffline)}
-        walletBalance={walletBalance}
-        onOpenWallet={() => setIsWalletOpen(true)}
-        themeMode={themeMode}
-        onToggleTheme={handleToggleTheme}
-        unreadAlertsCount={3}
-        onOpenAlerts={() => setIsAlertsOpen(true)}
-        onOpenProfile={() => setIsProfileOpen(true)}
-        userInitial={userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
-        userName={userProfile.name}
-        onOriginSelected={handleOriginSelected}
-        onDestSelected={handleDestSelected}
-        onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
-        onSearchFocusChange={setIsSearchFocused}
-        onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
-        currentLang={currentLang}
-        onOpenLanguageModal={() => setIsLangSelectOpen(true)}
-        t={t}
-      />
+      {/* ─── Dedicated Mobile User View (Folder: src/components/mobile/) ─── */}
+      <div className="block md:hidden">
+        <MobileAppView
+          originQuery={originQuery}
+          destQuery={destQuery}
+          onOriginChange={setOriginQuery}
+          onDestChange={setDestQuery}
+          onSearch={(orig, dest) => handleSearch(orig, dest)}
+          onSelectDestination={(dest) => {
+            setDestQuery(dest);
+            handleSearch(originQuery || 'Jayadev Vihar', dest);
+          }}
+          onOpenMenu={() => setIsMobileMenuOpen(true)}
+          onOpenProfile={() => setIsProfileOpen(true)}
+          onOpenAlerts={() => setIsAlertsOpen(true)}
+          onOpenLanguage={() => setIsLangSelectOpen(true)}
+          onOpenWallet={() => setIsWalletOpen(true)}
+          onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
+          onOpenFareCalc={() => setIsFareCalcOpen(true)}
+          onOpenTripsHistory={() => setIsTripsOpen(true)}
+          onTriggerSOS={() => setIsSosOpen(true)}
+          themeMode={themeMode}
+          onToggleTheme={handleToggleTheme}
+          currentLang={currentLang}
+          walletBalance={walletBalance}
+          userName={userProfile.name}
+          vehicles={vehicles}
+          userLocation={userLocation}
+          originCoords={originCoords}
+          destCoords={destCoords}
+          onSelectLocationOnMap={handleSelectLocationOnMap}
+        />
+      </div>
 
-      {/* 2. Main 3-Column Dashboard Body (Mobile Optimized with pb-24 for bottom bar) */}
-      <div className="flex-1 max-w-[1600px] w-full mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 p-3 sm:p-6 pb-24 lg:pb-6">
-        {/* Column 1: Left Aligned Sidebar (Visible on Desktop / Tablets, Hidden on Phones) */}
-        <div className="hidden lg:block flex-shrink-0">
-          <MusafirSidebar
-            activeTab={activeTab}
-            onTabChange={handleSidebarTabChange}
-            onOpenNearbyStops={() => setIsAmenitiesOpen(true)}
-            onOpenShareLocation={() => setIsFamilyShareOpen(true)}
-            onOpenSOS={() => setIsSosOpen(true)}
-            onOpenStudent={() => setIsStudentOpen(true)}
-            onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
-            onSelectSavedPlace={(place) => setDestQuery(place)}
-            t={t}
-          />
-        </div>
+      {/* ─── Tablet & Desktop 3-Column Modern Workspace ─── */}
+      <div className="hidden md:flex flex-col flex-1">
+        {/* 1. Top Header */}
+        <MusafirHeader
+          originQuery={originQuery}
+          setOriginQuery={setOriginQuery}
+          destQuery={destQuery}
+          setDestQuery={setDestQuery}
+          onSearch={handleSearch}
+          onUseLiveGps={handleUseLiveGps}
+          isGpsActive={isGpsActive}
+          isOffline={isOffline}
+          onToggleOffline={() => setIsOffline(!isOffline)}
+          walletBalance={walletBalance}
+          onOpenWallet={() => setIsWalletOpen(true)}
+          themeMode={themeMode}
+          onToggleTheme={handleToggleTheme}
+          unreadAlertsCount={3}
+          onOpenAlerts={() => setIsAlertsOpen(true)}
+          onOpenProfile={() => setIsProfileOpen(true)}
+          userInitial={userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
+          userName={userProfile.name}
+          onOriginSelected={handleOriginSelected}
+          onDestSelected={handleDestSelected}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+          onSearchFocusChange={setIsSearchFocused}
+          onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
+          currentLang={currentLang}
+          onOpenLanguageModal={() => setIsLangSelectOpen(true)}
+          t={t}
+        />
 
-        {/* Column 2: Center Main Content (Large Map + Best Routes Cards + Highlight Badges) */}
-        <main className="flex-1 flex flex-col gap-6 min-w-0">
-          {/* Large Map Canvas — pans to real India coordinates */}
-          <MusafirMap
-            vehicles={vehicles}
-            userLocation={userLocation}
-            onSelectLocationOnMap={handleSelectLocationOnMap}
-            themeMode={themeMode}
-            isOffline={isOffline}
-            originCoords={originCoords}
-            destCoords={destCoords}
-            originName={originQuery}
-            destinationName={destQuery}
-            isAnyModalOpen={isAnyModalOpen}
-          />
+        {/* 2. Main 3-Column Dashboard Body */}
+        <div className="flex-1 max-w-[1600px] w-full mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 p-3 sm:p-6 pb-24 lg:pb-6">
+          {/* Column 1: Left Aligned Sidebar */}
+          <div className="hidden lg:block flex-shrink-0">
+            <MusafirSidebar
+              activeTab={activeTab}
+              onTabChange={handleSidebarTabChange}
+              onOpenNearbyStops={() => setIsAmenitiesOpen(true)}
+              onOpenShareLocation={() => setIsFamilyShareOpen(true)}
+              onOpenSOS={() => setIsSosOpen(true)}
+              onOpenStudent={() => setIsStudentOpen(true)}
+              onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
+              onSelectSavedPlace={(place) => setDestQuery(place)}
+              t={t}
+            />
+          </div>
 
-          {/* Best Routes for You Section (with 6 Smart Optimization Modes) */}
-          <BestRoutesCarousel
+          {/* Column 2: Center Main Content (Large Map + Best Routes Cards) */}
+          <main className="flex-1 flex flex-col gap-6 min-w-0">
+            <MusafirMap
+              vehicles={vehicles}
+              userLocation={userLocation}
+              onSelectLocationOnMap={handleSelectLocationOnMap}
+              themeMode={themeMode}
+              isOffline={isOffline}
+              originCoords={originCoords}
+              destCoords={destCoords}
+              originName={originQuery}
+              destinationName={destQuery}
+              isAnyModalOpen={isAnyModalOpen}
+            />
+
+            <BestRoutesCarousel
+              originName={originQuery}
+              destinationName={destQuery}
+              originCoords={originCoords}
+              destCoords={destCoords}
+              selectedRouteId={selectedRouteId}
+              onSelectRoute={(id) => setSelectedRouteId(id)}
+              activeFilterMode={activeFilterMode}
+              onFilterModeChange={(mode) => setActiveFilterMode(mode)}
+              onOpenLiveUpdates={() => alert('Real-time fleet GPS tracking active across all routes.')}
+              onOpenSmartAlerts={() => setIsAlertsOpen(true)}
+              onOpenSafeJourney={() => setIsFamilyShareOpen(true)}
+              onOpenSaveMore={() => setIsFareCalcOpen(true)}
+              onOpenFareCalc={() => setIsFareCalcOpen(true)}
+              onSelectDestination={(dest) => {
+                setDestQuery(dest);
+                handleSearch(originQuery || 'Current Location', dest);
+              }}
+              t={t}
+            />
+          </main>
+
+          {/* Column 3: Right Sidebar (Your Journey Panel) */}
+          <JourneyDetailPanel
             originName={originQuery}
             destinationName={destQuery}
             originCoords={originCoords}
             destCoords={destCoords}
             selectedRouteId={selectedRouteId}
-            onSelectRoute={(id) => setSelectedRouteId(id)}
-            activeFilterMode={activeFilterMode}
-            onFilterModeChange={(mode) => setActiveFilterMode(mode)}
-            onOpenLiveUpdates={() => alert('Real-time fleet GPS tracking active across all routes.')}
-            onOpenSmartAlerts={() => setIsAlertsOpen(true)}
-            onOpenSafeJourney={() => setIsFamilyShareOpen(true)}
-            onOpenSaveMore={() => setIsFareCalcOpen(true)}
-            onOpenFareCalc={() => setIsFareCalcOpen(true)}
-            onSelectDestination={(dest) => {
-              setDestQuery(dest);
-              handleSearch(originQuery || 'Current Location', dest);
-            }}
+            onStartNavigation={handleStartNavigation}
+            onShareTrip={() => setIsFamilyShareOpen(true)}
+            onBookPass={() => setIsWalletOpen(true)}
+            onOpenTripAssurance={() => setIsTripAssuranceOpen(true)}
+            onOpenScheduleRide={() => setIsScheduleOpen(true)}
+            onOpenFareDetails={() => setIsFareCalcOpen(true)}
             t={t}
           />
-        </main>
-
-        {/* Column 3: Right Sidebar (Your Journey Panel with Multiple Stops) */}
-        <JourneyDetailPanel
-          originName={originQuery}
-          destinationName={destQuery}
-          originCoords={originCoords}
-          destCoords={destCoords}
-          selectedRouteId={selectedRouteId}
-          onStartNavigation={handleStartNavigation}
-          onShareTrip={() => setIsFamilyShareOpen(true)}
-          onBookPass={() => setIsWalletOpen(true)}
-          onOpenTripAssurance={() => setIsTripAssuranceOpen(true)}
-          onOpenScheduleRide={() => setIsScheduleOpen(true)}
-          onOpenFareDetails={() => setIsFareCalcOpen(true)}
-          t={t}
-        />
+        </div>
       </div>
 
       {/* 3. Floating Popup AI Assistant (Bottom Right) */}

@@ -321,14 +321,13 @@ export const TransitMap: React.FC<TransitMapProps> = ({
         zoom={cityZoom}
         className="w-full h-full dark-tiles"
         zoomControl={false}
-        attributionControl={false}
       >
         <MapCenterController center={cityCenter} zoom={cityZoom} />
         <MapLocationPicker onLocationPicked={handleMapClick} />
 
         <TileLayer
-          attribution=""
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
 
         {/* Real-Time User GPS Live Pin & Accuracy Circle */}

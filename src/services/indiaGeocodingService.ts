@@ -10,7 +10,6 @@ export interface IndiaLocationResult {
 }
 
 const OLA_MAPS_API_KEY = import.meta.env.VITE_OLA_MAPS_API_KEY || '63CtJZBj4maPgvCCiDSXxavc6jkxztXfRTEpwPYj';
-const MAPPLS_STATIC_KEY = import.meta.env.VITE_MAPPLS_API_KEY || 'kwpehkqickgkvjmvxjkrxyrgbphypcjmhgqw';
 
 const isOlaMapsConfigured = (): boolean =>
   Boolean(OLA_MAPS_API_KEY) && OLA_MAPS_API_KEY.length > 5 && !OLA_MAPS_API_KEY.includes('your-ola');
@@ -70,48 +69,12 @@ export const POPULAR_INDIAN_LOCATIONS: IndiaLocationResult[] = [
   { id: 'koc-mgroad', name: 'MG Road Metro Station, Kochi', city: 'Kochi', state: 'Kerala', lat: 9.9723, lng: 76.2828, type: 'metro', formattedAddress: 'MG Road, Ernakulam, Kochi, Kerala' },
 ];
 
-// ── Geocode Address with Mappls First + OLA Maps + Nominatim + Local Fallback ─────────────
+// ── Geocode Address with OLA Maps First + Nominatim + Local Fallback ─────────────
 export async function geocodeAddressIndia(query: string): Promise<IndiaLocationResult[]> {
   const cleanQ = query?.trim() || '';
   if (cleanQ.length < 2) return [];
 
-  // 1. Try Mappls Geocoding API First
-  try {
-    const encoded = encodeURIComponent(cleanQ);
-    const mapplsUrl = `https://atlas.mappls.com/api/places/geocode?address=${encoded}&itemType=1&access_token=${MAPPLS_STATIC_KEY}`;
-    const mRes = await fetch(mapplsUrl, { signal: AbortSignal.timeout(3000) });
-    if (mRes.ok) {
-      const data = await mRes.json();
-      const copResults = data.copResults || (Array.isArray(data) ? data : (data.results || [data]));
-      if (Array.isArray(copResults) && copResults.length > 0) {
-        const results: IndiaLocationResult[] = [];
-        for (const item of copResults) {
-          const lat = parseFloat(item.latitude || item.lat);
-          const lng = parseFloat(item.longitude || item.lng);
-          if (!isNaN(lat) && !isNaN(lng)) {
-            const name = item.formatted_address?.split(',')[0] || item.poi || item.placeName || cleanQ;
-            const city = item.city || item.district || 'India';
-            const state = item.state || 'India';
-            results.push({
-              id: item.eLoc ? `mappls-${item.eLoc}` : `mappls-${lat}-${lng}`,
-              name,
-              city,
-              state,
-              lat,
-              lng,
-              type: 'landmark',
-              formattedAddress: item.formatted_address || `${name}, ${city}, ${state}`,
-            });
-          }
-        }
-        if (results.length > 0) return results.slice(0, 8);
-      }
-    }
-  } catch (mErr) {
-    console.warn('Mappls geocoding fallback to Ola/OSM:', mErr);
-  }
-
-  // 2. Try OLA Maps Autocomplete API (fast, instant location in single call)
+  // 1. Try OLA Maps Autocomplete API (fast, instant location in single call)
   if (isOlaMapsConfigured()) {
     try {
       const encoded = encodeURIComponent(cleanQ);
