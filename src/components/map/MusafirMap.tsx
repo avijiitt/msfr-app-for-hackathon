@@ -164,7 +164,7 @@ interface MusafirMapProps {
   isAnyModalOpen?: boolean;
 }
 
-// Internal Map Controller Component (handles bounds & clicks)
+// Internal Map Controller Component (handles bounds, animation & clicks)
 const MapController: React.FC<{
   originCoords: [number, number] | null;
   destCoords: [number, number] | null;
@@ -180,6 +180,19 @@ const MapController: React.FC<{
     },
   });
 
+  // Re-invalidate map container layout on mount and window resize
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [map]);
+
   useEffect(() => {
     if (originCoords && destCoords) {
       const boundsKey = `${originCoords[0]},${originCoords[1]}-${destCoords[0]},${destCoords[1]}`;
@@ -189,10 +202,14 @@ const MapController: React.FC<{
           [originCoords[0], originCoords[1]],
           [destCoords[0], destCoords[1]]
         );
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true });
       }
     } else if (originCoords) {
-      map.flyTo([originCoords[0], originCoords[1]], 14);
+      prevBoundsRef.current = `origin-${originCoords[0]},${originCoords[1]}`;
+      map.flyTo([originCoords[0], originCoords[1]], 14, { animate: true });
+    } else if (destCoords) {
+      prevBoundsRef.current = `dest-${destCoords[0]},${destCoords[1]}`;
+      map.flyTo([destCoords[0], destCoords[1]], 14, { animate: true });
     }
   }, [originCoords, destCoords, map]);
 

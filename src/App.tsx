@@ -201,25 +201,38 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleSearch = (from: string, to: string) => {
+  const handleSearch = async (from: string, to: string) => {
     setOriginQuery(from);
     setDestQuery(to);
 
-    // Resolve stop coordinates for map polyline and stoppage plotting upon search submission
-    const origCoord = getStopCoordinates(from);
-    const dstCoord = getStopCoordinates(to);
-    if (origCoord) {
-      setOriginCoords(origCoord);
+    // 1. Resolve Origin Coordinates
+    const origLocal = indiaGeocodingService.searchLocations(from)[0];
+    if (origLocal) {
+      setOriginCoords([origLocal.lat, origLocal.lng]);
     } else {
-      const local = indiaGeocodingService.searchLocations(from)[0];
-      if (local) setOriginCoords([local.lat, local.lng]);
+      const origCoord = getStopCoordinates(from);
+      if (origCoord) {
+        setOriginCoords(origCoord);
+      } else if (from.length > 2 && !from.includes('Current Location')) {
+        geocodeAddressIndia(from).then(res => {
+          if (res && res[0]) setOriginCoords([res[0].lat, res[0].lng]);
+        });
+      }
     }
 
-    if (dstCoord) {
-      setDestCoords(dstCoord);
+    // 2. Resolve Destination Coordinates
+    const dstLocal = indiaGeocodingService.searchLocations(to)[0];
+    if (dstLocal) {
+      setDestCoords([dstLocal.lat, dstLocal.lng]);
     } else {
-      const local = indiaGeocodingService.searchLocations(to)[0];
-      if (local) setDestCoords([local.lat, local.lng]);
+      const dstCoord = getStopCoordinates(to);
+      if (dstCoord) {
+        setDestCoords(dstCoord);
+      } else if (to.length > 2) {
+        geocodeAddressIndia(to).then(res => {
+          if (res && res[0]) setDestCoords([res[0].lat, res[0].lng]);
+        });
+      }
     }
   };
 

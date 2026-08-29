@@ -771,7 +771,7 @@ export const STOP_COORDINATES_MAP: Record<string, [number, number]> = {
 export function getStopCoordinates(stopName: string, routeStartCoord?: [number, number], routeEndCoord?: [number, number], stopIndex?: number, totalStops?: number): [number, number] {
   if (!stopName) return [20.2961, 85.8245];
   const clean = stopName.split(',')[0].toLowerCase().trim();
-  const norm = clean.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+  const norm = clean.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ").trim();
   
   // 1. Direct match in dictionary
   if (STOP_COORDINATES_MAP[norm]) {
@@ -780,12 +780,13 @@ export function getStopCoordinates(stopName: string, routeStartCoord?: [number, 
 
   // 2. Partial match in dictionary
   for (const [key, coords] of Object.entries(STOP_COORDINATES_MAP)) {
-    if (norm.includes(key) || key.includes(norm)) {
+    if (key === norm || (key.length >= 3 && norm.includes(key)) || (norm.length >= 3 && key.includes(norm))) {
       return coords;
     }
   }
 
-  // 3. Fallback interpolation between Start & End coordinates
+
+  // 4. Fallback interpolation between Start & End coordinates
   if (routeStartCoord && routeEndCoord && typeof stopIndex === 'number' && typeof totalStops === 'number' && totalStops > 1) {
     const fraction = stopIndex / (totalStops - 1);
     const lat = routeStartCoord[0] + (routeEndCoord[0] - routeStartCoord[0]) * fraction + (Math.sin(stopIndex) * 0.003);
@@ -793,7 +794,7 @@ export function getStopCoordinates(stopName: string, routeStartCoord?: [number, 
     return [Math.round(lat * 10000) / 10000, Math.round(lng * 10000) / 10000];
   }
 
-  // Master Canteen default
+  // Default coordinate
   return [20.2961, 85.8245];
 }
 
