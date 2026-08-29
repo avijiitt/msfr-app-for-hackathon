@@ -16,9 +16,15 @@ const isOlaMapsConfigured = (): boolean =>
 
 // ── Popular India locations for instant autocomplete (offline & instant lookup) ─────────
 export const POPULAR_INDIAN_LOCATIONS: IndiaLocationResult[] = [
-  // Bhubaneswar & Odisha (Institutes, Colleges, Hospitals & Transit Hubs)
+  // Bhubaneswar & Odisha (Institutes, Colleges, Hospitals, Apartments & Transit Hubs)
+  { id: 'bbs-royal-lagoon', name: 'Royal Lagoon Apartments, Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3695, lng: 85.8210, type: 'landmark', formattedAddress: 'Nandankanan Road, Raghunathpur, Bhubaneswar, Odisha' },
+  { id: 'bbs-mani-tribhuvan', name: 'Mani Tribhuvan Apartments, Patia', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3640, lng: 85.8215, type: 'landmark', formattedAddress: 'Nandankanan Road, Patia, Bhubaneswar, Odisha' },
+  { id: 'bbs-raghunathpur', name: 'Raghunathpur / Raghunathpur Village', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3720, lng: 85.8230, type: 'landmark', formattedAddress: 'Raghunathpur, Nandankanan Road, Bhubaneswar, Odisha' },
+  { id: 'bbs-nandan-vihar', name: 'Nandan Vihar / Sishupal', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3620, lng: 85.8200, type: 'landmark', formattedAddress: 'Nandan Vihar, Patia, Bhubaneswar, Odisha' },
+  { id: 'bbs-sikharchandi', name: 'Sikharchandi Temple & Vihar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3600, lng: 85.8150, type: 'landmark', formattedAddress: 'Sikharchandi Hills, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-trident', name: 'Trident College / Trident Academy of Creative Technology', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3582, lng: 85.8086, type: 'university', formattedAddress: 'Near Infocity Square, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-kiit', name: 'KIIT Square, Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3541, lng: 85.8175, type: 'university', formattedAddress: 'KIIT Square, Patia, Bhubaneswar, Odisha' },
+  { id: 'bbs-kims', name: 'KIMS Hospital & Medical College', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3560, lng: 85.8140, type: 'hospital', formattedAddress: 'KIMS Hospital Road, KIIT Campus, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-iter', name: 'ITER / SOA University (Siksha \'O\' Anusandhan)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2505, lng: 85.7972, type: 'university', formattedAddress: 'Jagamara, Khandagiri, Bhubaneswar, Odisha' },
   { id: 'bbs-silicon', name: 'Silicon University / SiliconTech', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3533, lng: 85.8055, type: 'university', formattedAddress: 'Silicon Hills, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-cvrce', name: 'C.V. Raman Global University (CVRCE)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2198, lng: 85.7363, type: 'university', formattedAddress: 'Bidyanagar, Mahura, Janla, Bhubaneswar, Odisha' },
@@ -28,9 +34,11 @@ export const POPULAR_INDIAN_LOCATIONS: IndiaLocationResult[] = [
   { id: 'bbs-baramunda', name: 'Baramunda ISBT Bus Terminal (Babasaheb Ambedkar Bus Terminal)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2818, lng: 85.7938, type: 'station', formattedAddress: 'ISBT Baramunda, NH16, Bhubaneswar, Odisha' },
   { id: 'bbs-patia', name: 'Patia Square / Patia Station', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3567, lng: 85.8166, type: 'station', formattedAddress: 'Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-damana', name: 'Damana Square / Chandrasekharpur', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3341, lng: 85.8202, type: 'landmark', formattedAddress: 'Damana Chhak, CSPUR, Bhubaneswar, Odisha' },
+  { id: 'bbs-sailashree', name: 'Sailashree Vihar / Phase 2 & 6', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3380, lng: 85.8150, type: 'landmark', formattedAddress: 'Sailashree Vihar, Chandrasekharpur, Bhubaneswar, Odisha' },
   { id: 'bbs-khandagiri', name: 'Khandagiri & Udayagiri Caves Square', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2605, lng: 85.7865, type: 'landmark', formattedAddress: 'Khandagiri Square, NH16, Bhubaneswar, Odisha' },
   { id: 'bbs-rasulgarh', name: 'Rasulgarh Square / Cuttack Road', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2982, lng: 85.8643, type: 'landmark', formattedAddress: 'Rasulgarh Flyover, NH16, Bhubaneswar, Odisha' },
   { id: 'bbs-vanivihar', name: 'Vani Vihar Square / Utkal University', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2974, lng: 85.8475, type: 'university', formattedAddress: 'Utkal University, Vani Vihar, Bhubaneswar, Odisha' },
+  { id: 'bbs-kalpana', name: 'Kalpana Square / BJB College / State Museum', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2570, lng: 85.8420, type: 'landmark', formattedAddress: 'Kalpana Chhak, Puri-Cuttack Road, Bhubaneswar, Odisha' },
   { id: 'bbs-airport', name: 'Biju Patnaik International Airport (BBI)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2524, lng: 85.8178, type: 'airport', formattedAddress: 'Airport Road, Bhubaneswar, Odisha' },
   { id: 'bbs-aiims', name: 'AIIMS Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2312, lng: 85.7761, type: 'hospital', formattedAddress: 'Sijua, Patrapada, Bhubaneswar, Odisha' },
   { id: 'bbs-infocity', name: 'Infocity IT Park & DLF Cybercity', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3602, lng: 85.8035, type: 'landmark', formattedAddress: 'Infocity Road, Patia, Bhubaneswar, Odisha' },
@@ -42,6 +50,7 @@ export const POPULAR_INDIAN_LOCATIONS: IndiaLocationResult[] = [
   { id: 'bbs-lingaraj', name: 'Lingaraj Temple & Old Town Plaza', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2382, lng: 85.8338, type: 'landmark', formattedAddress: 'Old Town, Bhubaneswar, Odisha' },
   { id: 'bbs-puri', name: 'Puri Railway Station & Jagannath Temple', city: 'Puri', state: 'Odisha', lat: 19.8038, lng: 85.8201, type: 'station', formattedAddress: 'Puri Railway Station, Puri, Odisha' },
   { id: 'bbs-cuttack', name: 'Badambadi Bus Stand, Cuttack', city: 'Cuttack', state: 'Odisha', lat: 20.4625, lng: 85.8828, type: 'station', formattedAddress: 'Badambadi, Cuttack, Odisha' },
+
 
   // Delhi NCR
   { id: 'del-cp', name: 'Connaught Place (Rajiv Chowk)', city: 'New Delhi', state: 'Delhi', lat: 28.6328, lng: 77.2197, type: 'metro', formattedAddress: 'Rajiv Chowk Metro, Connaught Place, New Delhi' },
@@ -201,16 +210,44 @@ export async function geocodeAddressIndia(query: string): Promise<IndiaLocationR
   return localMatches.slice(0, 6);
 }
 
+import { STOP_COORDINATES_MAP } from '../data/busRoutesData';
+
 class IndiaGeocodingService {
   public searchLocations(query: string): IndiaLocationResult[] {
     const q = (query || '').trim().toLowerCase();
-    if (!q) return POPULAR_INDIAN_LOCATIONS.slice(0, 8);
-    return POPULAR_INDIAN_LOCATIONS.filter(loc =>
+    if (!q) return POPULAR_INDIAN_LOCATIONS.slice(0, 10);
+    
+    // 1. Check POPULAR_INDIAN_LOCATIONS
+    const directMatches = POPULAR_INDIAN_LOCATIONS.filter(loc =>
       loc.name.toLowerCase().includes(q) ||
       loc.city.toLowerCase().includes(q) ||
       loc.state.toLowerCase().includes(q) ||
       loc.formattedAddress.toLowerCase().includes(q)
-    ).slice(0, 8);
+    );
+
+    // 2. Also search all Mo Bus Stoppages from STOP_COORDINATES_MAP
+    const stopMatches: IndiaLocationResult[] = [];
+    for (const [stopKey, coords] of Object.entries(STOP_COORDINATES_MAP)) {
+      if (stopKey.includes(q) || q.includes(stopKey)) {
+        const titleCase = stopKey.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        const isDuplicate = directMatches.some(m => Math.abs(m.lat - coords[0]) < 0.002 && Math.abs(m.lng - coords[1]) < 0.002);
+        if (!isDuplicate) {
+          stopMatches.push({
+            id: `stop-${stopKey.replace(/\s+/g, '-')}`,
+            name: `${titleCase}, Bhubaneswar`,
+            city: 'Bhubaneswar',
+            state: 'Odisha',
+            lat: coords[0],
+            lng: coords[1],
+            type: 'station',
+            formattedAddress: `${titleCase} Mo Bus Stop, Bhubaneswar, Odisha`,
+          });
+        }
+      }
+    }
+
+    const merged = [...directMatches, ...stopMatches];
+    return merged.slice(0, 12);
   }
 
   public getLocationById(id: string): IndiaLocationResult | undefined {
@@ -232,3 +269,4 @@ class IndiaGeocodingService {
 }
 
 export const indiaGeocodingService = new IndiaGeocodingService();
+

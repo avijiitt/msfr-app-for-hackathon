@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Bus, Train, ChevronRight, RotateCw, RefreshCw, Shield, Bell, Zap, Wallet, Star, Leaf, Accessibility, Moon, CloudRain, Coins, MapPin, Sparkles } from 'lucide-react';
+import { Bus, ChevronRight, RotateCw, RefreshCw, Shield, Bell, Zap, Wallet, Star, Leaf, Accessibility, Moon, CloudRain, Coins, MapPin, Sparkles } from 'lucide-react';
 import { RouteMode } from '../../types/transit';
-import { getNearbyLocationsAlongCorridor, findMatchingMoBusRoutes } from '../../data/cities/bhubaneswar';
+import { getNearbyLocationsAlongCorridor } from '../../data/cities/bhubaneswar';
+import { findMoBusRoutesDynamic } from '../../data/busRoutesData';
 import { TranslationDictionary } from '../../types/i18n';
+
 
 export interface RouteCardOption {
   id: string;
@@ -89,14 +91,27 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
     { id: 'night', label: t?.filterSafest ? `🌙 ${t.filterSafest}` : '🌙 Night Travel', icon: Moon },
   ];
 
-  // Match real Mo Bus routes from 82+ CRUT network lines
-  const matchedMoBus = React.useMemo(() => {
-    return findMatchingMoBusRoutes(originName, destinationName);
+  // Match real Mo Bus routes dynamically across all 60+ CRUT network lines
+  const dynamicMatch = React.useMemo(() => {
+    return findMoBusRoutesDynamic(originName, destinationName);
   }, [originName, destinationName]);
 
-  const primaryBus = matchedMoBus.primarySuggestion || { route: '10', path: 'Bhubaneswar Airport – MANU University' };
-  const altBus = matchedMoBus.directRoutes[1] || matchedMoBus.connectedRoutes[0] || { route: '11', path: 'Bhubaneswar Railway Station – Nandankanan' };
-  const thirdBus = matchedMoBus.directRoutes[2] || matchedMoBus.connectedRoutes[1] || { route: '24', path: 'Kalinga Vihar – Sai Temple' };
+  const r1 = dynamicMatch.matchedRoutes[0];
+  const r2 = dynamicMatch.matchedRoutes[1];
+  const r3 = dynamicMatch.matchedRoutes[2];
+
+  const primaryBus = r1
+    ? { route: r1.route.route, path: `${r1.fromStop} – ${r1.toStop}` }
+    : { route: '10', path: `${cleanFrom} – ${cleanTo}` };
+
+  const altBus = r2
+    ? { route: r2.route.route, path: `${r2.fromStop} – ${r2.toStop}` }
+    : { route: r1 ? r1.route.route : '11', path: `${cleanFrom} – ${cleanTo}` };
+
+  const thirdBus = r3
+    ? { route: r3.route.route, path: `${r3.fromStop} – ${r3.toStop}` }
+    : { route: 'Mo E-Ride Feeder', path: `${cleanFrom} – ${cleanTo}` };
+
 
   // Dynamic Route Generation for All Modes (3 Optimized Options per Mode)
   const getRoutesForMode = (): RouteCardOption[] => {

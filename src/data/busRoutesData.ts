@@ -623,41 +623,18 @@ export const STOP_COORDINATES_MAP: Record<string, [number, number]> = {
   "xavier square": [20.3150, 85.8190],
   "xavior square": [20.3150, 85.8190],
   "fortune tower": [20.3180, 85.8200],
-  "kalinga hospital": [20.3225, 85.8218],
-  "kaling hospital square": [20.3225, 85.8218],
-  "kaling hospital sq": [20.3225, 85.8218],
   "rail sadan": [20.3270, 85.8210],
-  "omfed square": [20.3310, 85.8205],
   "omfed": [20.3310, 85.8205],
-  "niladri vihar": [20.3370, 85.8055],
-  "niladri vihar square": [20.3370, 85.8055],
-  "niladrivihar square": [20.3370, 85.8055],
-  "damana": [20.3340, 85.8205],
-  "damana sq": [20.3340, 85.8205],
-  "damana square": [20.3340, 85.8205],
   "salishree vihar": [20.3420, 85.8110],
   "shailashree vihar": [20.3420, 85.8110],
-  "patia": [20.3541, 85.8175],
-  "patia sq": [20.3541, 85.8175],
-  "patia square": [20.3541, 85.8175],
   "kiit": [20.3533, 85.8164],
-  "kiit campus": [20.3533, 85.8164],
-  "kiit sq": [20.3533, 85.8164],
-  "kiit square": [20.3533, 85.8164],
-  "infocity": [20.3602, 85.8035],
-  "infocity square": [20.3602, 85.8035],
-  "dlf": [20.3620, 85.8010],
-  "silicon": [20.3660, 85.8060],
   "sikhar chandi": [20.3610, 85.8150],
-  "kims hospital": [20.3520, 85.8150],
-  "kimms hospital": [20.3520, 85.8150],
-  "nandan vihar": [20.3650, 85.8220],
-  "raghunathpur": [20.3750, 85.8250],
   "nandankanan": [20.3950, 85.8280],
   "nandan kannan": [20.3950, 85.8280],
   "barang": [20.4050, 85.8300],
   "trisulia": [20.4200, 85.8450],
   "trisulia sq": [20.4200, 85.8450],
+
   "trishulia sq": [20.4200, 85.8450],
   "judicial academy": [20.4400, 85.8550],
   "satichaura sq": [20.4500, 85.8600],
@@ -747,6 +724,38 @@ export const STOP_COORDINATES_MAP: Record<string, [number, number]> = {
   "pahal": [20.3320, 85.8900],
   "nakhara": [20.3550, 85.9050],
   "nakhara sq": [20.3550, 85.9050],
+  "royal lagoon": [20.3695, 85.8210],
+  "royal lagoon apartments": [20.3695, 85.8210],
+  "mani tribhuvan": [20.3640, 85.8215],
+  "manitribhuban": [20.3640, 85.8215],
+  "raghunathpur": [20.3720, 85.8230],
+  "raghunathpur village": [20.3750, 85.8250],
+  "nandan vihar": [20.3620, 85.8200],
+  "sikharchandi": [20.3580, 85.8120],
+  "sikharchandi vihar": [20.3600, 85.8150],
+  "kimms hospital": [20.3560, 85.8140],
+  "kims hospital": [20.3560, 85.8140],
+  "kiit campus": [20.3540, 85.8180],
+  "kiit sq": [20.3541, 85.8175],
+  "kiit square": [20.3541, 85.8175],
+  "patia": [20.3567, 85.8166],
+  "patia sq": [20.3567, 85.8166],
+  "patia square": [20.3567, 85.8166],
+  "cipet": [20.3580, 85.8110],
+  "infocity": [20.3602, 85.8035],
+  "infocity square": [20.3602, 85.8035],
+  "dlf": [20.3590, 85.8060],
+  "dlf cybercity": [20.3590, 85.8060],
+  "silicon": [20.3533, 85.8055],
+  "trident college": [20.3582, 85.8086],
+  "sai enclave": [20.3550, 85.8100],
+  "kailash vihar": [20.3510, 85.8090],
+  "niladri vihar": [20.3448, 85.8062],
+  "niladri vihar sq": [20.3448, 85.8062],
+  "care hospital": [20.3245, 85.8172],
+  "kalinga hospital square": [20.3168, 85.8185],
+  "jayadev vihar": [20.3039, 85.8188],
+  "railway station": [20.2668, 85.8436],
   "khordha": [20.1820, 85.6200],
   "khordha new bus stand": [20.1820, 85.6200],
   "jatani": [20.1650, 85.7050],
@@ -760,14 +769,16 @@ export const STOP_COORDINATES_MAP: Record<string, [number, number]> = {
  * Given a stop name, finds or estimates [lat, lng]
  */
 export function getStopCoordinates(stopName: string, routeStartCoord?: [number, number], routeEndCoord?: [number, number], stopIndex?: number, totalStops?: number): [number, number] {
-  const norm = stopName.toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+  if (!stopName) return [20.2961, 85.8245];
+  const clean = stopName.split(',')[0].toLowerCase().trim();
+  const norm = clean.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
   
   // 1. Direct match in dictionary
   if (STOP_COORDINATES_MAP[norm]) {
     return STOP_COORDINATES_MAP[norm];
   }
 
-  // 2. Partial match
+  // 2. Partial match in dictionary
   for (const [key, coords] of Object.entries(STOP_COORDINATES_MAP)) {
     if (norm.includes(key) || key.includes(norm)) {
       return coords;
@@ -820,39 +831,52 @@ export function findMoBusRoutesDynamic(originQuery: string, destQuery: string): 
     toStop: string;
     stopCount: number;
     subStops: string[];
+    isDirect: boolean;
   }>;
   allRoutes: MoBusDetailRoute[];
 } {
-  const normO = (originQuery || '').toLowerCase().trim();
-  const normD = (destQuery || '').toLowerCase().trim();
+  const cleanO = (originQuery || '').split(',')[0].toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+  const cleanD = (destQuery || '').split(',')[0].toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
 
-  if (!normO && !normD) {
+  if (!cleanO && !cleanD) {
     return {
       matchedRoutes: [],
       allRoutes: MO_BUS_DETAILED_ROUTES,
     };
   }
 
-  const matches: Array<{
+  const directMatches: Array<{
     route: MoBusDetailRoute;
     fromStop: string;
     toStop: string;
     stopCount: number;
     subStops: string[];
+    isDirect: boolean;
+  }> = [];
+
+  const partialMatches: Array<{
+    route: MoBusDetailRoute;
+    fromStop: string;
+    toStop: string;
+    stopCount: number;
+    subStops: string[];
+    isDirect: boolean;
   }> = [];
 
   for (const r of MO_BUS_DETAILED_ROUTES) {
-    const stopsLower = r.stopsList.map(s => s.toLowerCase());
-    
-    // Find index of origin match and dest match
+    const stopsClean = r.stopsList.map(s => s.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim());
+    const startClean = r.start.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+    const destClean = r.destination.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+
     let oIdx = -1;
     let dIdx = -1;
 
-    for (let i = 0; i < stopsLower.length; i++) {
-      if (oIdx === -1 && normO && (stopsLower[i].includes(normO) || normO.includes(stopsLower[i]) || r.start.toLowerCase().includes(normO))) {
+    for (let i = 0; i < stopsClean.length; i++) {
+      const s = stopsClean[i];
+      if (oIdx === -1 && cleanO && (s.includes(cleanO) || cleanO.includes(s) || startClean.includes(cleanO) || cleanO.includes(startClean))) {
         oIdx = i;
       }
-      if (dIdx === -1 && normD && (stopsLower[i].includes(normD) || normD.includes(stopsLower[i]) || r.destination.toLowerCase().includes(normD))) {
+      if (dIdx === -1 && cleanD && (s.includes(cleanD) || cleanD.includes(s) || destClean.includes(cleanD) || cleanD.includes(destClean))) {
         dIdx = i;
       }
     }
@@ -861,26 +885,48 @@ export function findMoBusRoutesDynamic(originQuery: string, destQuery: string): 
       const startI = Math.min(oIdx, dIdx);
       const endI = Math.max(oIdx, dIdx);
       const sub = r.stopsList.slice(startI, endI + 1);
-      matches.push({
+      directMatches.push({
         route: r,
         fromStop: r.stopsList[oIdx] || r.start,
         toStop: r.stopsList[dIdx] || r.destination,
         stopCount: sub.length,
         subStops: sub,
+        isDirect: true,
       });
-    } else if (oIdx !== -1 || dIdx !== -1) {
-      matches.push({
+    } else if (oIdx !== -1) {
+      partialMatches.push({
         route: r,
-        fromStop: oIdx !== -1 ? r.stopsList[oIdx] : r.start,
-        toStop: dIdx !== -1 ? r.stopsList[dIdx] : r.destination,
-        stopCount: r.stopsList.length,
-        subStops: r.stopsList,
+        fromStop: r.stopsList[oIdx],
+        toStop: r.destination,
+        stopCount: r.stopsList.length - oIdx,
+        subStops: r.stopsList.slice(oIdx),
+        isDirect: false,
+      });
+    } else if (dIdx !== -1) {
+      partialMatches.push({
+        route: r,
+        fromStop: r.start,
+        toStop: r.stopsList[dIdx],
+        stopCount: dIdx + 1,
+        subStops: r.stopsList.slice(0, dIdx + 1),
+        isDirect: false,
       });
     }
   }
 
+  // Combine direct matches first, then partials
+  const allMatches = [...directMatches, ...partialMatches];
+
   return {
-    matchedRoutes: matches,
+    matchedRoutes: allMatches.length > 0 ? allMatches : MO_BUS_DETAILED_ROUTES.slice(0, 3).map(r => ({
+      route: r,
+      fromStop: r.start,
+      toStop: r.destination,
+      stopCount: r.stopsList.length,
+      subStops: r.stopsList,
+      isDirect: true,
+    })),
     allRoutes: MO_BUS_DETAILED_ROUTES,
   };
 }
+

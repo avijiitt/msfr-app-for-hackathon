@@ -201,47 +201,11 @@ export const App: React.FC = () => {
     }
   };
 
-  // Reactive Origin Coordinates Geocoding
-  useEffect(() => {
-    if (!originQuery) return;
-    const resolved = getStopCoordinates(originQuery);
-    if (resolved && (resolved[0] !== 20.2961 || resolved[1] !== 85.8245 || originQuery.toLowerCase().includes('master canteen') || originQuery.toLowerCase().includes('station'))) {
-      setOriginCoords(resolved);
-    } else {
-      const local = indiaGeocodingService.searchLocations(originQuery)[0];
-      if (local) {
-        setOriginCoords([local.lat, local.lng]);
-      } else if (originQuery.length > 2 && !originQuery.includes('Current Location')) {
-        geocodeAddressIndia(originQuery).then((res) => {
-          if (res[0]) setOriginCoords([res[0].lat, res[0].lng]);
-        });
-      }
-    }
-  }, [originQuery]);
-
-  // Reactive Destination Coordinates Geocoding
-  useEffect(() => {
-    if (!destQuery) return;
-    const resolved = getStopCoordinates(destQuery);
-    if (resolved && (resolved[0] !== 20.2961 || resolved[1] !== 85.8245 || destQuery.toLowerCase().includes('master canteen') || destQuery.toLowerCase().includes('station'))) {
-      setDestCoords(resolved);
-    } else {
-      const local = indiaGeocodingService.searchLocations(destQuery)[0];
-      if (local) {
-        setDestCoords([local.lat, local.lng]);
-      } else if (destQuery.length > 2) {
-        geocodeAddressIndia(destQuery).then((res) => {
-          if (res[0]) setDestCoords([res[0].lat, res[0].lng]);
-        });
-      }
-    }
-  }, [destQuery]);
-
   const handleSearch = (from: string, to: string) => {
     setOriginQuery(from);
     setDestQuery(to);
 
-    // Auto-resolve stop coordinates for map polyline and stoppage plotting
+    // Resolve stop coordinates for map polyline and stoppage plotting upon search submission
     const origCoord = getStopCoordinates(from);
     const dstCoord = getStopCoordinates(to);
     if (origCoord) {
@@ -258,6 +222,7 @@ export const App: React.FC = () => {
       if (local) setDestCoords([local.lat, local.lng]);
     }
   };
+
 
   // Called when user picks a location from dropdown (has real lat/lng)
   const handleOriginSelected = (result: IndiaLocationResult) => {
