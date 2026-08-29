@@ -1,29 +1,35 @@
 import React, { useState } from 'react';
 import './BusRoutes.css';
-import { STANDARD_MO_BUS_ROUTES, SPECIAL_MO_BUS_ROUTES, MoBusRouteInfo } from '../../data/cities/bhubaneswar';
-import { Bus, Search, Sparkles, Navigation, X } from 'lucide-react';
+import { MO_BUS_DETAILED_ROUTES, MoBusDetailRoute } from '../../data/busRoutesData';
+import { Bus, Search, Navigation, X, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 
 interface BusRoutesProps {
-  onSelectRoute?: (route: MoBusRouteInfo) => void;
+  onSelectRoute?: (route: MoBusDetailRoute) => void;
   onClose?: () => void;
 }
 
 export const BusRoutes: React.FC<BusRoutesProps> = ({ onSelectRoute, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedRoute, setExpandedRoute] = useState<string | null>(null);
 
-  const allRoutes = STANDARD_MO_BUS_ROUTES;
-  const specialRoutes = SPECIAL_MO_BUS_ROUTES;
+  const allRoutes = MO_BUS_DETAILED_ROUTES;
 
-  // Filter routes by query
+  // Filter routes by query (matches route number, start, destination, or ANY intermediate stop name)
   const q = searchQuery.toLowerCase().trim();
 
-  const filteredStandard = allRoutes.filter(
-    (r) => r.route.toLowerCase().includes(q) || r.path.toLowerCase().includes(q)
-  );
+  const filteredRoutes = allRoutes.filter((r) => {
+    if (!q) return true;
+    return (
+      r.route.toLowerCase().includes(q) ||
+      r.start.toLowerCase().includes(q) ||
+      r.destination.toLowerCase().includes(q) ||
+      r.stops.toLowerCase().includes(q)
+    );
+  });
 
-  const filteredSpecial = specialRoutes.filter(
-    (r) => r.route.toLowerCase().includes(q) || r.path.toLowerCase().includes(q)
-  );
+  const toggleExpand = (routeNo: string) => {
+    setExpandedRoute(expandedRoute === routeNo ? null : routeNo);
+  };
 
   return (
     <div className="bus-routes-container">
@@ -31,19 +37,19 @@ export const BusRoutes: React.FC<BusRoutesProps> = ({ onSelectRoute, onClose }) 
         <div>
           <h2 className="flex items-center gap-2">
             <Bus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <span>All City Bus Routes & Locations (CRUT Mo Bus)</span>
+            <span>CRUT Mo Bus Routes & Stoppages Network</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Official 82+ Mo Bus Lines connecting Bhubaneswar, Cuttack, Puri, Khordha, Jatani & Konark
+            Comprehensive routes connecting Bhubaneswar, Cuttack, Puri, Khordha, Jatani & Konark
           </p>
         </div>
 
         {/* Live Search Input */}
-        <div className="relative min-w-[240px]">
+        <div className="relative min-w-[260px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search route no. or place (e.g. 10, Airport, Puri, AIIMS)..."
+            placeholder="Search route no. or stop (e.g. 10, Patia, AIIMS, KIIT, Damana)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-8 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -59,73 +65,99 @@ export const BusRoutes: React.FC<BusRoutesProps> = ({ onSelectRoute, onClose }) 
         </div>
       </div>
 
-      {/* Special/Alphanumeric Routes */}
-      {filteredSpecial.length > 0 && (
+      {/* Routes Grid */}
+      {filteredRoutes.length > 0 ? (
         <div className="route-group">
-          <h3>
-            <Sparkles className="w-4 h-4 text-rose-500" />
-            <span>Special & Heritage Routes ({filteredSpecial.length})</span>
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="m-0">
+              <Bus className="w-4 h-4 text-blue-600" />
+              <span>Available Routes ({filteredRoutes.length})</span>
+            </h3>
+            <span className="text-[11px] font-bold text-slate-500">
+              Showing {filteredRoutes.length} of {allRoutes.length} total lines
+            </span>
+          </div>
+
           <div className="route-grid">
-            {filteredSpecial.map((item, index) => (
-              <div className="route-card" key={`spc-${index}`}>
-                <div className="route-card-top">
-                  <div className="route-badge special-badge">Route {item.route}</div>
-                  <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md">
-                    Heritage Express
-                  </span>
-                </div>
-                <div className="route-path">{item.path}</div>
-                {onSelectRoute && (
+            {filteredRoutes.map((item) => {
+              const isExpanded = expandedRoute === item.route;
+              const stopsArray = item.stopsList || item.stops.split(',').map((s) => s.trim()).filter(Boolean);
+
+              return (
+                <div className="route-card" key={`route-${item.route}`}>
+                  <div className="route-card-top">
+                    <div className="route-badge">Route {item.route}</div>
+                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-md">
+                      {stopsArray.length} Stops
+                    </span>
+                  </div>
+
+                  <div className="mb-2">
+                    <div className="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span className="text-blue-600 font-black">●</span>
+                      <span className="truncate">{item.start}</span>
+                    </div>
+                    <div className="h-2.5 border-l-2 border-dashed border-slate-300 dark:border-slate-700 ml-1 my-0.5"></div>
+                    <div className="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span className="text-rose-600 font-black">●</span>
+                      <span className="truncate">{item.destination}</span>
+                    </div>
+                  </div>
+
+                  {/* Via Path Summary */}
+                  <div className="route-path text-[11px] line-clamp-2 text-slate-600 dark:text-slate-400 mb-2">
+                    <span className="font-bold text-slate-700 dark:text-slate-300">Via: </span>
+                    {stopsArray.slice(1, 6).join(' ➔ ')}
+                    {stopsArray.length > 6 ? ' ...' : ''}
+                  </div>
+
+                  {/* Expand/Collapse All Stops */}
                   <button
                     type="button"
-                    onClick={() => onSelectRoute(item)}
-                    className="route-action-btn"
+                    onClick={() => toggleExpand(item.route)}
+                    className="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline py-1 text-left"
                   >
-                    <Navigation className="w-3 h-3" />
-                    <span>Plan Route With Bus {item.route}</span>
+                    <MapPin className="w-3 h-3" />
+                    <span>{isExpanded ? 'Hide All Stops' : `View All ${stopsArray.length} Stoppages`}</span>
+                    {isExpanded ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
                   </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Standard Routes */}
-      {filteredStandard.length > 0 && (
-        <div className="route-group">
-          <h3>
-            <Bus className="w-4 h-4 text-blue-600" />
-            <span>Standard City Transit Routes ({filteredStandard.length})</span>
-          </h3>
-          <div className="route-grid">
-            {filteredStandard.map((item, index) => (
-              <div className="route-card" key={`std-${index}`}>
-                <div className="route-card-top">
-                  <div className="route-badge">Route {item.route}</div>
-                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-md">
-                    Daily Service
-                  </span>
+                  {/* Expanded Stoppages List */}
+                  {isExpanded && (
+                    <div className="mt-2 p-2.5 bg-slate-50 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 max-h-48 overflow-y-auto space-y-1">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        Stop-by-Stop Route Sequence:
+                      </div>
+                      {stopsArray.map((stop, sIdx) => (
+                        <div key={sIdx} className="text-[11px] flex items-center gap-2 text-slate-700 dark:text-slate-300 py-0.5">
+                          <span className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-800 text-[9px] font-bold flex items-center justify-center flex-shrink-0 text-slate-700 dark:text-slate-300">
+                            {sIdx + 1}
+                          </span>
+                          <span className={sIdx === 0 ? 'font-bold text-blue-600' : sIdx === stopsArray.length - 1 ? 'font-bold text-rose-600' : ''}>
+                            {stop}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Plan Route Action */}
+                  {onSelectRoute && (
+                    <button
+                      type="button"
+                      onClick={() => onSelectRoute(item)}
+                      className="route-action-btn mt-2"
+                    >
+                      <Navigation className="w-3 h-3" />
+                      <span>Plan & View On Map (Bus {item.route})</span>
+                    </button>
+                  )}
                 </div>
-                <div className="route-path">{item.path}</div>
-                {onSelectRoute && (
-                  <button
-                    type="button"
-                    onClick={() => onSelectRoute(item)}
-                    className="route-action-btn"
-                  >
-                    <Navigation className="w-3 h-3" />
-                    <span>Plan Route With Bus {item.route}</span>
-                  </button>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
-      )}
-
-      {filteredStandard.length === 0 && filteredSpecial.length === 0 && (
+      ) : (
         <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
           <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
             No bus routes found matching "{searchQuery}"
@@ -140,3 +172,4 @@ export const BusRoutes: React.FC<BusRoutesProps> = ({ onSelectRoute, onClose }) 
 };
 
 export default BusRoutes;
+

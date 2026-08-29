@@ -7,7 +7,8 @@ import {
 import { Vehicle } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
 import { getRouteDirections, RouteDirectionsResult } from '../../services/olaRoutingService';
-import { getHumanReadableLocationName } from '../../data/cities/bhubaneswar';
+import { getHumanReadableLocationName, getNearbyLocationsAlongCorridor } from '../../data/cities/bhubaneswar';
+import { findMoBusRoutesDynamic, getStopCoordinates } from '../../data/busRoutesData';
 
 // Fix leaflet default marker paths
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
@@ -128,6 +129,28 @@ const createUserPinIcon = (isRealGps: boolean) => {
   });
 };
 
+// Custom Black Dot Icon for Intermediate Stoppages
+const createStopDotIcon = () => {
+  return L.divIcon({
+    className: 'custom-stop-dot',
+    html: `
+      <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <div style="
+          width: 9px; 
+          height: 9px; 
+          border-radius: 50%; 
+          background: #000000; 
+          border: 2px solid #ffffff; 
+          box-shadow: 0 2px 5px rgba(0,0,0,0.6);
+        "></div>
+      </div>
+    `,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
+  });
+};
+
+
 interface MusafirMapProps {
   vehicles: Vehicle[];
   userLocation: LiveLocationData;
@@ -222,7 +245,12 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch real road route directions
+  // Dynamic intermediate stops for active route
+  const [activeStops, setActiveStops] = useState<
+    Array<{ name: string; lat: number; lng: number; index: number }>
+  >([]);
+
+  // Fetch real road route directions & calculate intermediate stoppages
   useEffect(() => {
     let isCancelled = false;
     if (originCoords && destCoords) {
@@ -233,13 +261,54 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           }
         })
         .catch(() => {});
+
+      // Dynamically locate matching Mo Bus line and its sequence of stops
+      const dynamicMatch = findMoBusRoutesDynamic(originName, destinationName);
+      if (dynamicMatch.matchedRoutes.length > 0) {
+        const topMatch = dynamicMatch.matchedRoutes[0];
+        const sub = topMatch.subStops;
+        const total = sub.length;
+        const resolvedStops = sub.map((stopName, sIdx) => {
+          const [sLat, sLng] = getStopCoordinates(
+            stopName,
+            originCoords,
+            destCoords,
+            sIdx,
+            total
+          );
+          return {
+            name: stopName,
+            lat: sLat,
+            lng: sLng,
+            index: sIdx + 1,
+          };
+        });
+        setActiveStops(resolvedStops);
+      } else {
+        // Fallback: corridor localities along the line
+        const corridor = getNearbyLocationsAlongCorridor(
+          originName,
+          destinationName,
+          { lat: originCoords[0], lng: originCoords[1] },
+          { lat: destCoords[0], lng: destCoords[1] }
+        );
+        const resolved = corridor.map((loc, sIdx) => ({
+          name: loc.name,
+          lat: loc.lat,
+          lng: loc.lng,
+          index: sIdx + 1,
+        }));
+        setActiveStops(resolved);
+      }
     } else {
       setRouteInfo(null);
+      setActiveStops([]);
     }
     return () => {
       isCancelled = true;
     };
-  }, [originCoords, destCoords]);
+  }, [originCoords, destCoords, originName, destinationName]);
+
 
   const defaultCenter: [number, number] = originCoords || [20.2961, 85.8245];
 
@@ -456,8 +525,8 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           </Marker>
         )}
 
-        {/* Route Polyline (Shown in both Online & Offline Mode) */}
-        {routeInfo && routeInfo.coordinates && routeInfo.coordinates.length > 0 && (
+        {/* Route Polyline (Road Route or Connected Stoppages) */}
+        {routeInfo && routeInfo.coordinates && routeInfo.coordinates.length > 0 ? (
           <>
             <Polyline
               positions={routeInfo.coordinates}
@@ -479,7 +548,41 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
               }}
             />
           </>
+        ) : (
+          activeStops.length > 1 && (
+            <Polyline
+              positions={activeStops.map((s) => [s.lat, s.lng] as [number, number])}
+              pathOptions={{
+                color: isOffline ? '#10b981' : '#2563eb',
+                weight: 5,
+                opacity: 0.85,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+          )
         )}
+
+        {/* Intermediate Bus Stoppages (Marked as Black Dots with Connected Route Line) */}
+        {activeStops.map((stop) => (
+          <Marker
+            key={`stop-dot-${stop.index}-${stop.name}`}
+            position={[stop.lat, stop.lng]}
+            icon={createStopDotIcon()}
+          >
+            <Popup>
+              <div className="p-1 text-xs">
+                <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wide block">
+                  Mo Bus Stoppage #{stop.index}
+                </span>
+                <strong className="text-slate-900 dark:text-white font-bold block mt-0.5">
+                  {stop.name}
+                </strong>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
 
         {/* Live Moving Transit Vehicles (Online only) */}
         {!isOffline && filteredVehicles.map((v) => (

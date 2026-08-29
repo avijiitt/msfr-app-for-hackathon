@@ -8,6 +8,7 @@ import { walletService } from './services/walletService';
 import { sosService } from './services/sosService';
 import { geolocationService, LiveLocationData } from './services/geolocationService';
 import { IndiaLocationResult } from './services/indiaGeocodingService';
+import { getStopCoordinates } from './data/busRoutesData';
 
 // Redesigned Musafir Layout & Core Components
 import { MusafirHeader } from './components/layout/MusafirHeader';
@@ -203,7 +204,14 @@ export const App: React.FC = () => {
   const handleSearch = (from: string, to: string) => {
     setOriginQuery(from);
     setDestQuery(to);
+
+    // Auto-resolve stop coordinates for map polyline and stoppage plotting
+    const origCoord = getStopCoordinates(from);
+    const dstCoord = getStopCoordinates(to);
+    if (origCoord) setOriginCoords(origCoord);
+    if (dstCoord) setDestCoords(dstCoord);
   };
+
 
   // Called when user picks a location from dropdown (has real lat/lng)
   const handleOriginSelected = (result: IndiaLocationResult) => {

@@ -1,12 +1,12 @@
 import React from 'react';
 import { BusRoutes } from './BusRoutes';
-import { MoBusRouteInfo } from '../../data/cities/bhubaneswar';
+import { MoBusDetailRoute } from '../../data/busRoutesData';
 import { X, Bus, Sparkles } from 'lucide-react';
 
 interface BusRoutesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectRoute: (origin: string, destination: string) => void;
+  onSelectRoute: (origin: string, destination: string, route?: MoBusDetailRoute) => void;
 }
 
 export const BusRoutesModal: React.FC<BusRoutesModalProps> = ({
@@ -16,17 +16,14 @@ export const BusRoutesModal: React.FC<BusRoutesModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const handleRouteSelected = (route: MoBusRouteInfo) => {
-    // Parse origin and destination from path: "Origin – Destination (via ...)"
-    const cleanPath = route.path.replace(/\(.*?\)/g, '').trim();
-    const parts = cleanPath.split(/[–—\-]/).map((p) => p.trim());
-    
-    const origin = parts[0] || route.origin || 'Master Canteen';
-    const destination = parts[1] || route.destination || 'Patia';
+  const handleRouteSelected = (route: MoBusDetailRoute) => {
+    const origin = route.start || 'Bhubaneswar Railway Station';
+    const destination = route.destination || 'Patia';
 
-    onSelectRoute(origin, destination);
+    onSelectRoute(origin, destination, route);
     onClose();
   };
+
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in">
