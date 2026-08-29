@@ -171,22 +171,22 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
   const r2 = dynamicMatch.matchedRoutes[1];
   const r3 = dynamicMatch.matchedRoutes[2];
 
-  const primaryRoute = r1 ? r1.route.route : '09';
-  const primaryFrom = r1 ? r1.fromStop : 'Jayadev Vihar';
-  const primaryTo = r1 ? r1.toStop : 'KIIT Square';
-  const primaryStopsCount = r1 ? r1.stopCount : 8;
+  const cleanFrom = originQuery ? originQuery.split(',')[0].trim() : 'Departure Origin';
+  const cleanTo = destQuery ? destQuery.split(',')[0].trim() : 'Destination';
 
-  const altRoute = r2 ? r2.route.route : (r1 ? r1.route.route : '10');
-  const altFrom = r2 ? r2.fromStop : 'Jayadev Vihar';
-  const altTo = r2 ? r2.toStop : 'KIIT Square';
-  const altStopsCount = r2 ? r2.stopCount : 10;
+  const primaryRoute = r1 ? r1.route.route : 'AC Express';
+  const primaryFrom = r1 ? r1.fromStop : cleanFrom;
+  const primaryTo = r1 ? r1.toStop : cleanTo;
+  const primaryStopsCount = r1 ? r1.stopCount : 6;
 
-  const thirdRoute = r3 ? r3.route.route : '11';
-  const thirdFrom = r3 ? r3.fromStop : 'Jayadev Vihar';
-  const thirdTo = r3 ? r3.toStop : 'KIIT Square';
+  const altRoute = r2 ? r2.route.route : (r1 ? r1.route.route : 'City Bus');
+  const altFrom = r2 ? r2.fromStop : cleanFrom;
+  const altTo = r2 ? r2.toStop : cleanTo;
+  const altStopsCount = r2 ? r2.stopCount : 8;
 
-  const cleanFrom = originQuery ? originQuery.split(',')[0].trim() : 'Jayadev Vihar';
-  const cleanTo = destQuery ? destQuery.split(',')[0].trim() : 'KIIT Square';
+  const thirdRoute = r3 ? r3.route.route : 'Feeder EV';
+  const thirdFrom = r3 ? r3.fromStop : cleanFrom;
+  const thirdTo = r3 ? r3.toStop : cleanTo;
 
   const getTypeIcon = (type: string) => {
     switch (type) {

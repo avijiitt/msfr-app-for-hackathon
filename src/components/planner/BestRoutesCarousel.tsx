@@ -102,15 +102,15 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
 
   const primaryBus = r1
     ? { route: r1.route.route, path: `${r1.fromStop} – ${r1.toStop}` }
-    : { route: '10', path: `${cleanFrom} – ${cleanTo}` };
+    : { route: 'AC Express', path: `${cleanFrom} – ${cleanTo}` };
 
   const altBus = r2
     ? { route: r2.route.route, path: `${r2.fromStop} – ${r2.toStop}` }
-    : { route: r1 ? r1.route.route : '11', path: `${cleanFrom} – ${cleanTo}` };
+    : { route: r1 ? r1.route.route : 'City Bus', path: `${cleanFrom} – ${cleanTo}` };
 
   const thirdBus = r3
     ? { route: r3.route.route, path: `${r3.fromStop} – ${r3.toStop}` }
-    : { route: 'Mo E-Ride Feeder', path: `${cleanFrom} – ${cleanTo}` };
+    : { route: 'EV Feeder', path: `${cleanFrom} – ${cleanTo}` };
 
 
   // Dynamic Route Generation for All Modes (3 Optimized Options per Mode)
