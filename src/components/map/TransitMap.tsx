@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon, Circle, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { Vehicle, Station, TransitRoute } from '../../types/transit';
@@ -321,13 +321,14 @@ export const TransitMap: React.FC<TransitMapProps> = ({
         zoom={cityZoom}
         className="w-full h-full dark-tiles"
         zoomControl={false}
+        attributionControl={false}
       >
         <MapCenterController center={cityCenter} zoom={cityZoom} />
         <MapLocationPicker onLocationPicked={handleMapClick} />
 
         <TileLayer
-          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          attribution=""
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
         {/* Real-Time User GPS Live Pin & Accuracy Circle */}

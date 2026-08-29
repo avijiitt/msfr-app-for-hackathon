@@ -320,49 +320,9 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         </div>
       )}
 
-      {/* Top Left: Route Mode Badge */}
-      {!isAnyModalOpen && routeInfo && (
-        <div
-          className={`absolute ${
-            isOffline ? 'top-10' : 'top-2.5 sm:top-3'
-          } left-2.5 sm:left-4 z-[400] max-w-[calc(100%-85px)] sm:max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl shadow-lg border border-slate-200/90 dark:border-slate-800 text-xs flex items-center gap-2 sm:gap-2.5 transition-all`}
-        >
-          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-600 text-white flex-shrink-0 flex items-center justify-center shadow-sm">
-            <Bus className="w-3.5 h-3.5" />
-          </div>
-          <div className="min-w-0 pr-1">
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-slate-900 dark:text-white truncate text-[11px] sm:text-xs">
-                {routeInfo.summary || 'Smart Corridor Route'}
-              </span>
-              <span className="hidden sm:inline-flex px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
-                Verified Route
-              </span>
-            </div>
-            <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
-              {routeInfo.distanceKm} km • ~{routeInfo.durationMinutes} mins via Smart Transit
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Top Right: Live Clock & Live Transit Badge (Neutral, NO third-party branding) */}
+      {/* Floating Layer Controls (Top Left) */}
       {!isAnyModalOpen && (
-        <div className="absolute top-2.5 sm:top-3 right-2.5 sm:right-4 z-[400] flex flex-col items-end gap-1.5">
-          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-xl shadow-lg border border-slate-200/90 dark:border-slate-800 text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-blue-600 flex-shrink-0 animate-pulse" />
-            <span className="font-mono tracking-tight">{currentTimeStr || 'Live Transit'}</span>
-          </div>
-
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1">
-            <span>⚡ Live Transit Radar</span>
-          </div>
-        </div>
-      )}
-
-      {/* Floating Layer Controls (Top Left below route badge) */}
-      {!isAnyModalOpen && (
-        <div className="absolute top-16 left-2.5 sm:left-4 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1.5 rounded-2xl shadow-lg border border-slate-200/90 dark:border-slate-800 text-xs">
+        <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-4 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1.5 rounded-2xl shadow-lg border border-slate-200/90 dark:border-slate-800 text-xs">
           {isOptionsOpen ? (
             <div className="space-y-1.5 min-w-[140px]">
               <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
@@ -489,10 +449,10 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
-        {/* High-Definition Map Tiles */}
+        {/* High-Definition Map Tiles (100% Watermark-Free & Clean) */}
         <TileLayer
           attribution=""
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={19}
         />
 
