@@ -7,8 +7,9 @@ import { transitSimulator } from './services/transitSimulator';
 import { walletService } from './services/walletService';
 import { sosService } from './services/sosService';
 import { geolocationService, LiveLocationData } from './services/geolocationService';
-import { IndiaLocationResult } from './services/indiaGeocodingService';
+import { IndiaLocationResult, indiaGeocodingService, geocodeAddressIndia } from './services/indiaGeocodingService';
 import { getStopCoordinates } from './data/busRoutesData';
+
 
 // Redesigned Musafir Layout & Core Components
 import { MusafirHeader } from './components/layout/MusafirHeader';
@@ -200,6 +201,42 @@ export const App: React.FC = () => {
     }
   };
 
+  // Reactive Origin Coordinates Geocoding
+  useEffect(() => {
+    if (!originQuery) return;
+    const resolved = getStopCoordinates(originQuery);
+    if (resolved && (resolved[0] !== 20.2961 || resolved[1] !== 85.8245 || originQuery.toLowerCase().includes('master canteen') || originQuery.toLowerCase().includes('station'))) {
+      setOriginCoords(resolved);
+    } else {
+      const local = indiaGeocodingService.searchLocations(originQuery)[0];
+      if (local) {
+        setOriginCoords([local.lat, local.lng]);
+      } else if (originQuery.length > 2 && !originQuery.includes('Current Location')) {
+        geocodeAddressIndia(originQuery).then((res) => {
+          if (res[0]) setOriginCoords([res[0].lat, res[0].lng]);
+        });
+      }
+    }
+  }, [originQuery]);
+
+  // Reactive Destination Coordinates Geocoding
+  useEffect(() => {
+    if (!destQuery) return;
+    const resolved = getStopCoordinates(destQuery);
+    if (resolved && (resolved[0] !== 20.2961 || resolved[1] !== 85.8245 || destQuery.toLowerCase().includes('master canteen') || destQuery.toLowerCase().includes('station'))) {
+      setDestCoords(resolved);
+    } else {
+      const local = indiaGeocodingService.searchLocations(destQuery)[0];
+      if (local) {
+        setDestCoords([local.lat, local.lng]);
+      } else if (destQuery.length > 2) {
+        geocodeAddressIndia(destQuery).then((res) => {
+          if (res[0]) setDestCoords([res[0].lat, res[0].lng]);
+        });
+      }
+    }
+  }, [destQuery]);
+
   const handleSearch = (from: string, to: string) => {
     setOriginQuery(from);
     setDestQuery(to);
@@ -207,10 +244,20 @@ export const App: React.FC = () => {
     // Auto-resolve stop coordinates for map polyline and stoppage plotting
     const origCoord = getStopCoordinates(from);
     const dstCoord = getStopCoordinates(to);
-    if (origCoord) setOriginCoords(origCoord);
-    if (dstCoord) setDestCoords(dstCoord);
-  };
+    if (origCoord) {
+      setOriginCoords(origCoord);
+    } else {
+      const local = indiaGeocodingService.searchLocations(from)[0];
+      if (local) setOriginCoords([local.lat, local.lng]);
+    }
 
+    if (dstCoord) {
+      setDestCoords(dstCoord);
+    } else {
+      const local = indiaGeocodingService.searchLocations(to)[0];
+      if (local) setDestCoords([local.lat, local.lng]);
+    }
+  };
 
   // Called when user picks a location from dropdown (has real lat/lng)
   const handleOriginSelected = (result: IndiaLocationResult) => {
@@ -234,6 +281,7 @@ export const App: React.FC = () => {
       setDestQuery(cleanName);
     }
   };
+
 
 
   const handleSidebarTabChange = (tab: MusafirSidebarTab) => {
