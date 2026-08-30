@@ -1,6 +1,8 @@
+import { googleGetDirections } from './googleMapsService';
+
 /**
- * OLA Maps Routing & Navigation Service
- * Uses official OLA Maps Directions API with Polyline Decoding & Fallback
+ * Maps Routing & Navigation Service
+ * Uses Google Maps Directions API with OLA Maps & OSRM Fallback
  */
 
 const OLA_MAPS_API_KEY = import.meta.env.VITE_OLA_MAPS_API_KEY || '63CtJZBj4maPgvCCiDSXxavc6jkxztXfRTEpwPYj';
@@ -10,7 +12,7 @@ export interface RouteDirectionsResult {
   distanceKm: number;
   durationMinutes: number;
   summary: string;
-  source: 'ola_maps' | 'osrm_fallback' | 'interpolated';
+  source: 'google_maps' | 'ola_maps' | 'osrm_fallback' | 'interpolated';
 }
 
 /**
@@ -78,7 +80,23 @@ export async function getRouteDirections(
   const [destLat, destLng] = destination;
   const directDist = calculateDirectDistanceKm(origLat, origLng, destLat, destLng);
 
-  // 1. Try OLA Maps Directions API
+  // 1. Try Google Maps Directions API (Primary & Most Accurate)
+  try {
+    const gRoute = await googleGetDirections(origin, destination, 'driving');
+    if (gRoute && gRoute.coordinates.length > 1) {
+      return {
+        coordinates: gRoute.coordinates,
+        distanceKm: gRoute.distanceKm,
+        durationMinutes: gRoute.durationMinutes,
+        summary: `${gRoute.distanceKm} km • ~${gRoute.durationMinutes} mins (${gRoute.summary})`,
+        source: 'google_maps',
+      };
+    }
+  } catch (gErr) {
+    console.warn('Google Maps directions fallback to OLA/OSM:', gErr);
+  }
+
+  // 2. Try OLA Maps Directions API
   if (OLA_MAPS_API_KEY && !OLA_MAPS_API_KEY.includes('your-ola')) {
     try {
       const url = `https://api.olamaps.io/routing/v1/directions?origin=${origLat},${origLng}&destination=${destLat},${destLng}&api_key=${OLA_MAPS_API_KEY}`;
@@ -110,8 +128,8 @@ export async function getRouteDirections(
           }
         }
       }
-    } catch (err) {
-      console.warn('OLA Maps directions API error, trying fallback:', err);
+    } catch (olaErr) {
+      console.warn('OLA Maps directions API error, falling back to OSRM:', olaErr);
     }
   }
 

@@ -1123,11 +1123,83 @@ app.post('/api/tickets/validate', (req: Request, res: Response) => {
 });
 
 
+// ── Google Maps Platform API Gateway ──────────────────────────────────────
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyBxK55bcOFGfpkIX_0Hi6AyWzwjCSGPFQM';
+
+app.get('/api/maps/geocode', async (req: Request, res: Response) => {
+  try {
+    const address = req.query.address as string;
+    if (!address) {
+      return res.status(400).json({ status: 'INVALID_REQUEST', error_message: 'address query parameter required' });
+    }
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&region=in&key=${GOOGLE_MAPS_API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (err: any) {
+    console.error('Google Maps Geocoding Proxy Error:', err);
+    res.status(500).json({ status: 'ERROR', error_message: err.message });
+  }
+});
+
+app.get('/api/maps/places/autocomplete', async (req: Request, res: Response) => {
+  try {
+    const input = req.query.input as string;
+    if (!input) {
+      return res.json({ predictions: [], status: 'OK' });
+    }
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&components=country:in&language=en&key=${GOOGLE_MAPS_API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (err: any) {
+    console.error('Google Maps Autocomplete Proxy Error:', err);
+    res.status(500).json({ status: 'ERROR', error_message: err.message, predictions: [] });
+  }
+});
+
+app.get('/api/maps/directions', async (req: Request, res: Response) => {
+  try {
+    const origin = req.query.origin as string;
+    const destination = req.query.destination as string;
+    const mode = (req.query.mode as string) || 'transit';
+    if (!origin || !destination) {
+      return res.status(400).json({ status: 'INVALID_REQUEST', error_message: 'origin and destination required' });
+    }
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&mode=${mode}&region=in&alternatives=true&key=${GOOGLE_MAPS_API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (err: any) {
+    console.error('Google Maps Directions Proxy Error:', err);
+    res.status(500).json({ status: 'ERROR', error_message: err.message });
+  }
+});
+
+app.get('/api/maps/places/nearby', async (req: Request, res: Response) => {
+  try {
+    const location = req.query.location as string;
+    const radius = (req.query.radius as string) || '2000';
+    const type = (req.query.type as string) || 'transit_station';
+    if (!location) {
+      return res.status(400).json({ status: 'INVALID_REQUEST', error_message: 'location (lat,lng) required' });
+    }
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${encodeURIComponent(location)}&radius=${radius}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (err: any) {
+    console.error('Google Maps Nearby Search Error:', err);
+    res.status(500).json({ status: 'ERROR', error_message: err.message, results: [] });
+  }
+});
+
 // ── Start Server ───────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀 Musafir Backend API Server running at http://localhost:${PORT}`);
   console.log(`📡 Supabase Database: ${SUPABASE_URL}`);
   console.log(`🤖 Gemini AI: Configured`);
+  console.log(`🗺️ Google Maps API: Active (Key: AIzaSyBxK55b...)`);
   console.log(`🗺️ OLA Maps API: Configured`);
   console.log(`📱 SMS OTP Gateway: Ready (Twilio SMS Gateway & Supabase)`);
   console.log(`💳 Payment Gateway: Ready (Razorpay + NPCI Bharat UPI QR)`);

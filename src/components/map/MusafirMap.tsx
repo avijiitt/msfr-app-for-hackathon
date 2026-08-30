@@ -7,6 +7,7 @@ import {
 import { Vehicle } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
 import { getRouteDirections, RouteDirectionsResult } from '../../services/olaRoutingService';
+import { GOOGLE_MAPS_API_KEY } from '../../services/googleMapsService';
 import { getHumanReadableLocationName, getNearbyLocationsAlongCorridor } from '../../data/cities/bhubaneswar';
 import { findMoBusRoutesDynamic, getStopCoordinates } from '../../data/busRoutesData';
 
@@ -233,6 +234,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   const [showAutos, setShowAutos] = useState(true);
   const [currentTimeStr, setCurrentTimeStr] = useState('');
   const [routeInfo, setRouteInfo] = useState<RouteDirectionsResult | null>(null);
+  const [mapLayerStyle, setMapLayerStyle] = useState<'google-roadmap' | 'google-hybrid' | 'google-traffic' | 'google-terrain' | 'osm'>('google-roadmap');
 
   // Pin Choice Confirmation State
   const [pendingPinChoice, setPendingPinChoice] = useState<{
@@ -389,31 +391,73 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
 
 
           {isOptionsOpen && (
-            <div className="w-48 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 text-xs flex flex-col gap-2">
+            <div className="w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 text-xs flex flex-col gap-2.5">
               <div className="flex justify-between items-center font-extrabold text-slate-900 dark:text-white pb-1 border-b border-slate-200 dark:border-slate-800">
-                <span>Fleet Layers</span>
+                <span>Google Maps & Fleet</span>
                 <button onClick={() => setIsOptionsOpen(false)} className="text-slate-400 hover:text-slate-600">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showBuses}
-                  onChange={(e) => setShowBuses(e.target.checked)}
-                  className="rounded text-blue-600 focus:ring-0"
-                />
-                <span>Mo Bus Fleet</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showAutos}
-                  onChange={(e) => setShowAutos(e.target.checked)}
-                  className="rounded text-blue-600 focus:ring-0"
-                />
-                <span>Mo E-Ride / Feeder</span>
-              </label>
+
+              <div>
+                <span className="font-bold text-[10px] uppercase tracking-wider text-slate-400 block mb-1.5">Map Style (Google Maps)</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={() => setMapLayerStyle('google-roadmap')}
+                    className={`px-2 py-1.5 rounded-xl text-left font-bold text-[11px] transition ${
+                      mapLayerStyle === 'google-roadmap' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    🗺️ Road Map
+                  </button>
+                  <button
+                    onClick={() => setMapLayerStyle('google-hybrid')}
+                    className={`px-2 py-1.5 rounded-xl text-left font-bold text-[11px] transition ${
+                      mapLayerStyle === 'google-hybrid' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    🛰️ Satellite
+                  </button>
+                  <button
+                    onClick={() => setMapLayerStyle('google-traffic')}
+                    className={`px-2 py-1.5 rounded-xl text-left font-bold text-[11px] transition ${
+                      mapLayerStyle === 'google-traffic' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    🚦 Traffic
+                  </button>
+                  <button
+                    onClick={() => setMapLayerStyle('google-terrain')}
+                    className={`px-2 py-1.5 rounded-xl text-left font-bold text-[11px] transition ${
+                      mapLayerStyle === 'google-terrain' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    ⛰️ Terrain
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-1.5">
+                <span className="font-bold text-[10px] uppercase tracking-wider text-slate-400 block">Fleet Toggles</span>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showBuses}
+                    onChange={(e) => setShowBuses(e.target.checked)}
+                    className="rounded text-blue-600 focus:ring-0"
+                  />
+                  <span>Mo Bus Fleet</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showAutos}
+                    onChange={(e) => setShowAutos(e.target.checked)}
+                    className="rounded text-blue-600 focus:ring-0"
+                  />
+                  <span>Mo E-Ride / Feeder</span>
+                </label>
+              </div>
             </div>
           )}
         </div>
@@ -479,8 +523,44 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           onMapClick={handleMapClick}
         />
 
-        {/* Tile Layer (Clean OpenStreetMap with dark-tiles CSS filter for zero-key dark mode) */}
-        {!isOffline && (
+        {/* Google Maps Roadmap Tile Layer (Default) */}
+        {!isOffline && mapLayerStyle === 'google-roadmap' && (
+          <TileLayer
+            attribution='&copy; <a href="https://maps.google.com">Google Maps</a>'
+            url={`https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${GOOGLE_MAPS_API_KEY}`}
+            maxZoom={20}
+          />
+        )}
+
+        {/* Google Maps Satellite / Hybrid Imagery */}
+        {!isOffline && mapLayerStyle === 'google-hybrid' && (
+          <TileLayer
+            attribution='&copy; <a href="https://maps.google.com">Google Maps Satellite</a>'
+            url={`https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${GOOGLE_MAPS_API_KEY}`}
+            maxZoom={20}
+          />
+        )}
+
+        {/* Google Maps Live Traffic Overlay */}
+        {!isOffline && mapLayerStyle === 'google-traffic' && (
+          <TileLayer
+            attribution='&copy; <a href="https://maps.google.com">Google Maps Traffic</a>'
+            url={`https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}&key=${GOOGLE_MAPS_API_KEY}`}
+            maxZoom={20}
+          />
+        )}
+
+        {/* Google Maps Terrain Elevation View */}
+        {!isOffline && mapLayerStyle === 'google-terrain' && (
+          <TileLayer
+            attribution='&copy; <a href="https://maps.google.com">Google Maps Terrain</a>'
+            url={`https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}&key=${GOOGLE_MAPS_API_KEY}`}
+            maxZoom={20}
+          />
+        )}
+
+        {/* Fallback OSM Layer */}
+        {!isOffline && mapLayerStyle === 'osm' && (
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

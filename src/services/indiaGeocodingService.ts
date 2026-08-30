@@ -1,3 +1,5 @@
+import { googleGeocodeAddress, googlePlaceAutocomplete } from './googleMapsService';
+
 export interface IndiaLocationResult {
   id: string;
   name: string;
@@ -95,12 +97,51 @@ export const POPULAR_INDIAN_LOCATIONS: IndiaLocationResult[] = [
   { id: 'koc-mgroad', name: 'MG Road Metro Station, Kochi', city: 'Kochi', state: 'Kerala', lat: 9.9723, lng: 76.2828, type: 'metro', formattedAddress: 'MG Road, Ernakulam, Kochi, Kerala' },
 ];
 
-// ── Geocode Address with OLA Maps First + Nominatim + Local Fallback ─────────────
+// ── Geocode Address with Google Maps First + OLA Maps + Nominatim + Local Fallback ─────────────
 export async function geocodeAddressIndia(query: string): Promise<IndiaLocationResult[]> {
   const cleanQ = query?.trim() || '';
   if (cleanQ.length < 2) return [];
 
-  // 1. Try OLA Maps Autocomplete API (fast, instant location in single call)
+  // 1. Try Google Maps Platform (Geocoding & Places Autocomplete)
+  try {
+    const gGeo = await googleGeocodeAddress(cleanQ);
+    if (gGeo && gGeo.lat && gGeo.lng) {
+      return [{
+        id: gGeo.id,
+        name: gGeo.name,
+        city: gGeo.city,
+        state: gGeo.state,
+        lat: gGeo.lat,
+        lng: gGeo.lng,
+        type: gGeo.type,
+        formattedAddress: gGeo.formattedAddress,
+      }];
+    }
+
+    const gPlaces = await googlePlaceAutocomplete(cleanQ);
+    if (gPlaces && gPlaces.length > 0) {
+      // Resolve coordinates for the top prediction
+      const topGeo = await googleGeocodeAddress(gPlaces[0].formattedAddress || gPlaces[0].name);
+      if (topGeo) {
+        gPlaces[0].lat = topGeo.lat;
+        gPlaces[0].lng = topGeo.lng;
+      }
+      return gPlaces.map(p => ({
+        id: p.id,
+        name: p.name,
+        city: p.city,
+        state: p.state,
+        lat: p.lat || 20.2961,
+        lng: p.lng || 85.8245,
+        type: p.type,
+        formattedAddress: p.formattedAddress,
+      }));
+    }
+  } catch (gErr) {
+    console.warn('Google Maps search fallback to OLA/OSM:', gErr);
+  }
+
+  // 2. Try OLA Maps Autocomplete API (fast, instant location in single call)
   if (isOlaMapsConfigured()) {
     try {
       const encoded = encodeURIComponent(cleanQ);
@@ -115,7 +156,6 @@ export async function geocodeAddressIndia(query: string): Promise<IndiaLocationR
           const results: IndiaLocationResult[] = [];
 
           for (const pred of predictions) {
-            // OLA Maps embeds geometry.location directly inside autocomplete predictions!
             const lat = pred.geometry?.location?.lat;
             const lng = pred.geometry?.location?.lng;
 
@@ -126,7 +166,6 @@ export async function geocodeAddressIndia(query: string): Promise<IndiaLocationR
               const city = secParts[0] || 'India';
               const state = secParts[1] || 'India';
 
-              // Determine icon/type
               const descLower = (pred.description || '').toLowerCase();
               let type: IndiaLocationResult['type'] = 'custom';
               if (descLower.includes('metro') || descLower.includes('station')) type = 'metro';
