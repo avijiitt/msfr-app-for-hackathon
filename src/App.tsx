@@ -46,6 +46,9 @@ import { LanguageSelectModal } from './components/language/LanguageSelectModal';
 import { tripService } from './services/tripService';
 import { TripsHistoryModal } from './components/trips/TripsHistoryModal';
 import { MobileAppView } from './components/mobile/MobileAppView';
+import { TransportationHubView } from './components/transportation/TransportationHubView';
+import { LogisticsHubView } from './components/logistics/LogisticsHubView';
+import { CommunityHubView } from './components/community/CommunityHubView';
 
 
 export const App: React.FC = () => {
@@ -485,58 +488,86 @@ export const App: React.FC = () => {
             />
           </div>
 
-          {/* Column 2: Center Main Content (Large Map + Best Routes Cards) */}
-          <main className="flex-1 flex flex-col gap-6 min-w-0">
-            <MusafirMap
-              vehicles={vehicles}
-              userLocation={userLocation}
-              onSelectLocationOnMap={handleSelectLocationOnMap}
-              themeMode={themeMode}
-              isOffline={isOffline}
-              originCoords={originCoords}
-              destCoords={destCoords}
-              originName={originQuery}
-              destinationName={destQuery}
-              isAnyModalOpen={isAnyModalOpen}
-            />
+          {/* Column 2: Center Main Content (Dedicated View or Planner Map) */}
+          {activeTab === 'transportation' ? (
+            <main className="flex-1 flex flex-col min-w-0">
+              <TransportationHubView
+                originName={originQuery}
+                destinationName={destQuery}
+                onSelectRoute={(rId) => {
+                  handleSearch(originQuery, destQuery);
+                  setActiveTab('plan');
+                }}
+                onNavigateToMap={() => setActiveTab('tracking')}
+              />
+            </main>
+          ) : activeTab === 'logistics' ? (
+            <main className="flex-1 flex flex-col min-w-0">
+              <LogisticsHubView
+                onNavigateToMap={() => setActiveTab('tracking')}
+              />
+            </main>
+          ) : activeTab === 'community' ? (
+            <main className="flex-1 flex flex-col min-w-0">
+              <CommunityHubView
+                onNavigateToMap={() => setActiveTab('tracking')}
+              />
+            </main>
+          ) : (
+            <>
+              <main className="flex-1 flex flex-col gap-6 min-w-0">
+                <MusafirMap
+                  vehicles={vehicles}
+                  userLocation={userLocation}
+                  onSelectLocationOnMap={handleSelectLocationOnMap}
+                  themeMode={themeMode}
+                  isOffline={isOffline}
+                  originCoords={originCoords}
+                  destCoords={destCoords}
+                  originName={originQuery}
+                  destinationName={destQuery}
+                  isAnyModalOpen={isAnyModalOpen}
+                />
 
-            <BestRoutesCarousel
-              originName={originQuery}
-              destinationName={destQuery}
-              originCoords={originCoords}
-              destCoords={destCoords}
-              selectedRouteId={selectedRouteId}
-              onSelectRoute={(id) => setSelectedRouteId(id)}
-              activeFilterMode={activeFilterMode}
-              onFilterModeChange={(mode) => setActiveFilterMode(mode)}
-              onOpenLiveUpdates={() => alert('Real-time fleet GPS tracking active across all routes.')}
-              onOpenSmartAlerts={() => setIsAlertsOpen(true)}
-              onOpenSafeJourney={() => setIsFamilyShareOpen(true)}
-              onOpenSaveMore={() => setIsFareCalcOpen(true)}
-              onOpenFareCalc={() => setIsFareCalcOpen(true)}
-              onSelectDestination={(dest) => {
-                setDestQuery(dest);
-                handleSearch(originQuery || 'Current Location', dest);
-              }}
-              t={t}
-            />
-          </main>
+                <BestRoutesCarousel
+                  originName={originQuery}
+                  destinationName={destQuery}
+                  originCoords={originCoords}
+                  destCoords={destCoords}
+                  selectedRouteId={selectedRouteId}
+                  onSelectRoute={(id) => setSelectedRouteId(id)}
+                  activeFilterMode={activeFilterMode}
+                  onFilterModeChange={(mode) => setActiveFilterMode(mode)}
+                  onOpenLiveUpdates={() => alert('Real-time fleet GPS tracking active across all routes.')}
+                  onOpenSmartAlerts={() => setIsAlertsOpen(true)}
+                  onOpenSafeJourney={() => setIsFamilyShareOpen(true)}
+                  onOpenSaveMore={() => setIsFareCalcOpen(true)}
+                  onOpenFareCalc={() => setIsFareCalcOpen(true)}
+                  onSelectDestination={(dest) => {
+                    setDestQuery(dest);
+                    handleSearch(originQuery || 'Current Location', dest);
+                  }}
+                  t={t}
+                />
+              </main>
 
-          {/* Column 3: Right Sidebar (Your Journey Panel) */}
-          <JourneyDetailPanel
-            originName={originQuery}
-            destinationName={destQuery}
-            originCoords={originCoords}
-            destCoords={destCoords}
-            selectedRouteId={selectedRouteId}
-            onStartNavigation={handleStartNavigation}
-            onShareTrip={() => setIsFamilyShareOpen(true)}
-            onBookPass={() => setIsWalletOpen(true)}
-            onOpenTripAssurance={() => setIsTripAssuranceOpen(true)}
-            onOpenScheduleRide={() => setIsScheduleOpen(true)}
-            onOpenFareDetails={() => setIsFareCalcOpen(true)}
-            t={t}
-          />
+              {/* Column 3: Right Sidebar (Your Journey Panel) */}
+              <JourneyDetailPanel
+                originName={originQuery}
+                destinationName={destQuery}
+                originCoords={originCoords}
+                destCoords={destCoords}
+                selectedRouteId={selectedRouteId}
+                onStartNavigation={handleStartNavigation}
+                onShareTrip={() => setIsFamilyShareOpen(true)}
+                onBookPass={() => setIsWalletOpen(true)}
+                onOpenTripAssurance={() => setIsTripAssuranceOpen(true)}
+                onOpenScheduleRide={() => setIsScheduleOpen(true)}
+                onOpenFareDetails={() => setIsFareCalcOpen(true)}
+                t={t}
+              />
+            </>
+          )}
         </div>
       </div>
 

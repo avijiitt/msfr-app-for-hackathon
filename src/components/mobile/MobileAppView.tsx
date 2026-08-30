@@ -10,6 +10,10 @@ import { LiveLocationData } from '../../services/geolocationService';
 
 import { IndiaLocationResult } from '../../services/indiaGeocodingService';
 
+import { TransportationHubView } from '../transportation/TransportationHubView';
+import { LogisticsHubView } from '../logistics/LogisticsHubView';
+import { CommunityHubView } from '../community/CommunityHubView';
+
 interface MobileAppViewProps {
   originQuery: string;
   destQuery: string;
@@ -80,11 +84,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   const handleTabChange = (tab: MobileTab) => {
     setActiveTab(tab);
     setIsRideDetailsOpen(false);
-    if (tab === 'tickets') {
-      onOpenTripsHistory();
-    } else if (tab === 'alerts') {
-      onOpenAlerts();
-    } else if (tab === 'profile') {
+    if (tab === 'profile') {
       onOpenProfile();
     }
   };
@@ -134,6 +134,24 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
             onBackToPlanner={() => setActiveTab('home')}
             onOpenRideDetails={() => setIsRideDetailsOpen(true)}
           />
+        ) : activeTab === 'transportation' ? (
+          <TransportationHubView
+            originName={originQuery}
+            destinationName={destQuery}
+            onSelectRoute={(rId) => {
+              onSearch(originQuery, destQuery);
+              setActiveTab('home');
+            }}
+            onNavigateToMap={() => setActiveTab('map')}
+          />
+        ) : activeTab === 'logistics' ? (
+          <LogisticsHubView
+            onNavigateToMap={() => setActiveTab('map')}
+          />
+        ) : activeTab === 'community' ? (
+          <CommunityHubView
+            onNavigateToMap={() => setActiveTab('map')}
+          />
         ) : (
           <MobileTripPlanner
             originQuery={originQuery}
@@ -151,7 +169,6 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
             onUseLiveGps={onUseLiveGps}
             isGpsActive={isGpsActive}
           />
-
         )}
       </main>
 
@@ -159,7 +176,6 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
       <MobileNavigation
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        unreadAlertsCount={2}
       />
     </div>
   );

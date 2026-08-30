@@ -18,7 +18,10 @@ import {
   Bus,
   Calendar,
   Package,
-  Wallet
+  Wallet,
+  Zap,
+  Truck,
+  Users
 } from 'lucide-react';
 
 import { TranslationDictionary } from '../../types/i18n';
@@ -26,6 +29,9 @@ import { TranslationDictionary } from '../../types/i18n';
 export type MusafirSidebarTab = 
   | 'plan' 
   | 'tracking' 
+  | 'transportation'
+  | 'logistics'
+  | 'community'
   | 'schedule'
   | 'parcel'
   | 'wallet'
@@ -61,9 +67,12 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   t,
 }) => {
   const mainNav = [
-    { id: 'plan' as MusafirSidebarTab, label: t?.navRoutes || 'Plan', icon: Navigation2 },
+    { id: 'plan' as MusafirSidebarTab, label: t?.navRoutes || 'Plan & Routes', icon: Navigation2 },
     { id: 'tracking' as MusafirSidebarTab, label: t?.navMap || 'Live Map', icon: MapPin },
-    { id: 'schedule' as MusafirSidebarTab, label: t?.navSchedule || 'Schedule', icon: Calendar, badge: 'New' },
+    { id: 'transportation' as MusafirSidebarTab, label: 'Transit Hub', icon: Zap, badge: 'Smart' },
+    { id: 'logistics' as MusafirSidebarTab, label: 'Logistics Optimizer', icon: Truck, badge: 'TSP' },
+    { id: 'community' as MusafirSidebarTab, label: 'Civic Community', icon: Users, badge: 'Feed' },
+    { id: 'schedule' as MusafirSidebarTab, label: t?.navSchedule || 'Schedule', icon: Calendar },
     { id: 'parcel' as MusafirSidebarTab, label: t?.parcelDelivery || 'Parcel', icon: Package },
     { id: 'wallet' as MusafirSidebarTab, label: t?.navWallet || 'Wallet', icon: Wallet },
     { id: 'trips' as MusafirSidebarTab, label: t?.navActivity || 'Trips', icon: Clock },
