@@ -110,17 +110,21 @@ class WalletService {
   }
 
   public purchasePass(
-    type: 'student' | 'senior' | 'daily' | 'women_pink' | 'standard',
+    type: 'student' | 'student_yearly' | 'senior' | 'daily' | 'daily_general' | 'daily_senior' | 'monthly_general' | 'women_pink' | 'standard',
     passengerName: string
   ): { success: boolean; pass?: TransitPass; error?: string } {
     const costMap: Record<string, number> = {
-      student: 20,
-      senior: 10,
-      daily: 50,
+      student_yearly: 1700,
+      daily_general: 200,
+      daily: 200,
+      daily_senior: 50,
+      senior: 50,
+      monthly_general: 1200, // 20% Discounted Monthly Pass (Standard ₹1500 -> ₹1200)
+      student: 160,          // 20% Discounted Monthly Student Pass
       women_pink: 0,
       standard: 25,
     };
-    const cost = costMap[type] || 25;
+    const cost = costMap[type] !== undefined ? costMap[type] : 25;
 
     if (this.balance < cost) {
       return { success: false, error: `Insufficient balance (Need ₹${cost}). Please recharge wallet.` };
@@ -129,21 +133,38 @@ class WalletService {
     this.balance -= cost;
 
     const titles: Record<string, string> = {
-      student: 'Student Concession Smart Pass (50% Off)',
-      senior: 'Senior Citizen Zero-Barrier Pass',
-      daily: '24-Hour Unlimited All-Transit Pass',
-      women_pink: 'Women Pink Safety Transit Pass',
-      standard: 'Single Multi-Modal Journey Pass',
+      student_yearly: 'Student Yearly Pass (1-Year Unlimited Travel - ₹1,700)',
+      daily_general: 'Unlimited Bus 1-Day Pass (General - ₹200)',
+      daily: 'Unlimited Bus 1-Day Pass (General - ₹200)',
+      daily_senior: 'Unlimited Bus 1-Day Pass (Senior Citizen - ₹50)',
+      senior: 'Unlimited Bus 1-Day Pass (Senior Citizen - ₹50)',
+      monthly_general: 'Monthly All-Bus Pass (20% Discount - ₹1,200)',
+      student: 'Monthly Student Concession Pass (20% Discount - ₹160)',
+      women_pink: 'Women Pink Safety Transit Pass (Free)',
+      standard: 'Single Multi-Modal Journey Pass (₹25)',
+    };
+
+    const validityMap: Record<string, string> = {
+      student_yearly: 'Valid for 365 Days (1 Full Year)',
+      daily_general: 'Valid for 24 Hours (1 Day Unlimited)',
+      daily: 'Valid for 24 Hours (1 Day Unlimited)',
+      daily_senior: 'Valid for 24 Hours (1 Day Senior Citizen)',
+      senior: 'Valid for 24 Hours (1 Day Senior Citizen)',
+      monthly_general: 'Valid for 30 Days (1 Full Month)',
+      student: 'Valid for 30 Days',
+      women_pink: 'Valid for 24 Hours',
+      standard: 'Valid for 4 Hours',
     };
 
     const newPass: TransitPass = {
       id: 'PASS-' + Math.floor(100000 + Math.random() * 900000),
       type,
       title: titles[type] || 'Transit Pass',
-      validUntil: 'Valid for 24 Hours',
+      validUntil: validityMap[type] || 'Valid for 24 Hours',
       qrPayload: `MSFR-TRANSIT|PASS-${type.toUpperCase()}|${passengerName}|${Date.now() + 86400000}|VALID`,
       passengerName,
-      discountPercentage: type === 'student' ? 50 : type === 'senior' ? 80 : 0,
+      discountPercentage: type === 'student_yearly' ? 70 : type === 'monthly_general' ? 20 : type === 'daily_senior' || type === 'senior' ? 75 : 0,
+      priceInr: cost,
     };
 
     this.passes.unshift(newPass);

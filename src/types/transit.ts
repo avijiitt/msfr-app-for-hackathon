@@ -262,12 +262,13 @@ export interface SupportTicket {
 
 export interface TransitPass {
   id: string;
-  type: 'student' | 'senior' | 'daily' | 'women_pink' | 'standard';
+  type: 'student' | 'student_yearly' | 'senior' | 'daily' | 'daily_general' | 'daily_senior' | 'monthly_general' | 'women_pink' | 'standard';
   title: string;
   validUntil: string;
   qrPayload: string;
   passengerName: string;
   discountPercentage: number;
+  priceInr?: number;
 }
 
 export interface WalletTransaction {

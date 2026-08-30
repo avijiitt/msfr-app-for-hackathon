@@ -47,7 +47,14 @@ import {
   calculateFuelAndPollutionSavings,
   isCrutAmaBusServiceClosed,
   RoadProblemReport,
-  SimulationScenario
+  SimulationScenario,
+  SAMPLE_SMART_STOPS,
+  ACTIVE_EVENT_PLANS,
+  SAMPLE_EMPTY_TRIP_MATCHES,
+  MUNICIPAL_WASTE_BINS,
+  TIER2_SMART_PARKINGS,
+  SMART_BUS_DISPATCHES,
+  EventTransportPlan
 } from '../../services/smartMobilitySuiteService';
 
 interface TransportationHubProps {
@@ -58,16 +65,22 @@ interface TransportationHubProps {
 }
 
 export type TransportationSubTab = 
+  | 'smart_stops'
+  | 'event_planner'
+  | 'empty_trips'
+  | 'waste_routes'
+  | 'smart_parking'
+  | 'bus_dispatch'
   | 'traffic_predict'
   | 'problem_sim'
   | 'emergency_route'
   | 'road_problem'
   | 'area_scores'
   | 'admin_dash'
+  | 'fuel_pollution'
   | 'load_balance'
   | 'crowd_predict'
   | 'green_score'
-  | 'fuel_pollution'
   | 'last_mile'
   | 'park_ride'
   | 'disruptions'
@@ -79,7 +92,9 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
   onSelectRoute,
   onNavigateToMap,
 }) => {
-  const [activeTab, setActiveTab] = useState<TransportationSubTab>('traffic_predict');
+  const [activeTab, setActiveTab] = useState<TransportationSubTab>('smart_stops');
+  const [activeCategory, setActiveCategory] = useState<'all' | 'transit' | 'events_logistics' | 'traffic'>('all');
+  const [selectedEvent, setSelectedEvent] = useState<EventTransportPlan>(ACTIVE_EVENT_PLANS[0]);
   const [selectedRoute, setSelectedRoute] = useState<RouteCrowdStatus>(CRUCIAL_CORRIDOR_CROWDS[0]);
   const [appliedIncentive, setAppliedIncentive] = useState(false);
 
@@ -174,44 +189,506 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
           </div>
         </div>
 
-        {/* Navigation Sub-Tabs */}
-        <div className="flex gap-2 mt-5 overflow-x-auto pb-1 hide-scrollbar">
+        {/* Category Filters */}
+        <div className="flex gap-2 mt-4 overflow-x-auto pb-1 hide-scrollbar">
           {[
-            { id: 'traffic_predict', label: '🚦 Traffic Prediction (30-60m)' },
-            { id: 'problem_sim', label: '🧪 Problem Simulator' },
-            { id: 'emergency_route', label: '🚑 Emergency Corridor' },
-            { id: 'road_problem', label: '⚠️ Report Road Hazard' },
-            { id: 'area_scores', label: '🛡️ Area Scores (0-100)' },
-            { id: 'admin_dash', label: '🏙️ Admin Command Center' },
-            { id: 'fuel_pollution', label: '⛽ Fuel & CO₂ Savings' },
-            { id: 'load_balance', label: '⚖️ Load Balancing' },
-            { id: 'crowd_predict', label: '👥 Crowd Prediction' },
-            { id: 'green_score', label: '🌿 Green Route Score' },
-            { id: 'last_mile', label: '🚶 Smart Last-Mile' },
-            { id: 'park_ride', label: '🅿️ Park & Ride' },
-            { id: 'disruptions', label: '🚨 Disruption Manager' },
-            { id: 'heatmap', label: '🔥 Mobility Heatmap' },
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as TransportationSubTab)}
-                className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                  isActive
-                    ? 'bg-white text-blue-900 shadow-md font-extrabold scale-100'
-                    : 'bg-white/15 text-white hover:bg-white/25 active:scale-95'
-                }`}
-              >
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+            { id: 'all', label: '🌟 All Tools' },
+            { id: 'transit', label: '🚏 Smart Transit & Savings' },
+            { id: 'events_logistics', label: '🏟️ Events & City Freight' },
+            { id: 'traffic', label: '🚦 Traffic & Emergency' },
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id as any)}
+              className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition ${
+                activeCategory === cat.id
+                  ? 'bg-amber-400 text-slate-950 shadow-sm'
+                  : 'bg-white/20 text-white hover:bg-white/30'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Navigation Sub-Tabs */}
+        <div className="flex gap-2 mt-3 overflow-x-auto pb-1 hide-scrollbar">
+          {[
+            { id: 'smart_stops', label: '🚏 Smart Stop Selection', cat: 'transit' },
+            { id: 'event_planner', label: '🏟️ Event Transport Planning', cat: 'events_logistics' },
+            { id: 'empty_trips', label: '🚛 Empty-Trip Matching', cat: 'events_logistics' },
+            { id: 'waste_routes', label: '🗑️ Solid Waste Optimization', cat: 'events_logistics' },
+            { id: 'smart_parking', label: '🅿️ AI Smart Parking (Tier-2)', cat: 'events_logistics' },
+            { id: 'bus_dispatch', label: '🚍 Smart Bus Dispatch', cat: 'transit' },
+            { id: 'fuel_pollution', label: '⛽ Fuel & CO₂ Savings', cat: 'transit' },
+            { id: 'traffic_predict', label: '🚦 Traffic Prediction (30-60m)', cat: 'traffic' },
+            { id: 'problem_sim', label: '🧪 Problem Simulator', cat: 'traffic' },
+            { id: 'emergency_route', label: '🚑 Emergency Corridor', cat: 'traffic' },
+            { id: 'road_problem', label: '⚠️ Report Road Hazard', cat: 'traffic' },
+            { id: 'area_scores', label: '🛡️ Area Scores (0-100)', cat: 'traffic' },
+            { id: 'admin_dash', label: '🏙️ Admin Command Center', cat: 'events_logistics' },
+            { id: 'load_balance', label: '⚖️ Load Balancing', cat: 'transit' },
+            { id: 'crowd_predict', label: '👥 Crowd Prediction', cat: 'transit' },
+            { id: 'green_score', label: '🌿 Green Route Score', cat: 'transit' },
+            { id: 'last_mile', label: '🚶 Smart Last-Mile', cat: 'transit' },
+            { id: 'park_ride', label: '🅿️ Park & Ride', cat: 'transit' },
+            { id: 'disruptions', label: '🚨 Disruption Manager', cat: 'traffic' },
+            { id: 'heatmap', label: '🔥 Mobility Heatmap', cat: 'traffic' },
+          ]
+            .filter((tab) => activeCategory === 'all' || tab.cat === activeCategory)
+            .map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as TransportationSubTab)}
+                  className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                    isActive
+                      ? 'bg-white text-blue-900 shadow-md font-extrabold scale-100'
+                      : 'bg-white/15 text-white hover:bg-white/25 active:scale-95'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
         </div>
       </div>
 
       {/* 2. Main Content Views based on active subtab */}
       <div className="px-3 md:px-5 space-y-5">
+
+        {/* ─── TAB: SMART STOP SELECTION ─── */}
+        {activeTab === 'smart_stops' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-blue-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-extrabold text-[10px] rounded-full uppercase mb-1">
+                    Smart Stop Intelligence
+                  </div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>🚏 Optimal Stop Recommendation (Beyond Just Proximity)</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Instead of sending you to the nearest congested stop, Musafir factors <strong>buses arriving, waiting time, and crowd density</strong>.
+                  </p>
+                </div>
+                <div className="p-2.5 bg-blue-50 dark:bg-blue-950/40 rounded-2xl border border-blue-200 dark:border-blue-800 text-xs">
+                  <span className="text-[10px] uppercase font-bold text-blue-600 block">Commuter Rule:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">Walk ~300m for 3 buses vs 60m for 1 bus with 22m wait</span>
+                </div>
+              </div>
+
+              {/* Stop Cards */}
+              <div className="space-y-3">
+                {SAMPLE_SMART_STOPS.map((stop, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-2xl border transition ${
+                      stop.isRecommended
+                        ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-500 shadow-md'
+                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-black text-sm text-slate-900 dark:text-white">{stop.stopName}</h3>
+                          {stop.isRecommended && (
+                            <span className="px-2.5 py-0.5 bg-emerald-600 text-white text-[10px] font-black rounded-full uppercase">
+                              Best Choice
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1">
+                          {stop.recommendationReason}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3 self-end sm:self-auto text-right">
+                        <div>
+                          <div className="text-xs font-black text-slate-900 dark:text-white">🚶 {stop.walkDistanceMeters}m ({stop.walkTimeMins} min)</div>
+                          <div className="text-[10px] text-slate-400">🚌 {stop.upcomingBusesCount} buses in next 10m</div>
+                        </div>
+                        <div className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-center min-w-[75px]">
+                          <div className="text-[10px] text-slate-400 font-bold uppercase">Wait ETA</div>
+                          <div className={`text-xs font-black ${stop.nextBusWaitMins <= 5 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            ⏱️ {stop.nextBusWaitMins} mins
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                      <div className="text-[11px] text-slate-500">
+                        Lines passing here: <strong className="text-slate-800 dark:text-slate-200">{stop.availableRoutes.join(', ')}</strong>
+                      </div>
+                      <button
+                        onClick={onNavigateToMap}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition shadow-xs ${
+                          stop.isRecommended
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300'
+                        }`}
+                      >
+                        Navigate to Stop ➔
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: EVENT-BASED TRANSPORT PLANNING ─── */}
+        {activeTab === 'event_planner' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-purple-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold text-[10px] rounded-full uppercase mb-1">
+                    Event Crowd Prediction
+                  </div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>🏟️ Event-Based Transport Planning (Matches, Concerts, Festivals, Exams)</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Predicting transport pressure around venues with alternative entry corridors, arrival timing, and park & ride combinations.
+                  </p>
+                </div>
+              </div>
+
+              {/* Event Selector */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {ACTIVE_EVENT_PLANS.map((evt) => (
+                  <button
+                    key={evt.id}
+                    onClick={() => setSelectedEvent(evt)}
+                    className={`p-3 rounded-2xl border text-left transition ${
+                      selectedEvent.id === evt.id
+                        ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-500 text-purple-900 dark:text-purple-300 font-black shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <div className="text-[10px] uppercase font-bold text-purple-600">{evt.category}</div>
+                    <div className="text-xs font-black truncate">{evt.eventName}</div>
+                    <div className="text-[10px] text-slate-400 truncate mt-0.5">{evt.venueName}</div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Active Event Plan Details */}
+              <div className="p-4 bg-purple-50/50 dark:bg-purple-950/20 border-2 border-purple-300 dark:border-purple-800 rounded-2xl space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-black text-base text-slate-900 dark:text-white">{selectedEvent.eventName}</h3>
+                    <div className="text-xs text-purple-700 dark:text-purple-300 font-bold">📍 {selectedEvent.venueName} • 👥 {selectedEvent.expectedFootfall}</div>
+                  </div>
+                  <div className="px-3 py-1 bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 text-xs font-bold rounded-xl self-start sm:self-auto">
+                    Peak Rush: {selectedEvent.peakTrafficWindow}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">⏰ Suggested Arrival Windows:</span>
+                    {selectedEvent.suggestedArrivalTimes.map((t, idx) => (
+                      <div key={idx} className="font-bold text-emerald-600 flex items-center gap-1">
+                        <span>✓</span>
+                        <span>{t}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">🚪 Alternative Entry Corridors:</span>
+                    {selectedEvent.alternateEntryCorridors.map((c, idx) => (
+                      <div key={idx} className="font-bold text-slate-700 dark:text-slate-200">
+                        • {c}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">🅿️ Recommended Park & Ride:</span>
+                    <span className="font-bold text-emerald-600">₹{selectedEvent.parkAndRideCombination.parkingFareInr} Flat Fee</span>
+                  </div>
+                  <div className="font-bold text-slate-800 dark:text-slate-200">
+                    {selectedEvent.parkAndRideCombination.parkingHubName} ({selectedEvent.parkAndRideCombination.distanceToVenue})
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Shuttle Service: {selectedEvent.parkAndRideCombination.shuttleFrequency}
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-800 text-xs font-bold text-blue-800 dark:text-blue-300">
+                  🏛️ City Resource Action: {selectedEvent.cityResourceAction}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: EMPTY-TRIP MATCHING & FREIGHT PLATFORM ─── */}
+        {activeTab === 'empty_trips' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-extrabold text-[10px] rounded-full uppercase mb-1">
+                    Unified Freight Matching
+                  </div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>🚛 Empty-Trip Matching & Logistics Return Optimizer</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Connecting delivery vehicles returning empty with nearby parcels going the same way. <strong>Fewer empty trips = lower fuel costs & emissions.</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {SAMPLE_EMPTY_TRIP_MATCHES.map((et) => (
+                  <div
+                    key={et.id}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-mono font-bold text-xs rounded-lg">
+                            {et.vehicleRegistration}
+                          </span>
+                          <span className="font-extrabold text-sm text-slate-900 dark:text-white">{et.vehicleType}</span>
+                          <span className="text-xs text-slate-400">({et.driverName})</span>
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          Empty Route: {et.currentReturnOrigin} ➔ {et.returnDestination} ({et.emptyPayloadKg} kg capacity)
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-xs font-black text-emerald-600 block">+₹{et.matchedParcelJob.offeredPayoutInr} Payout</span>
+                        <span className="text-[10px] text-slate-400">⚡ Detour: +{et.matchedParcelJob.extraDetourKm} km</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-300 dark:border-emerald-800 space-y-1 text-xs">
+                      <div className="font-bold text-emerald-800 dark:text-emerald-300">
+                        📦 Matched Return Cargo Job ({et.matchedParcelJob.jobId}):
+                      </div>
+                      <div className="text-slate-700 dark:text-slate-200">
+                        Pickup: <strong>{et.matchedParcelJob.pickupLocation}</strong> ➔ Drop: <strong>{et.matchedParcelJob.dropLocation}</strong> ({et.matchedParcelJob.weightKg} kg)
+                      </div>
+                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold pt-0.5">
+                        🌱 Saved {et.dieselSavedLitres}L Diesel • Prevented {et.co2PreventedKg}kg CO₂ emissions
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => alert(`Cargo Job ${et.matchedParcelJob.jobId} accepted! Navigation dispatched to driver ${et.driverName}.`)}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
+                      >
+                        Accept Return Freight Load
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: MUNICIPAL SOLID WASTE COLLECTION OPTIMIZATION ─── */}
+        {activeTab === 'waste_routes' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-extrabold text-[10px] rounded-full uppercase mb-1">
+                    Municipal Smart Grid
+                  </div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>🗑️ Municipal Solid Waste Collection Route Optimization</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Real-time ultrasonic bin-fill telemetry dynamically sequences collection trucks to only visit bins ≥ 80% full, saving 35% municipal diesel.
+                  </p>
+                </div>
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-black text-xs rounded-full">
+                  Bin Sensors Active (BMC Grid)
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {MUNICIPAL_WASTE_BINS.map((b) => (
+                  <div
+                    key={b.binId}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-mono text-xs font-bold text-slate-500">{b.binId} (Ward {b.wardNumber})</span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${
+                        b.fillPercentage >= 85 ? 'bg-rose-100 text-rose-700' :
+                        b.fillPercentage >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                      }`}>
+                        {b.fillPercentage}% Full
+                      </span>
+                    </div>
+
+                    <div className="font-black text-sm text-slate-900 dark:text-white">{b.locationName}</div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${
+                          b.fillPercentage >= 85 ? 'bg-rose-500' :
+                          b.fillPercentage >= 60 ? 'bg-amber-500' : 'bg-emerald-500'
+                        }`}
+                        style={{ width: `${b.fillPercentage}%` }}
+                      ></div>
+                    </div>
+
+                    <div className="flex justify-between text-[11px] text-slate-400">
+                      <span>Type: {b.wasteType}</span>
+                      <span>Priority: #{b.recommendedCollectionPriority}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={onNavigateToMap}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition"
+              >
+                Generate Optimized Municipal Waste Pickup Route (Skip Empty Bins)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: AI SMART PARKING & DYNAMIC PRICING (TIER-2 CITIES) ─── */}
+        {activeTab === 'smart_parking' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-extrabold text-[10px] rounded-full uppercase mb-1">
+                    Tier-2 Smart Cities
+                  </div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>🅿️ AI-Based Parking Availability & Dynamic Pricing</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Live camera & sensor slot tracking with surge-based dynamic pricing to reduce congestion in busy markets.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {TIER2_SMART_PARKINGS.map((p) => (
+                  <div
+                    key={p.id}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2.5"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h3 className="font-black text-sm text-slate-900 dark:text-white">{p.hubName}</h3>
+                        <div className="text-xs text-slate-500">📍 {p.locality}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-black text-blue-600">₹{p.currentDynamicRateInr}/hr</div>
+                        <div className="text-[10px] text-slate-400">Base: ₹{p.baseHourlyRateInr}/hr (Surge {p.surgeMultiplier}x)</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="text-[10px] text-slate-400 font-bold uppercase">Vacant Spots</div>
+                        <div className="text-xs font-black text-emerald-600">{p.availableSlots} / {p.totalSlots}</div>
+                      </div>
+                      <div className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="text-[10px] text-slate-400 font-bold uppercase">EV Chargers</div>
+                        <div className="text-xs font-black text-blue-600">⚡ {p.evChargingSlotsAvailable} Available</div>
+                      </div>
+                      <div className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="text-[10px] text-slate-400 font-bold uppercase">Demand Trend</div>
+                        <div className="text-xs font-bold text-amber-600">{p.occupancyTrend}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button
+                        onClick={() => alert(`Spot reserved at ${p.hubName} for 45 minutes. Rate locked at ₹${p.currentDynamicRateInr}/hr.`)}
+                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
+                      >
+                        Reserve Parking Spot ➔
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: SMART BUS DISPATCH ─── */}
+        {activeTab === 'bus_dispatch' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>🚍 Predictive Public Bus Crowding + Smart Dispatch</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Real-time passenger overload monitors trigger automated standby feeder bus dispatches before platforms overflow.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {SMART_BUS_DISPATCHES.map((d, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-800 space-y-2"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="font-mono text-xs font-black text-blue-600">{d.routeId}</span>
+                        <h3 className="font-black text-sm text-slate-900 dark:text-white">{d.routeName}</h3>
+                      </div>
+                      <span className="px-2 py-0.5 bg-rose-200 dark:bg-rose-900 text-rose-800 dark:text-rose-200 text-xs font-black rounded-full">
+                        {d.currentPassengerLoadPercent}% Packed
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+                      <div>
+                        <strong>Unmet Passenger Demand:</strong> {d.unmetPassengerDemandCount} commuters waiting at stops.
+                      </div>
+                      <div>
+                        <strong>Recommended Dispatch Depot:</strong> {d.standbyDepot} (ETA {d.estimatedResolutionMinutes} mins).
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => alert(`Standby Electric Feeder Bus dispatched from ${d.standbyDepot} to support ${d.routeId}!`)}
+                      className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
+                    >
+                      🚀 Dispatch Standby Extra Bus Now
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ─── TAB: 30–60 MIN TRAFFIC CONGESTION PREDICTION ─── */}
         {activeTab === 'traffic_predict' && (

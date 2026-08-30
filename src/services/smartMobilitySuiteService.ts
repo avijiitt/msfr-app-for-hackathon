@@ -441,3 +441,347 @@ export function isCrutAmaBusServiceClosed(date: Date = new Date()): {
     nextServiceTime: isClosed ? '06:00 AM Tomorrow' : 'Now (Active)',
   };
 }
+
+// ── 9. Smart Stop Selection Model ───────────────────────────────
+export interface SmartStopChoice {
+  stopName: string;
+  walkDistanceMeters: number;
+  walkTimeMins: number;
+  upcomingBusesCount: number;
+  nextBusWaitMins: number;
+  expectedCrowdPercent: number;
+  crowdLabel: 'Low' | 'Moderate' | 'Heavy';
+  availableRoutes: string[];
+  isRecommended: boolean;
+  recommendationReason: string;
+}
+
+export const SAMPLE_SMART_STOPS: SmartStopChoice[] = [
+  {
+    stopName: 'Behera Sahi / Acharya Vihar Stop (Recommended)',
+    walkDistanceMeters: 300,
+    walkTimeMins: 4,
+    upcomingBusesCount: 3,
+    nextBusWaitMins: 3,
+    expectedCrowdPercent: 35,
+    crowdLabel: 'Low',
+    availableRoutes: ['Route 10', 'Route 11', 'Route 26'],
+    isRecommended: true,
+    recommendationReason: '⭐ 3 buses arriving in next 10 mins with guaranteed seating! Only 300m walk.',
+  },
+  {
+    stopName: 'Jayadev Vihar Main Junction (Nearest Stop)',
+    walkDistanceMeters: 60,
+    walkTimeMins: 1,
+    upcomingBusesCount: 1,
+    nextBusWaitMins: 22,
+    expectedCrowdPercent: 92,
+    crowdLabel: 'Heavy',
+    availableRoutes: ['Route 10'],
+    isRecommended: false,
+    recommendationReason: '⚠️ Only 1 bus in 22 mins with heavy crowd (40+ passengers waiting).',
+  },
+  {
+    stopName: 'Vani Vihar Outer Bay',
+    walkDistanceMeters: 450,
+    walkTimeMins: 6,
+    upcomingBusesCount: 2,
+    nextBusWaitMins: 8,
+    expectedCrowdPercent: 48,
+    crowdLabel: 'Moderate',
+    availableRoutes: ['Route 13', 'Route 24'],
+    isRecommended: false,
+    recommendationReason: 'Moderate frequency and 450m walking distance.',
+  },
+];
+
+// ── 10. Event-Based Transport Planning Model ───────────────────
+export interface EventTransportPlan {
+  id: string;
+  eventName: string;
+  category: 'sports' | 'concert' | 'festival' | 'examination';
+  venueName: string;
+  expectedFootfall: string;
+  peakTrafficWindow: string;
+  suggestedArrivalTimes: string[];
+  recommendedEntryGates: string[];
+  alternateEntryCorridors: string[];
+  lessCrowdedTransit: string[];
+  parkAndRideCombination: {
+    parkingHubName: string;
+    distanceToVenue: string;
+    shuttleFrequency: string;
+    parkingFareInr: number;
+  };
+  cityResourceAction: string;
+}
+
+export const ACTIVE_EVENT_PLANS: EventTransportPlan[] = [
+  {
+    id: 'evt-1',
+    eventName: 'ISL Football Derby & Athletic Championship',
+    category: 'sports',
+    venueName: 'Kalinga Stadium, Bhubaneswar',
+    expectedFootfall: '35,000+ Spectators',
+    peakTrafficWindow: '05:30 PM – 07:30 PM & 09:45 PM',
+    suggestedArrivalTimes: ['04:45 PM (Gate Open)', '05:15 PM (Smooth Entry)'],
+    recommendedEntryGates: ['Gate 3 (Direct Pedestrian Plaza)', 'Gate 6 (VIP / North Flyover)'],
+    alternateEntryCorridors: ['Via Bidyut Marg ➔ Shastri Nagar Backroad', 'Via Nayapalli Flyover Underpass'],
+    lessCrowdedTransit: ['Mo Bus Special Event Electric Shuttle #K-1', 'Mo E-Ride from Jayadev Vihar Bay'],
+    parkAndRideCombination: {
+      parkingHubName: 'Janata Maidan Dedicated Event Lot',
+      distanceToVenue: '900m (Free E-Shuttle every 4 mins)',
+      shuttleFrequency: 'Every 4 minutes',
+      parkingFareInr: 20,
+    },
+    cityResourceAction: 'Auto-deployed 12 extra electric feeder buses & signal green-wave extended by 40s.',
+  },
+  {
+    id: 'evt-2',
+    eventName: 'Toshali National Crafts Mela & Live Musical Concert',
+    category: 'concert',
+    venueName: 'Janata Maidan, Jayadev Vihar',
+    expectedFootfall: '50,000+ Visitors',
+    peakTrafficWindow: '06:00 PM – 09:30 PM',
+    suggestedArrivalTimes: ['04:00 PM – 05:30 PM (Early Bird Entry)'],
+    recommendedEntryGates: ['North Pavilion Gate 2', 'Bhubaneswar Club Side Entry'],
+    alternateEntryCorridors: ['Via Nandankanan Road ➔ Damana Diversion', 'Via Sainik School Bypass'],
+    lessCrowdedTransit: ['Mo Bus Route 26 (Outer Ring Express)', 'Feeder Line 101'],
+    parkAndRideCombination: {
+      parkingHubName: 'IDCO Exhibition Ground Lot A & B',
+      distanceToVenue: '600m (Direct Walkway)',
+      shuttleFrequency: 'Every 5 minutes',
+      parkingFareInr: 30,
+    },
+    cityResourceAction: 'Designated one-way traffic loop on Nandankanan link road.',
+  },
+  {
+    id: 'evt-3',
+    eventName: 'Odisha OPSC Civil Services & Engineering Entrance Exam',
+    category: 'examination',
+    venueName: 'KIIT & Utkal University Campus Clusters',
+    expectedFootfall: '28,000+ Candidates',
+    peakTrafficWindow: '07:30 AM – 09:00 AM & 01:00 PM – 02:00 PM',
+    suggestedArrivalTimes: ['07:45 AM (Strict Entry by 08:30 AM)'],
+    recommendedEntryGates: ['KIIT Campus 6 Main Gate', 'Vani Vihar Gate 1'],
+    alternateEntryCorridors: ['Via Chandaka Forest Corridor', 'Via Infocity DLF Ring Road'],
+    lessCrowdedTransit: ['Special Exam Fast-Track Mo Bus #E-10', 'Patia Station Feeder'],
+    parkAndRideCombination: {
+      parkingHubName: 'Patia Railway Station Multi-Modal Lot',
+      distanceToVenue: '1.2 km (Mo E-Ride ₹10 flat)',
+      shuttleFrequency: 'Continuous queue',
+      parkingFareInr: 15,
+    },
+    cityResourceAction: 'Zero-horn silence zone enforced with dedicated police escort corridors.',
+  },
+];
+
+// ── 11. Empty-Trip Matching & Unified Freight Platform ───────────
+export interface EmptyTripMatch {
+  id: string;
+  vehicleRegistration: string;
+  vehicleType: 'Tata Ace (1T)' | 'E-Loader 3W' | 'Mahindra Bolero Maxi' | '14-Wheel Freight Truck';
+  driverName: string;
+  currentReturnOrigin: string;
+  returnDestination: string;
+  emptyPayloadKg: number;
+  availableFromTime: string;
+  matchedParcelJob: {
+    jobId: string;
+    pickupLocation: string;
+    dropLocation: string;
+    weightKg: number;
+    offeredPayoutInr: number;
+    extraDetourKm: number;
+  };
+  dieselSavedLitres: number;
+  co2PreventedKg: number;
+}
+
+export const SAMPLE_EMPTY_TRIP_MATCHES: EmptyTripMatch[] = [
+  {
+    id: 'et-101',
+    vehicleRegistration: 'OD-02-CB-4819',
+    vehicleType: 'Tata Ace (1T)',
+    driverName: 'Ramesh Mohanty',
+    currentReturnOrigin: 'Nandankanan Wholesale Market',
+    returnDestination: 'Rasulgarh Industrial Area',
+    emptyPayloadKg: 850,
+    availableFromTime: 'In 15 mins (Empty Return)',
+    matchedParcelJob: {
+      jobId: 'PRCL-7712',
+      pickupLocation: 'KIIT Square Hub, Patia',
+      dropLocation: 'Vani Vihar / Saheed Nagar Hub',
+      weightKg: 420,
+      offeredPayoutInr: 650,
+      extraDetourKm: 1.2,
+    },
+    dieselSavedLitres: 4.8,
+    co2PreventedKg: 12.6,
+  },
+  {
+    id: 'et-102',
+    vehicleRegistration: 'OD-33-E-9021',
+    vehicleType: 'E-Loader 3W',
+    driverName: 'Sujit Behera',
+    currentReturnOrigin: 'AIIMS Hospital Delivery Hub',
+    returnDestination: 'Baramunda Central Depot',
+    emptyPayloadKg: 200,
+    availableFromTime: 'Now Available',
+    matchedParcelJob: {
+      jobId: 'PRCL-8890',
+      pickupLocation: 'Khandagiri Square Depot',
+      dropLocation: 'ISBT Baramunda Cargo Center',
+      weightKg: 120,
+      offeredPayoutInr: 280,
+      extraDetourKm: 0.4,
+    },
+    dieselSavedLitres: 1.8,
+    co2PreventedKg: 4.2,
+  },
+];
+
+// ── 12. Municipal Solid Waste Collection Route Optimization ────
+export interface SolidWasteBinSensor {
+  binId: string;
+  locationName: string;
+  wardNumber: number;
+  fillPercentage: number;
+  status: 'critical_overflow' | 'full' | 'moderate' | 'empty';
+  wasteType: 'organic' | 'dry_recyclable' | 'e_waste';
+  lastCleaned: string;
+  recommendedCollectionPriority: number; // 1 = immediate
+}
+
+export const MUNICIPAL_WASTE_BINS: SolidWasteBinSensor[] = [
+  {
+    binId: 'BIN-101',
+    locationName: 'Saheed Nagar Market Frontage',
+    wardNumber: 12,
+    fillPercentage: 94,
+    status: 'critical_overflow',
+    wasteType: 'organic',
+    lastCleaned: '18 hours ago',
+    recommendedCollectionPriority: 1,
+  },
+  {
+    binId: 'BIN-102',
+    locationName: 'Nayapalli VIP Road Food Court',
+    wardNumber: 15,
+    fillPercentage: 88,
+    status: 'full',
+    wasteType: 'dry_recyclable',
+    lastCleaned: '14 hours ago',
+    recommendedCollectionPriority: 1,
+  },
+  {
+    binId: 'BIN-103',
+    locationName: 'Master Canteen Station Plaza',
+    wardNumber: 8,
+    fillPercentage: 82,
+    status: 'full',
+    wasteType: 'organic',
+    lastCleaned: '12 hours ago',
+    recommendedCollectionPriority: 2,
+  },
+  {
+    binId: 'BIN-104',
+    locationName: 'Khandagiri Square Tourist Stop',
+    wardNumber: 22,
+    fillPercentage: 35,
+    status: 'empty',
+    wasteType: 'dry_recyclable',
+    lastCleaned: '3 hours ago',
+    recommendedCollectionPriority: 4,
+  },
+];
+
+// ── 13. AI-Based Smart Parking & Dynamic Pricing for Tier-2 Cities ──
+export interface Tier2SmartParkingHub {
+  id: string;
+  hubName: string;
+  locality: string;
+  totalSlots: number;
+  availableSlots: number;
+  evChargingSlotsAvailable: number;
+  baseHourlyRateInr: number;
+  currentDynamicRateInr: number;
+  surgeMultiplier: number;
+  occupancyTrend: 'Filling Rapidly' | 'Stable' | 'Plenty of Spots';
+  hasCoveredRoof: boolean;
+}
+
+export const TIER2_SMART_PARKINGS: Tier2SmartParkingHub[] = [
+  {
+    id: 'sp-1',
+    hubName: 'Master Canteen Multi-Level Automated Parking',
+    locality: 'Station Square, Bhubaneswar',
+    totalSlots: 320,
+    availableSlots: 42,
+    evChargingSlotsAvailable: 8,
+    baseHourlyRateInr: 20,
+    currentDynamicRateInr: 35,
+    surgeMultiplier: 1.75,
+    occupancyTrend: 'Filling Rapidly',
+    hasCoveredRoof: true,
+  },
+  {
+    id: 'sp-2',
+    hubName: 'Sahid Nagar Smart Community Parking Complex',
+    locality: 'Janpath, Sahid Nagar',
+    totalSlots: 180,
+    availableSlots: 74,
+    evChargingSlotsAvailable: 12,
+    baseHourlyRateInr: 20,
+    currentDynamicRateInr: 20,
+    surgeMultiplier: 1.0,
+    occupancyTrend: 'Stable',
+    hasCoveredRoof: true,
+  },
+  {
+    id: 'sp-3',
+    hubName: 'Infocity IT Corridor Parking Plaza',
+    locality: 'Patia, Bhubaneswar',
+    totalSlots: 450,
+    availableSlots: 188,
+    evChargingSlotsAvailable: 24,
+    baseHourlyRateInr: 15,
+    currentDynamicRateInr: 15,
+    surgeMultiplier: 1.0,
+    occupancyTrend: 'Plenty of Spots',
+    hasCoveredRoof: true,
+  },
+];
+
+// ── 14. Predictive Public Bus Crowding & Smart Dispatch ─────────
+export interface SmartBusDispatchRecommendation {
+  routeId: string;
+  routeName: string;
+  currentPassengerLoadPercent: number;
+  unmetPassengerDemandCount: number;
+  recommendedAction: 'Dispatch Standby Bus' | 'Short-Loop Feeder' | 'Normal Operations';
+  standbyDepot: string;
+  estimatedResolutionMinutes: number;
+}
+
+export const SMART_BUS_DISPATCHES: SmartBusDispatchRecommendation[] = [
+  {
+    routeId: 'Route 10',
+    routeName: 'Bhubaneswar Airport ➔ Nandankanan',
+    currentPassengerLoadPercent: 94,
+    unmetPassengerDemandCount: 58,
+    recommendedAction: 'Dispatch Standby Bus',
+    standbyDepot: 'Baramunda Central Electric Depot',
+    estimatedResolutionMinutes: 6,
+  },
+  {
+    routeId: 'Route 11',
+    routeName: 'Bhubaneswar Railway Station ➔ Ghatikia',
+    currentPassengerLoadPercent: 86,
+    unmetPassengerDemandCount: 34,
+    recommendedAction: 'Short-Loop Feeder',
+    standbyDepot: 'Master Canteen Satellite Bay',
+    estimatedResolutionMinutes: 8,
+  },
+];
+

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Award, Gift, Flame, Leaf, Check, Sparkles, X, ChevronRight, Coins } from 'lucide-react';
 import { rewardsService, AVAILABLE_REWARDS, RewardItem, UserRewardsData } from '../../services/rewardsService';
 
@@ -96,6 +96,59 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({ isOpen, onClose, onC
             </button>
           </div>
         )}
+
+        {/* Referral & Rewards Program */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-300 dark:border-amber-700/60 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-extrabold text-amber-900 dark:text-amber-200">
+                  🎁 Refer & Earn: 200 Points per Referral
+                </span>
+                <span className="text-[9px] bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-extrabold px-2 py-0.5 rounded-full">10 Pts = ₹1</span>
+              </div>
+              <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+                Share your code: You get <strong>200 Points (₹20)</strong> when they install, and your friend gets <strong>100 Points (₹10)</strong> welcome bonus!
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                const res = rewardsService.processReferralBonus('REF-ODISHA-2026');
+                setRewardsData(rewardsService.getRewardsData());
+                alert(res.message);
+                if (onCoinsUpdated) onCoinsUpdated();
+              }}
+              className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-xs rounded-xl shadow-sm transition flex-shrink-0"
+            >
+              Simulate Invite Referral (+200 Pts)
+            </button>
+          </div>
+
+          <div className="pt-2 border-t border-amber-200 dark:border-amber-800/50 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="text-xs text-slate-600 dark:text-slate-300">
+              Your Referral Code: <strong className="font-mono text-amber-600 dark:text-amber-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800">MUSAFIR-ODISHA-200</strong>
+            </div>
+
+            <button
+              onClick={() => {
+                const ptsToConvert = Math.min(rewardsData.totalCoins, 200);
+                if (ptsToConvert < 10) {
+                  alert('You need at least 10 points to convert to wallet cash (10 Points = ₹1).');
+                  return;
+                }
+                const res = rewardsService.convertPointsToCash(ptsToConvert);
+                if (res.success) {
+                  setRewardsData(rewardsService.getRewardsData());
+                  alert(`🎉 Converted ${ptsToConvert} Points into ₹${res.inrValue} Wallet Cash! (10 Pts = ₹1 INR).`);
+                  if (onCoinsUpdated) onCoinsUpdated();
+                }
+              }}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
+            >
+              Convert 200 Pts to ₹20 Cash ➔
+            </button>
+          </div>
+        </div>
 
         {/* Available Rewards Catalog */}
         <div className="space-y-3">

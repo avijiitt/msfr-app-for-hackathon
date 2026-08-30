@@ -66,7 +66,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
     }
   };
 
-  const handleBuyPass = (type: 'student' | 'senior' | 'daily' | 'women_pink' | 'standard') => {
+  const handleBuyPass = (type: TransitPass['type']) => {
     let buyerName = 'Traveller';
     try {
       const stored = localStorage.getItem('musafir_demo_user');
@@ -298,61 +298,90 @@ export const WalletModal: React.FC<WalletModalProps> = ({
               </div>
             ) : (
               <div className="space-y-2.5">
-                {/* Student Pass */}
-                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                {/* 1. Student Pass Yearly - ₹1700 */}
+                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-blue-200 dark:border-blue-800 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 flex items-center justify-center font-bold">
                       <GraduationCap className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-xs text-slate-900 dark:text-white">Monthly Student Pass</h4>
-                      <p className="text-[11px] text-slate-500">50% concession on all public routes</p>
-                      <span className="text-xs font-mono font-extrabold text-blue-600">₹150 / month</span>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-xs text-slate-900 dark:text-white">Student Pass Yearly</h4>
+                        <span className="text-[9px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-extrabold px-2 py-0.5 rounded-full uppercase">1 Year Unlimited</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">Full 365-day access across all Mo Bus routes for verified students</p>
+                      <span className="text-xs font-mono font-extrabold text-blue-600">₹1,700 / year</span>
                     </div>
                   </div>
                   <button
-                    onClick={() => handleBuyPass('student')}
-                    className="py-2 px-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
+                    onClick={() => handleBuyPass('student_yearly')}
+                    className="py-2 px-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex-shrink-0"
                   >
                     Buy Pass
                   </button>
                 </div>
 
-                {/* Daily Unlimited Pass */}
-                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                {/* 2. Unlimited Bus for 1 Day per User (General) - ₹200 */}
+                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 flex items-center justify-center font-bold">
                       <Sparkles className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-xs text-slate-900 dark:text-white">Day Tourist / Explorer Pass</h4>
-                      <p className="text-[11px] text-slate-500">Unlimited bus & metro rides for 24 hours</p>
-                      <span className="text-xs font-mono font-extrabold text-emerald-600">₹50 / day</span>
+                      <h4 className="font-bold text-xs text-slate-900 dark:text-white">Unlimited Bus 1-Day Pass (General)</h4>
+                      <p className="text-[11px] text-slate-500">24-hour unlimited travel on all AC & Non-AC bus corridors</p>
+                      <span className="text-xs font-mono font-extrabold text-emerald-600">₹200 / day</span>
                     </div>
                   </div>
                   <button
-                    onClick={() => handleBuyPass('daily')}
-                    className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
+                    onClick={() => handleBuyPass('daily_general')}
+                    className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex-shrink-0"
                   >
                     Buy Pass
                   </button>
                 </div>
 
-                {/* Senior Citizen Pass */}
-                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                {/* 3. Unlimited Bus for 1 Day (Senior Citizen) - ₹50 */}
+                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-purple-200 dark:border-purple-800 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 flex items-center justify-center font-bold">
                       <ShieldCheck className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-xs text-slate-900 dark:text-white">Senior Citizen Pass</h4>
-                      <p className="text-[11px] text-slate-500">Priority boarding & zero-step access</p>
-                      <span className="text-xs font-mono font-extrabold text-purple-600">₹100 / month</span>
+                      <h4 className="font-bold text-xs text-slate-900 dark:text-white">Unlimited Bus 1-Day Pass (Senior Citizen)</h4>
+                      <p className="text-[11px] text-slate-500">Dedicated concessional day pass with zero-barrier priority seating</p>
+                      <span className="text-xs font-mono font-extrabold text-purple-600">₹50 / day</span>
                     </div>
                   </div>
                   <button
-                    onClick={() => handleBuyPass('senior')}
-                    className="py-2 px-3.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
+                    onClick={() => handleBuyPass('daily_senior')}
+                    className="py-2 px-3.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex-shrink-0"
+                  >
+                    Buy Pass
+                  </button>
+                </div>
+
+                {/* 4. Monthly All-Bus Pass (20% Discount) - ₹1200 */}
+                <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 flex items-center justify-center font-bold">
+                      ⚡
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-xs text-slate-900 dark:text-white">Monthly All-Bus Pass</h4>
+                        <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-black px-2 py-0.5 rounded-full uppercase">20% DISCOUNT APPLIED</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">30 days unlimited transit across Bhubaneswar & Puri region</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs font-mono font-extrabold text-emerald-600">₹1,200 / month</span>
+                        <span className="text-[10px] text-slate-400 line-through">₹1,500</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleBuyPass('monthly_general')}
+                    className="py-2 px-3.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex-shrink-0"
                   >
                     Buy Pass
                   </button>

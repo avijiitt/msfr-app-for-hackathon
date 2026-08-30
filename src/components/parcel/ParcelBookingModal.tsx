@@ -63,9 +63,10 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Rate calculation
-  const baseRate = deliveryType === 'locker' ? 35 : deliveryType === 'doorstep' ? 55 : 75;
-  const totalFare = Math.round(baseRate + (weightKg > 1 ? (weightKg - 1) * 15 : 0));
+  // Rate calculation (Max Weight 50kg, 1/2 kg pricing: Normal = ₹10/0.5kg, Smart Locker = ₹50/0.5kg, Express = ₹25/0.5kg)
+  const ratePerHalfKg = deliveryType === 'locker' ? 50 : deliveryType === 'express' ? 25 : 10;
+  const halfKgUnits = Math.max(1, Math.ceil(Math.min(50, weightKg) / 0.5));
+  const totalFare = halfKgUnits * ratePerHalfKg;
 
   const handleBookParcel = () => {
     if (!recipientName.trim() || !recipientPhone.trim() || !alternateRecipientPhone.trim()) {
@@ -284,6 +285,20 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
+                      onClick={() => setDeliveryType('doorstep')}
+                      className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center gap-1 ${
+                        deliveryType === 'doorstep'
+                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}
+                    >
+                      <Home className="w-4 h-4" />
+                      <span className="text-[11px] font-extrabold">Normal Doorstep</span>
+                      <span className="text-[10px] text-emerald-600 font-bold">₹10 / 0.5kg</span>
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => setDeliveryType('locker')}
                       className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center gap-1 ${
                         deliveryType === 'locker'
@@ -293,21 +308,7 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                     >
                       <Lock className="w-4 h-4" />
                       <span className="text-[11px] font-extrabold">Smart Locker</span>
-                      <span className="text-[10px] text-emerald-600 font-bold">₹35</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryType('doorstep')}
-                      className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center gap-1 ${
-                        deliveryType === 'doorstep'
-                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold shadow-xs'
-                          : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      <Home className="w-4 h-4" />
-                      <span className="text-[11px] font-extrabold">Any Doorstep</span>
-                      <span className="text-[10px] text-emerald-600 font-bold">₹55</span>
+                      <span className="text-[10px] text-emerald-600 font-bold">₹50 / 0.5kg</span>
                     </button>
 
                     <button
@@ -321,7 +322,7 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                     >
                       <Truck className="w-4 h-4" />
                       <span className="text-[11px] font-extrabold">45-Min Express</span>
-                      <span className="text-[10px] text-emerald-600 font-bold">₹75</span>
+                      <span className="text-[10px] text-emerald-600 font-bold">₹25 / 0.5kg</span>
                     </button>
                   </div>
                 </div>
@@ -468,33 +469,40 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                   </div>
                 )}
 
-                {/* Package Weight & Pricing Breakdown */}
-                <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Package Weight</span>
-                    <div className="flex items-center gap-1.5">
-                      {[0.5, 1.5, 3.0, 5.0].map((w) => (
-                        <button
-                          key={w}
-                          type="button"
-                          onClick={() => setWeightKg(w)}
-                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition ${
-                            weightKg === w
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                          }`}
-                        >
-                          {w} kg
-                        </button>
-                      ))}
+                {/* Package Weight & Pricing Breakdown (Max 50kg) */}
+                <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Package Weight (Max 50 kg)</span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">🛡️ Includes safe transit & tamper protection</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Total Fare</span>
+                      <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
+                        ₹{totalFare}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-[10px] text-slate-400 block uppercase font-bold">Total Transit Fare</span>
-                    <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
-                      ₹{totalFare}
-                    </span>
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    {[0.5, 1.0, 2.5, 5.0, 10.0, 25.0, 50.0].map((w) => (
+                      <button
+                        key={w}
+                        type="button"
+                        onClick={() => setWeightKg(w)}
+                        className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold transition ${
+                          weightKg === w
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+                        }`}
+                      >
+                        {w} kg
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="text-[10px] text-slate-400">
+                    Pricing Rate: <strong className="text-slate-700 dark:text-slate-200 font-mono">₹{ratePerHalfKg}</strong> per 0.5 kg • {halfKgUnits} × 0.5 kg units = ₹{totalFare}
                   </div>
                 </div>
 
@@ -502,7 +510,7 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                   onClick={handleBookParcel}
                   className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-lg shadow-blue-500/25 transition active:scale-98"
                 >
-                  Confirm & Dispatch Parcel across Bhubaneswar (₹{totalFare})
+                  Confirm & Dispatch Safe Parcel (₹{totalFare})
                 </button>
               </div>
             )}

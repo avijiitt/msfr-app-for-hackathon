@@ -86,8 +86,8 @@ export const StudentHubModal: React.FC<StudentHubModalProps> = ({
     }, 800);
   };
 
-  const handleClaimStudentPass = () => {
-    walletService.purchasePass('student', userProfile.name);
+  const handleClaimStudentPass = (type: 'student_yearly' | 'student' = 'student_yearly') => {
+    walletService.purchasePass(type, userProfile.name);
     onPassClaimed();
     onClose();
   };
@@ -106,7 +106,7 @@ export const StudentHubModal: React.FC<StudentHubModalProps> = ({
                 {t.studentHubTitle || 'DigiLocker Student Pass Hub'}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {t.studentHubTagline || '50% Concession on all City Buses & Metro Lines'}
+                Yearly ₹1,700 • Monthly with 20% Discount
               </p>
             </div>
           </div>
@@ -141,13 +141,22 @@ export const StudentHubModal: React.FC<StudentHubModalProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={handleClaimStudentPass}
-              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5"
-            >
-              <QrCode className="w-4 h-4" />
-              Claim 50% Concession Monthly Pass (₹150)
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              <button
+                onClick={() => handleClaimStudentPass('student_yearly')}
+                className="py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex flex-col items-center justify-center gap-0.5"
+              >
+                <span className="font-extrabold">Student Pass Yearly</span>
+                <span className="text-[11px] text-blue-200 font-mono">₹1,700 / 1 Year Unlimited</span>
+              </button>
+              <button
+                onClick={() => handleClaimStudentPass('student')}
+                className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition flex flex-col items-center justify-center gap-0.5"
+              >
+                <span className="font-extrabold">Student Monthly Pass</span>
+                <span className="text-[11px] text-emerald-200 font-mono">₹160 / Month (20% Off)</span>
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3 text-xs">

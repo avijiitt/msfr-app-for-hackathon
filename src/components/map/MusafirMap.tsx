@@ -573,6 +573,15 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
+        {/* If offline, render cached OSM / Local vector tiles so the map remains completely visible */}
+        {isOffline && (
+          <TileLayer
+            attribution='Local Offline Cached Transit Grid'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            className={themeMode === 'dark' ? 'dark-tiles' : ''}
+          />
+        )}
+
         {/* Offline Vector Badge Overlay */}
         {isOffline && (
           <div className="absolute top-4 left-4 z-40 bg-slate-900/90 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-amber-500/40 shadow-xl flex items-center gap-2.5 pointer-events-none">
