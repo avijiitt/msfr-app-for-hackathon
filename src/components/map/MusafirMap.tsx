@@ -163,6 +163,7 @@ interface MusafirMapProps {
   destCoords?: [number, number] | null;
   originName?: string;
   isAnyModalOpen?: boolean;
+  isGpsActive?: boolean;
 }
 
 // Internal Map Controller Component (handles bounds, animation & clicks)
@@ -178,39 +179,42 @@ const MapController: React.FC<{
   useMapEvents({
     click(e) {
       onMapClick(e.latlng.lat, e.latlng.lng);
-    },
+    }
   });
 
-  // Re-invalidate map container layout on mount and window resize
   useEffect(() => {
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 250);
-    const handleResize = () => map.invalidateSize();
-    window.addEventListener('resize', handleResize);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [map]);
-
-  useEffect(() => {
+    // 1. If Origin & Dest both exist: Zoom to fit both
     if (originCoords && destCoords) {
-      const boundsKey = `${originCoords[0]},${originCoords[1]}-${destCoords[0]},${destCoords[1]}`;
-      if (prevBoundsRef.current !== boundsKey) {
-        prevBoundsRef.current = boundsKey;
-        const bounds = L.latLngBounds(
-          [originCoords[0], originCoords[1]],
-          [destCoords[0], destCoords[1]]
-        );
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true });
+      const bounds = L.latLngBounds([
+        [originCoords[0], originCoords[1]],
+        [destCoords[0], destCoords[1]],
+      ]);
+      const key = `od-${originCoords.join(',')}-${destCoords.join(',')}`;
+      if (prevBoundsRef.current !== key) {
+        prevBoundsRef.current = key;
+        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16, animate: true });
       }
-    } else if (originCoords) {
-      prevBoundsRef.current = `origin-${originCoords[0]},${originCoords[1]}`;
-      map.flyTo([originCoords[0], originCoords[1]], 14, { animate: true });
-    } else if (destCoords) {
-      prevBoundsRef.current = `dest-${destCoords[0]},${destCoords[1]}`;
-      map.flyTo([destCoords[0], destCoords[1]], 14, { animate: true });
+      return;
+    }
+
+    // 2. If Origin only exists: Fly to Origin
+    if (originCoords) {
+      const key = `orig-${originCoords.join(',')}`;
+      if (prevBoundsRef.current !== key) {
+        prevBoundsRef.current = key;
+        map.flyTo([originCoords[0], originCoords[1]], 15, { animate: true, duration: 1.2 });
+      }
+      return;
+    }
+
+    // 3. If Destination only exists: Fly to Dest
+    if (destCoords) {
+      const key = `dest-${destCoords.join(',')}`;
+      if (prevBoundsRef.current !== key) {
+        prevBoundsRef.current = key;
+        map.flyTo([destCoords[0], destCoords[1]], 15, { animate: true, duration: 1.2 });
+      }
+      return;
     }
   }, [originCoords, destCoords, map]);
 
@@ -228,6 +232,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   destCoords = null,
   originName = 'Departure',
   isAnyModalOpen = false,
+  isGpsActive = false,
 }) => {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [showBuses, setShowBuses] = useState(true);
@@ -568,26 +573,26 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
-        {/* Offline Vector Grid Background */}
+        {/* Offline Vector Badge Overlay */}
         {isOffline && (
-          <div className="absolute inset-0 bg-slate-900 flex items-center justify-center pointer-events-none">
-            <div className="text-center p-6 text-slate-400 space-y-2">
-              <WifiOff className="w-8 h-8 text-amber-400 mx-auto animate-pulse" />
-              <div className="text-sm font-bold text-white">Local Offline Cache Active</div>
-              <div className="text-xs">Showing saved transit route corridor & stops</div>
+          <div className="absolute top-4 left-4 z-40 bg-slate-900/90 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-amber-500/40 shadow-xl flex items-center gap-2.5 pointer-events-none">
+            <WifiOff className="w-4 h-4 text-amber-400 animate-pulse" />
+            <div>
+              <div className="text-[11px] font-black text-amber-300">Local Offline Cache Active</div>
+              <div className="text-[9px] text-slate-300 font-medium">Displaying cached route corridors & transit stops</div>
             </div>
           </div>
         )}
 
-        {/* User GPS Location Marker */}
-        {!isOffline && userLocation && userLocation.lat && userLocation.lng && (
+        {/* User GPS Location Marker (Only rendered when user has active GPS) */}
+        {isGpsActive && !isOffline && userLocation && userLocation.lat && userLocation.lng && (
           <Marker
             position={[userLocation.lat, userLocation.lng]}
             icon={createUserPinIcon(true)}
           >
             <Popup>
               <div className="p-1 text-xs">
-                <strong className="text-blue-600 font-bold block">Your Current Location</strong>
+                <strong className="text-blue-600 font-bold block">Your Current GPS Location</strong>
                 <span className="text-slate-500 text-[10px]">Accuracy: ±{Math.round(userLocation.accuracy || 10)}m</span>
               </div>
             </Popup>

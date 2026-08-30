@@ -1,0 +1,18 @@
+[
+  {
+    "orderId": "UPI_DIRECT",
+    "txnRef": "MSFR_TXN_791B5127",
+    "amount": 500,
+    "currency": "INR",
+    "purpose": "Mo-Wallet Top-up of ₹500",
+    "status": "success",
+    "customerName": "Traveller",
+    "customerPhone": "",
+    "customerEmail": "",
+    "createdAt": "2026-08-29T13:59:19.478Z",
+    "paymentId": "pay_a58597c6db4541",
+    "method": "Direct UPI (Google Pay)",
+    "verifiedAt": "2026-08-29T13:59:23.490Z",
+    "receiptNumber": "RCPT-369081"
+  }
+]

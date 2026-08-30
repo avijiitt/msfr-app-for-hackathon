@@ -380,10 +380,10 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
 
         <button
           onClick={() => setIsTicketPaymentOpen(true)}
-          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white font-extrabold text-xs shadow-md shadow-blue-600/30 transition flex items-center justify-center gap-1.5"
+          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 text-white font-extrabold text-xs shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-1.5"
         >
           <Ticket className="w-4 h-4" />
-          <span>{t?.buySingleTicket ? `${t.buySingleTicket} (₹${totalFareInr})` : `Book Live Transit QR Ticket (₹${totalFareInr})`}</span>
+          <span>🎟️ Unified Connected QR Pass — Pay Once for All Rides (₹{totalFareInr})</span>
         </button>
       </div>
 
@@ -392,11 +392,11 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
         isOpen={isTicketPaymentOpen}
         onClose={() => setIsTicketPaymentOpen(false)}
         amount={totalFareInr}
-        purpose={`Mo Bus Ticket: ${cleanFrom} ➔ ${cleanTo}`}
+        purpose={`Unified Connected QR Pass: ${cleanFrom} ➔ ${cleanTo} (All Feeder + Mo Bus + Interchanges Included)`}
         customerName="Traveller"
         onPaymentSuccess={(result) => {
           setIsTicketPaymentOpen(false);
-          alert(`🎉 Mo Bus Ticket Confirmed! Receipt: ${result.receiptNumber}. Live QR pass generated.`);
+          alert(`🎉 Unified Connected QR Pass Active!\nReceipt: ${result.receiptNumber}\nValid across all connected rides (Feeder + Mo Bus) with a single QR scan.`);
         }}
       />
     </div>

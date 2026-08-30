@@ -256,8 +256,49 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
               </button>
             </div>
           </div>
+
+          {/* Delivery Time Suggestions (Avoid Peak Hours) */}
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+              <Clock className="w-4 h-4 text-emerald-600" />
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  Smart Delivery Time Slot Suggestions (Off-Peak Optimization)
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Deliver non-urgent parcels during low-congestion windows to avoid peak traffic delays and save fuel.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {[
+                { slot: '11:00 AM – 01:30 PM', status: '⭐ Highly Recommended', save: '38% time saved', fuel: '1.8L fuel saved', badge: 'bg-emerald-100 text-emerald-800', note: 'Wide-open roads and rapid doorstep deliveries' },
+                { slot: '02:00 PM – 04:30 PM', status: '✅ Recommended', save: '32% time saved', fuel: '1.4L fuel saved', badge: 'bg-emerald-50 text-emerald-700', note: 'Smooth commercial traffic and quick parking' },
+                { slot: '05:30 PM – 08:30 PM', status: '❌ Peak Gridlock', save: '0% saved (Heavy delays)', fuel: 'High idle consumption', badge: 'bg-rose-100 text-rose-800', note: 'Heavy evening commuter rush across major corridors' },
+                { slot: '09:00 PM – 10:30 PM', status: '⭐ Night Super-Fast', save: '46% time saved', fuel: '2.2L fuel saved', badge: 'bg-indigo-100 text-indigo-800', note: 'Completely clear arterial roads for express freight' },
+              ].map((s, idx) => (
+                <div
+                  key={idx}
+                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-black text-xs text-slate-900 dark:text-white">{s.slot}</span>
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${s.badge}`}>
+                      {s.status}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-300 font-medium">{s.note}</div>
+                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                    ⚡ {s.save} • ⛽ {s.fuel}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+

@@ -19,12 +19,12 @@ const isOlaMapsConfigured = (): boolean =>
 // ── Popular India locations for instant autocomplete (offline & instant lookup) ─────────
 export const POPULAR_INDIAN_LOCATIONS: IndiaLocationResult[] = [
   // Bhubaneswar & Odisha (Institutes, Colleges, Hospitals, Apartments & Transit Hubs)
-  { id: 'bbs-royal-lagoon', name: 'Royal Lagoon Apartments, Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3695, lng: 85.8210, type: 'landmark', formattedAddress: 'Nandankanan Road, Raghunathpur, Bhubaneswar, Odisha' },
+  { id: 'bbs-royal-lagoon', name: 'Royal Lagoon Apartments, Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3664, lng: 85.8235, type: 'landmark', formattedAddress: 'Nandankanan Road, Raghunathpur, Patia, Bhubaneswar, Odisha' },
+  { id: 'bbs-trident-infocity', name: 'Trident Academy / Trident College (Infocity)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3548, lng: 85.8155, type: 'university', formattedAddress: 'Chandaka Industrial Estate, Near Infocity Square, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-mani-tribhuvan', name: 'Mani Tribhuvan Apartments, Patia', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3640, lng: 85.8215, type: 'landmark', formattedAddress: 'Nandankanan Road, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-raghunathpur', name: 'Raghunathpur / Raghunathpur Village', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3720, lng: 85.8230, type: 'landmark', formattedAddress: 'Raghunathpur, Nandankanan Road, Bhubaneswar, Odisha' },
   { id: 'bbs-nandan-vihar', name: 'Nandan Vihar / Sishupal', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3620, lng: 85.8200, type: 'landmark', formattedAddress: 'Nandan Vihar, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-sikharchandi', name: 'Sikharchandi Temple & Vihar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3600, lng: 85.8150, type: 'landmark', formattedAddress: 'Sikharchandi Hills, Patia, Bhubaneswar, Odisha' },
-  { id: 'bbs-trident', name: 'Trident College / Trident Academy of Creative Technology', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3582, lng: 85.8086, type: 'university', formattedAddress: 'Near Infocity Square, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-kiit', name: 'KIIT Square, Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3541, lng: 85.8175, type: 'university', formattedAddress: 'KIIT Square, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-kims', name: 'KIMS Hospital & Medical College', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3560, lng: 85.8140, type: 'hospital', formattedAddress: 'KIMS Hospital Road, KIIT Campus, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-iter', name: 'ITER / SOA University (Siksha \'O\' Anusandhan)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2505, lng: 85.7972, type: 'university', formattedAddress: 'Jagamara, Khandagiri, Bhubaneswar, Odisha' },

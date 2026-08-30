@@ -17,7 +17,16 @@ import {
   Footprints,
   Compass,
   Layers,
-  Info
+  Info,
+  Siren,
+  Activity,
+  BarChart3,
+  Cpu,
+  Fuel,
+  Plus,
+  ThumbsUp,
+  MapPin,
+  Moon
 } from 'lucide-react';
 import {
   CRUCIAL_CORRIDOR_CROWDS,
@@ -29,6 +38,17 @@ import {
   RouteCrowdStatus
 } from '../../services/crowdPredictionService';
 import { calculateLastMileOptions, LastMileOption } from '../../services/lastMileService';
+import {
+  TRAFFIC_PREDICTIONS,
+  AREA_TRAFFIC_SCORES,
+  PRESET_SIMULATION_SCENARIOS,
+  INITIAL_ROAD_PROBLEM_REPORTS,
+  generateEmergencyCorridor,
+  calculateFuelAndPollutionSavings,
+  isCrutAmaBusServiceClosed,
+  RoadProblemReport,
+  SimulationScenario
+} from '../../services/smartMobilitySuiteService';
 
 interface TransportationHubProps {
   originName?: string;
@@ -38,9 +58,16 @@ interface TransportationHubProps {
 }
 
 export type TransportationSubTab = 
+  | 'traffic_predict'
+  | 'problem_sim'
+  | 'emergency_route'
+  | 'road_problem'
+  | 'area_scores'
+  | 'admin_dash'
   | 'load_balance'
   | 'crowd_predict'
   | 'green_score'
+  | 'fuel_pollution'
   | 'last_mile'
   | 'park_ride'
   | 'disruptions'
@@ -52,16 +79,75 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
   onSelectRoute,
   onNavigateToMap,
 }) => {
-  const [activeTab, setActiveTab] = useState<TransportationSubTab>('load_balance');
+  const [activeTab, setActiveTab] = useState<TransportationSubTab>('traffic_predict');
   const [selectedRoute, setSelectedRoute] = useState<RouteCrowdStatus>(CRUCIAL_CORRIDOR_CROWDS[0]);
   const [appliedIncentive, setAppliedIncentive] = useState(false);
+
+  // Simulation State
+  const [activeSim, setActiveSim] = useState<SimulationScenario>(PRESET_SIMULATION_SCENARIOS[0]);
+  const [simActiveState, setSimActiveState] = useState(false);
+
+  // Road Hazards State
+  const [hazardReports, setHazardReports] = useState<RoadProblemReport[]>(INITIAL_ROAD_PROBLEM_REPORTS);
+  const [isReportHazardOpen, setIsReportHazardOpen] = useState(false);
+  const [newHazardType, setNewHazardType] = useState<'accident' | 'pothole' | 'waterlogging' | 'roadblock' | 'illegal_parking'>('waterlogging');
+  const [newHazardTitle, setNewHazardTitle] = useState('');
+  const [newHazardLocation, setNewHazardLocation] = useState('Acharya Vihar Square, Bhubaneswar');
+  const [newHazardDesc, setNewHazardDesc] = useState('');
+
+  // Emergency Route State
+  const emergencyPlan = generateEmergencyCorridor('KIMS Hospital, Patia', 'Apollo Hospital, Sainik School Road');
+
+  // Bus Operating Hours Check (Closes after 10 PM)
+  const busServiceStatus = isCrutAmaBusServiceClosed();
+  const fuelSavings = calculateFuelAndPollutionSavings(12.5);
 
   const smartBalance = getSmartLoadBalancedOptions(originName, destinationName);
   const greenScores = calculateGreenRouteScores(8.5);
   const lastMileOptions = calculateLastMileOptions(originName, destinationName);
 
+  const handleAddHazardReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newHazardTitle.trim() || !newHazardDesc.trim()) return;
+
+    const newReport: RoadProblemReport = {
+      id: `rp-${Date.now()}`,
+      problemType: newHazardType,
+      title: newHazardTitle.trim(),
+      description: newHazardDesc.trim(),
+      locationName: newHazardLocation.trim(),
+      lat: 20.3000,
+      lng: 85.8300,
+      reportedAt: 'Just now',
+      severity: 'moderate',
+      status: 'acknowledged_by_police',
+      upvotes: 1,
+      actionTaken: 'Auto-routed to Traffic Control Room',
+    };
+
+    setHazardReports([newReport, ...hazardReports]);
+    setIsReportHazardOpen(false);
+    setNewHazardTitle('');
+    setNewHazardDesc('');
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full bg-[#F8FAFC] dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 overflow-y-auto pb-16">
+      {/* 0. CRUT Ama Bus Service Closure Notice (After 10:00 PM) */}
+      <div className={`mx-3 md:mx-5 mt-3 p-3 rounded-2xl border flex items-center justify-between gap-3 text-xs font-bold ${
+        busServiceStatus.isClosed
+          ? 'bg-amber-500/15 border-amber-500/40 text-amber-900 dark:text-amber-200'
+          : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+      }`}>
+        <div className="flex items-center gap-2">
+          {busServiceStatus.isClosed ? <Moon className="w-4 h-4 text-amber-500 flex-shrink-0 animate-pulse" /> : <ShieldCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
+          <span>{busServiceStatus.message}</span>
+        </div>
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/40 dark:bg-black/30 font-black uppercase">
+          {busServiceStatus.nextServiceTime}
+        </span>
+      </div>
+
       {/* 1. Header Banner */}
       <div className="p-4 md:p-6 bg-gradient-to-r from-blue-700 via-indigo-700 to-sky-700 text-white rounded-3xl m-3 md:m-5 shadow-xl shadow-blue-700/20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
@@ -69,21 +155,21 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold mb-2">
               <Zap className="w-3.5 h-3.5 text-amber-300" />
-              <span>Smart Transit Intelligence Hub</span>
+              <span>Smart Transit & City Command Center</span>
             </div>
             <h1 className="text-xl md:text-2xl font-black tracking-tight">
-              Transportation Optimization & Mobility Center
+              Transportation Optimization & Urban Intelligence Hub
             </h1>
             <p className="text-blue-100 text-xs md:text-sm mt-1 max-w-xl font-medium">
-              Real-time route load balancing, crowd forecasting, green carbon metrics, safe last-mile routing, and city disruption mitigation.
+              30–60m traffic forecasting, problem simulation, emergency green corridors, area scores (0-100), hazard reporting & city official controls.
             </p>
           </div>
 
           <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/20 self-start md:self-auto">
-            <ShieldCheck className="w-5 h-5 text-emerald-300" />
+            <Activity className="w-5 h-5 text-emerald-300 animate-pulse" />
             <div>
-              <div className="text-[10px] uppercase font-bold text-blue-200">Grid Health</div>
-              <div className="text-xs font-extrabold text-emerald-300">Optimized • 82 Lines Active</div>
+              <div className="text-[10px] uppercase font-bold text-blue-200">Urban Grid Status</div>
+              <div className="text-xs font-extrabold text-emerald-300">Live AI Monitoring • 82 Lines</div>
             </div>
           </div>
         </div>
@@ -91,20 +177,27 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
         {/* Navigation Sub-Tabs */}
         <div className="flex gap-2 mt-5 overflow-x-auto pb-1 hide-scrollbar">
           {[
-            { id: 'load_balance', label: '⚖️ Load Balancing', icon: Zap },
-            { id: 'crowd_predict', label: '👥 Crowd Prediction', icon: Users },
-            { id: 'green_score', label: '🌿 Green Route Score', icon: Leaf },
-            { id: 'last_mile', label: '🚶 Smart Last-Mile', icon: Footprints },
-            { id: 'park_ride', label: '🅿️ Park & Ride', icon: ParkingCircle },
-            { id: 'disruptions', label: '🚨 Disruption Manager', icon: AlertTriangle },
-            { id: 'heatmap', label: '🔥 Mobility Heatmap', icon: Flame },
+            { id: 'traffic_predict', label: '🚦 Traffic Prediction (30-60m)' },
+            { id: 'problem_sim', label: '🧪 Problem Simulator' },
+            { id: 'emergency_route', label: '🚑 Emergency Corridor' },
+            { id: 'road_problem', label: '⚠️ Report Road Hazard' },
+            { id: 'area_scores', label: '🛡️ Area Scores (0-100)' },
+            { id: 'admin_dash', label: '🏙️ Admin Command Center' },
+            { id: 'fuel_pollution', label: '⛽ Fuel & CO₂ Savings' },
+            { id: 'load_balance', label: '⚖️ Load Balancing' },
+            { id: 'crowd_predict', label: '👥 Crowd Prediction' },
+            { id: 'green_score', label: '🌿 Green Route Score' },
+            { id: 'last_mile', label: '🚶 Smart Last-Mile' },
+            { id: 'park_ride', label: '🅿️ Park & Ride' },
+            { id: 'disruptions', label: '🚨 Disruption Manager' },
+            { id: 'heatmap', label: '🔥 Mobility Heatmap' },
           ].map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as TransportationSubTab)}
-                className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   isActive
                     ? 'bg-white text-blue-900 shadow-md font-extrabold scale-100'
                     : 'bg-white/15 text-white hover:bg-white/25 active:scale-95'
@@ -119,6 +212,501 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
 
       {/* 2. Main Content Views based on active subtab */}
       <div className="px-3 md:px-5 space-y-5">
+
+        {/* ─── TAB: 30–60 MIN TRAFFIC CONGESTION PREDICTION ─── */}
+        {activeTab === 'traffic_predict' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-blue-600" />
+                    <span>Predictive Traffic Congestion Forecasting (Next 30–60 Minutes)</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Predicting road bottlenecks across key arteries using historical trends, signals, and active transit volumes.
+                  </p>
+                </div>
+                <span className="px-3 py-1 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold text-xs rounded-full self-start">
+                  Live AI Forecast Active
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {TRAFFIC_PREDICTIONS.map((tp) => (
+                  <div
+                    key={tp.id}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-black text-sm text-slate-900 dark:text-white">{tp.roadName}</h3>
+                        <div className="text-xs text-slate-500 mt-0.5">Factor: {tp.peakReason}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-black text-slate-900 dark:text-white">{tp.currentSpeedKmph} km/h</div>
+                        <div className="text-[10px] text-slate-400">Normal: {tp.freeFlowSpeedKmph} km/h</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="text-[10px] text-slate-400 font-bold uppercase">Now</div>
+                        <div className={`font-black uppercase text-[11px] ${
+                          tp.currentCongestionLevel === 'gridlock' ? 'text-rose-600' :
+                          tp.currentCongestionLevel === 'heavy' ? 'text-amber-600' : 'text-emerald-600'
+                        }`}>
+                          {tp.currentCongestionLevel}
+                        </div>
+                      </div>
+                      <div className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="text-[10px] text-slate-400 font-bold uppercase">In +30 Mins</div>
+                        <div className={`font-black uppercase text-[11px] ${
+                          tp.predicted30MinLevel === 'gridlock' ? 'text-rose-600' :
+                          tp.predicted30MinLevel === 'heavy' ? 'text-amber-600' : 'text-emerald-600'
+                        }`}>
+                          {tp.predicted30MinLevel}
+                        </div>
+                      </div>
+                      <div className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="text-[10px] text-slate-400 font-bold uppercase">In +60 Mins</div>
+                        <div className={`font-black uppercase text-[11px] ${
+                          tp.predicted60MinLevel === 'gridlock' ? 'text-rose-600' :
+                          tp.predicted60MinLevel === 'heavy' ? 'text-amber-600' : 'text-emerald-600'
+                        }`}>
+                          {tp.predicted60MinLevel}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-900 rounded-xl flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 block">Suggested Smooth Bypass:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">{tp.recommendedAlternative}</span>
+                      </div>
+                      <button
+                        onClick={onNavigateToMap}
+                        className="px-3 py-1 bg-emerald-600 text-white font-bold text-[10px] rounded-lg shadow-xs hover:bg-emerald-700"
+                      >
+                        Map Route
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: PROBLEM SIMULATOR (WHAT-IF INTERACTIVE SIMULATOR) ─── */}
+        {activeTab === 'problem_sim' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-purple-600" />
+                    <span>Urban Crisis & What-If Problem Simulator</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Simulate accidents, monsoon flooding, VIP closures, or concert events to test automated signal rerouting.
+                  </p>
+                </div>
+              </div>
+
+              {/* Scenario selector */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {PRESET_SIMULATION_SCENARIOS.map((sc) => (
+                  <button
+                    key={sc.id}
+                    onClick={() => {
+                      setActiveSim(sc);
+                      setSimActiveState(true);
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition ${
+                      activeSim.id === sc.id
+                        ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-500 font-black shadow-xs text-purple-900 dark:text-purple-300'
+                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <div className="text-[10px] font-bold uppercase text-purple-600">{sc.category.replace('_', ' ')}</div>
+                    <div className="text-xs font-black truncate mt-0.5">{sc.title.split(' at ')[0]}</div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Active Simulation Result Card */}
+              <div className="p-5 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border-2 border-purple-400 dark:border-purple-800 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="px-2.5 py-0.5 bg-purple-600 text-white font-black text-[10px] rounded-full uppercase">
+                      Simulated Crisis Scenario
+                    </span>
+                    <h3 className="font-black text-base text-slate-900 dark:text-white mt-1">{activeSim.title}</h3>
+                    <div className="text-xs text-slate-500 mt-0.5">Location: {activeSim.location}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-black text-rose-600">+{activeSim.simulatedDelayMins}m Delay</div>
+                    <div className="text-[10px] text-slate-400">Radius: {activeSim.affectedRadiusKm} km</div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                  <div className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                    <span className="text-purple-600 font-extrabold">🚨 Automated Action: </span>
+                    {activeSim.suggestedAction}
+                  </div>
+                  <div className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                    <span className="text-emerald-600 font-extrabold">🚦 Signal Preemption: </span>
+                    {activeSim.automatedSignalAdjustment}
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Impacted Lines: {activeSim.impactedRoutes.join(', ')}
+                  </div>
+                </div>
+
+                <button
+                  onClick={onNavigateToMap}
+                  className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-md transition"
+                >
+                  Visualize Simulated Rerouting on Map
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: EMERGENCY GREEN CORRIDOR ─── */}
+        {activeTab === 'emergency_route' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Siren className="w-5 h-5 text-rose-600 animate-bounce" />
+                  <div>
+                    <h2 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                      Emergency Green Corridor Routing (Ambulance & Siren Priority)
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Rapid dispatch clearance with traffic signal preemption to save critical golden hour minutes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900 rounded-2xl space-y-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-rose-200 dark:border-rose-800">
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">Standard Time</div>
+                    <div className="text-sm font-black text-slate-800 dark:text-slate-200">{emergencyPlan.standardDurationMins} mins</div>
+                  </div>
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-emerald-300 dark:border-emerald-800">
+                    <div className="text-[10px] text-emerald-600 font-bold uppercase">Green Corridor</div>
+                    <div className="text-base font-black text-emerald-600">{emergencyPlan.clearedGreenCorridorDurationMins} mins</div>
+                  </div>
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">Time Saved</div>
+                    <div className="text-sm font-black text-blue-600">⚡ {emergencyPlan.timeSavedMins} mins</div>
+                  </div>
+                  <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">Target Speed</div>
+                    <div className="text-sm font-black text-slate-800 dark:text-slate-200">{emergencyPlan.recommendedSpeedKmph} km/h</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mt-2">
+                  <div className="text-xs font-black text-slate-900 dark:text-white">Preempted Traffic Signals (Green Wave Active):</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {emergencyPlan.clearedSignalJunctions.map((j, idx) => (
+                      <div key={idx} className="p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                        <span>🟢</span>
+                        <span>{j}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={onNavigateToMap}
+                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition"
+                >
+                  Activate Live Emergency Siren Navigation
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: REPORT A ROAD PROBLEM ─── */}
+        {activeTab === 'road_problem' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    Report a Road Problem (Potholes, Waterlogging, Accidents, Roadblocks)
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Report road hazards directly to traffic control room & municipal authorities.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsReportHazardOpen(true)}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Report Road Issue</span>
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {hazardReports.map((r) => (
+                  <div
+                    key={r.id}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                          r.problemType === 'accident' ? 'bg-rose-100 text-rose-700' :
+                          r.problemType === 'waterlogging' ? 'bg-blue-100 text-blue-700' :
+                          r.problemType === 'pothole' ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700'
+                        }`}>
+                          {r.problemType.replace('_', ' ')}
+                        </span>
+                        <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">{r.title}</h3>
+                      </div>
+                      <span className="text-xs text-slate-400">{r.reportedAt}</span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 dark:text-slate-300">{r.description}</p>
+                    <div className="text-xs text-slate-500 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                      <span>{r.locationName}</span>
+                    </div>
+
+                    {r.actionTaken && (
+                      <div className="p-2 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                        🛡️ Action: {r.actionTaken}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Hazard Modal */}
+            {isReportHazardOpen && (
+              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3">
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 max-w-md w-full border border-slate-200 dark:border-slate-800 space-y-3">
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+                    <h3 className="font-black text-sm">Submit Road Hazard Report</h3>
+                    <button onClick={() => setIsReportHazardOpen(false)} className="text-slate-400 font-bold">✕</button>
+                  </div>
+                  <form onSubmit={handleAddHazardReport} className="space-y-2.5">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Hazard Type</label>
+                      <select
+                        value={newHazardType}
+                        onChange={(e) => setNewHazardType(e.target.value as any)}
+                        className="w-full p-2 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs"
+                      >
+                        <option value="pothole">🕳️ Dangerous Pothole</option>
+                        <option value="waterlogging">🌧️ Waterlogging / Drainage Overflow</option>
+                        <option value="accident">💥 Accident / Vehicle Collision</option>
+                        <option value="roadblock">🚧 Roadblock / Construction</option>
+                        <option value="illegal_parking">🚗 Illegal Parking in Bus Bay</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Title</label>
+                      <input
+                        type="text"
+                        value={newHazardTitle}
+                        onChange={(e) => setNewHazardTitle(e.target.value)}
+                        placeholder="e.g. Deep pothole on left lane"
+                        className="w-full p-2 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Location</label>
+                      <input
+                        type="text"
+                        value={newHazardLocation}
+                        onChange={(e) => setNewHazardLocation(e.target.value)}
+                        className="w-full p-2 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Description</label>
+                      <textarea
+                        rows={2}
+                        value={newHazardDesc}
+                        onChange={(e) => setNewHazardDesc(e.target.value)}
+                        placeholder="Provide details..."
+                        className="w-full p-2 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs"
+                        required
+                      ></textarea>
+                    </div>
+                    <div className="pt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsReportHazardOpen(false)}
+                        className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 font-bold text-xs rounded-xl"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-2 bg-rose-600 text-white font-black text-xs rounded-xl shadow-xs"
+                      >
+                        Publish Hazard
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── TAB: AREA TRAFFIC SCORES (0 TO 100) ─── */}
+        {activeTab === 'area_scores' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    Area Traffic & Safety Scores (0 - 100 Index)
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Live rating of each urban sector based on road speeds, active delivery couriers, and reported problems.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {AREA_TRAFFIC_SCORES.map((area) => (
+                  <div
+                    key={area.areaId}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex justify-between items-center"
+                  >
+                    <div>
+                      <h3 className="font-black text-sm text-slate-900 dark:text-white">{area.areaName}</h3>
+                      <div className="text-xs text-slate-500 mt-1">
+                        📦 {area.activeDeliveriesCount} deliveries • ⚠️ {area.reportedIncidentsCount} hazards
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">
+                        Bottleneck: {area.majorBottleneck}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className={`text-2xl font-black ${
+                        area.scoreOutOf100 >= 75 ? 'text-emerald-600' :
+                        area.scoreOutOf100 >= 50 ? 'text-amber-600' : 'text-rose-600'
+                      }`}>
+                        {area.scoreOutOf100}/100
+                      </div>
+                      <div className="text-[10px] uppercase font-bold text-slate-400">Delay: +{area.avgTravelDelayMins}m</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: ADMIN DASHBOARD (CITY OFFICIALS) ─── */}
+        {activeTab === 'admin_dash' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <h2 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                      Municipal & Traffic Police Command Center
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      City official dashboard: Live hotspot map, rapid signal preemption, and emergency dispatch.
+                    </p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-xs font-black rounded-full">
+                  Grid Synchronized
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-xs">
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-200 dark:border-blue-800">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Active Fleets</div>
+                  <div className="text-base font-black text-blue-600">324 Buses + 180 Shuttles</div>
+                </div>
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-800">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Grid Efficiency</div>
+                  <div className="text-base font-black text-emerald-600">94.2% On-Time</div>
+                </div>
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-2xl border border-amber-200 dark:border-amber-800">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Active Hazards</div>
+                  <div className="text-base font-black text-amber-600">4 Under Action</div>
+                </div>
+                <div className="p-3 bg-purple-50 dark:bg-purple-950/30 rounded-2xl border border-purple-200 dark:border-purple-800">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Emergency Corridors</div>
+                  <div className="text-base font-black text-purple-600">1 Active (KIMS ➔ Apollo)</div>
+                </div>
+              </div>
+
+              <button
+                onClick={onNavigateToMap}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition text-center"
+              >
+                Inspect Official City Command Map
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: FUEL AND POLLUTION SAVINGS ─── */}
+        {activeTab === 'fuel_pollution' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <Fuel className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    Fuel & Pollution Savings Analytics
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Comparing fuel consumption and CO₂ emissions saved by using optimal shared transit vs driving a car.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-300 dark:border-emerald-800">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Fuel Saved</div>
+                  <div className="text-base font-black text-emerald-600">{fuelSavings.fuelSavedLitres} Litres</div>
+                </div>
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-300 dark:border-blue-800">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">CO₂ Emissions Reduced</div>
+                  <div className="text-base font-black text-blue-600">{fuelSavings.co2SavedGrams}g CO₂</div>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Cost Saved</div>
+                  <div className="text-base font-black text-slate-900 dark:text-white">₹{fuelSavings.costSavedInr}</div>
+                </div>
+                <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-2xl border border-amber-300 dark:border-amber-800">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Green Credits</div>
+                  <div className="text-base font-black text-amber-600">+{fuelSavings.greenPointsEarned} Pts</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ─── TAB 1: SMART LOAD BALANCING & ROUTE DISTRIBUTION ─── */}
         {activeTab === 'load_balance' && (
           <div className="space-y-5 animate-in fade-in">
