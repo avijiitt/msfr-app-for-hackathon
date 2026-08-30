@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Bell, MapPin, Navigation2, CheckCircle2, ChevronRight, Shield } from 'lucide-react';
+import { geolocationService } from '../../services/geolocationService';
 
 interface PermissionsModalProps {
   isOpen: boolean;
@@ -50,9 +51,18 @@ export const PermissionsModal: React.FC<PermissionsModalProps> = ({ isOpen, onCo
         return;
       }
       navigator.geolocation.getCurrentPosition(
-        () => { updateStatus(id, 'granted'); setRequesting(null); checkAllDone(); },
-        () => { updateStatus(id, 'denied'); setRequesting(null); checkAllDone(); },
-        { timeout: 8000 }
+        (pos) => {
+          geolocationService.startLiveTracking();
+          updateStatus(id, 'granted');
+          setRequesting(null);
+          checkAllDone();
+        },
+        () => {
+          updateStatus(id, 'denied');
+          setRequesting(null);
+          checkAllDone();
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
       );
     }
 

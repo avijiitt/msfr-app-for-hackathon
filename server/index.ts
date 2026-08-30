@@ -1194,13 +1194,17 @@ app.get('/api/maps/places/nearby', async (req: Request, res: Response) => {
   }
 });
 
-// ── Start Server ───────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`🚀 Musafir Backend API Server running at http://localhost:${PORT}`);
-  console.log(`📡 Supabase Database: ${SUPABASE_URL}`);
-  console.log(`🤖 Gemini AI: Configured`);
-  console.log(`🗺️ Google Maps API: Active (Key: AIzaSyBxK55b...)`);
-  console.log(`🗺️ OLA Maps API: Configured`);
-  console.log(`📱 SMS OTP Gateway: Ready (Twilio SMS Gateway & Supabase)`);
-  console.log(`💳 Payment Gateway: Ready (Razorpay + NPCI Bharat UPI QR)`);
-});
+// ── Export App & Start Server ──────────────────────────────────────────────
+export default app;
+
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Musafir Backend API Server running at http://localhost:${PORT}`);
+    console.log(`📡 Supabase Database: ${SUPABASE_URL}`);
+    console.log(`🤖 Gemini AI: Configured`);
+    console.log(`🗺️ Google Maps API: Active`);
+    console.log(`🗺️ OLA Maps API: Configured`);
+    console.log(`📱 SMS OTP Gateway: Ready (Twilio SMS Gateway & Supabase)`);
+    console.log(`💳 Payment Gateway: Ready (Razorpay + NPCI Bharat UPI QR)`);
+  });
+}

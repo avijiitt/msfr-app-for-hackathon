@@ -274,7 +274,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
       // Send login email notification (optional)
       if (userData.email.includes('@gmail.com') || userData.email.includes('@')) {
-        await fetch('http://localhost:5000/api/auth/login-notification', {
+        await fetch('/api/auth/login-notification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -284,7 +284,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
             category: userData.category,
             homeCity: userData.homeAddress,
           }),
-        });
+        }).catch(() => {});
       }
     } catch (e) {
       console.warn('Backend sync notice:', e);

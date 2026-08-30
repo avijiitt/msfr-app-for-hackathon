@@ -72,7 +72,7 @@ export async function dispatchMobileOTP(phoneNumber: string): Promise<SendOtpRes
 
   // Try backend first (for database logging in otp_logs.json)
   try {
-    const res = await fetch('http://localhost:5000/api/auth/send-sms-otp', {
+    const res = await fetch('/api/auth/send-sms-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone: cleanPhone }),

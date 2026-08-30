@@ -74,7 +74,7 @@ class PaymentService {
     const defaultUri = `upi://pay?pa=${encodeURIComponent(defaultVpa)}&pn=Musafir%20Transit&am=${req.amount}&cu=INR&tn=${encodeURIComponent(req.purpose)}&tr=${defaultTxn}`;
 
     try {
-      const res = await fetch('http://localhost:5000/api/payment/create-order', {
+      const res = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(req),
@@ -203,7 +203,7 @@ class PaymentService {
     txnRef?: string;
   }): Promise<PaymentVerificationResult> {
     try {
-      const res = await fetch('http://localhost:5000/api/payment/verify', {
+      const res = await fetch('/api/payment/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

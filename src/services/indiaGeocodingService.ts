@@ -11,7 +11,7 @@ export interface IndiaLocationResult {
   formattedAddress: string;
 }
 
-const OLA_MAPS_API_KEY = import.meta.env.VITE_OLA_MAPS_API_KEY || '63CtJZBj4maPgvCCiDSXxavc6jkxztXfRTEpwPYj';
+const OLA_MAPS_API_KEY = import.meta.env.VITE_OLA_MAPS_API_KEY || '';
 
 const isOlaMapsConfigured = (): boolean =>
   Boolean(OLA_MAPS_API_KEY) && OLA_MAPS_API_KEY.length > 5 && !OLA_MAPS_API_KEY.includes('your-ola');
@@ -264,23 +264,25 @@ class IndiaGeocodingService {
       loc.formattedAddress.toLowerCase().includes(q)
     );
 
-    // 2. Also search all Mo Bus Stoppages from STOP_COORDINATES_MAP
+    // 2. Also search all Mo Bus Stoppages from STOP_COORDINATES_MAP only if query looks like a local stop name
     const stopMatches: IndiaLocationResult[] = [];
-    for (const [stopKey, coords] of Object.entries(STOP_COORDINATES_MAP)) {
-      if (stopKey.includes(q) || q.includes(stopKey)) {
-        const titleCase = stopKey.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        const isDuplicate = directMatches.some(m => Math.abs(m.lat - coords[0]) < 0.002 && Math.abs(m.lng - coords[1]) < 0.002);
-        if (!isDuplicate) {
-          stopMatches.push({
-            id: `stop-${stopKey.replace(/\s+/g, '-')}`,
-            name: `${titleCase}, Bhubaneswar`,
-            city: 'Bhubaneswar',
-            state: 'Odisha',
-            lat: coords[0],
-            lng: coords[1],
-            type: 'station',
-            formattedAddress: `${titleCase} Mo Bus Stop, Bhubaneswar, Odisha`,
-          });
+    if (q.length >= 3) {
+      for (const [stopKey, coords] of Object.entries(STOP_COORDINATES_MAP)) {
+        if (stopKey === q || stopKey.startsWith(q) || (stopKey.includes(q) && q.length >= 4)) {
+          const titleCase = stopKey.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          const isDuplicate = directMatches.some(m => Math.abs(m.lat - coords[0]) < 0.002 && Math.abs(m.lng - coords[1]) < 0.002);
+          if (!isDuplicate) {
+            stopMatches.push({
+              id: `stop-${stopKey.replace(/\s+/g, '-')}`,
+              name: `${titleCase}, Bhubaneswar`,
+              city: 'Bhubaneswar',
+              state: 'Odisha',
+              lat: coords[0],
+              lng: coords[1],
+              type: 'station',
+              formattedAddress: `${titleCase} Mo Bus Stop, Bhubaneswar, Odisha`,
+            });
+          }
         }
       }
     }

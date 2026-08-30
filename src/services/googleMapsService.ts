@@ -3,7 +3,7 @@
  * Powers Geocoding, Places Autocomplete, Turn-by-turn Directions, and Map Tile layers
  */
 
-export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBxK55bcOFGfpkIX_0Hi6AyWzwjCSGPFQM';
+export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 export interface GooglePlaceResult {
   id: string;

@@ -839,9 +839,16 @@ export function getHumanReadableLocationName(lat: number, lng: number): string {
     return 'Near Institute of Physics (Sachivalaya Marg)';
   }
 
+  // Within ~2.5 km of a specific known landmark
   if (closestDist < 0.025 && closestName) {
     return `Near ${closestName}${subArea ? ` (${subArea.split('&')[0].trim()})` : ''}`;
   }
 
-  return `Pinned Location (Near ${closestName || 'Bhubaneswar Central'})`;
+  // Within ~6 km of Bhubaneswar city bounds
+  if (closestDist < 0.06 && closestName) {
+    return `Near ${closestName}`;
+  }
+
+  // Outside Bhubaneswar region (e.g. Delhi, Mumbai, Kolkata, Bengaluru) - do NOT claim an Odisha landmark
+  return `Pinned Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
 }

@@ -178,7 +178,7 @@ interface TransitMapProps {
   cityZoom: number;
   stations: Station[];
   routes: TransitRoute[];
-  userLocation: LiveLocationData;
+  userLocation: LiveLocationData | null;
   isGpsTracking: boolean;
   onSetLocationAsOrigin: (lat: number, lng: number, name: string) => void;
   t: TranslationDictionary;
@@ -261,14 +261,16 @@ export const TransitMap: React.FC<TransitMapProps> = ({
         </div>
 
         {/* 1-Tap Quick Action: Use My Live GPS */}
-        <button
-          onClick={() => onSetLocationAsOrigin(userLocation.lat, userLocation.lng, 'My Live GPS Location (India)')}
-          className="px-2.5 py-1.5 rounded-xl bg-tertiary-container hover:bg-tertiary-fixed text-on-tertiary-container transition font-bold font-label-caps text-xs flex items-center gap-1.5 shadow-md"
-          title="Set current GPS coordinates as trip origin"
-        >
-          <LocateFixed className="w-3.5 h-3.5" />
-          <span>Use My Live Location</span>
-        </button>
+        {userLocation && (
+          <button
+            onClick={() => onSetLocationAsOrigin(userLocation.lat, userLocation.lng, 'My Live GPS Location (India)')}
+            className="px-2.5 py-1.5 rounded-xl bg-tertiary-container hover:bg-tertiary-fixed text-on-tertiary-container transition font-bold font-label-caps text-xs flex items-center gap-1.5 shadow-md"
+            title="Set current GPS coordinates as trip origin"
+          >
+            <LocateFixed className="w-3.5 h-3.5" />
+            <span>Use My Live Location</span>
+          </button>
+        )}
 
         {/* Layer Filters */}
         <div className="glass-panel p-1 rounded-xl flex items-center gap-1 shadow-lg text-xs border border-primary/20">
@@ -332,29 +334,31 @@ export const TransitMap: React.FC<TransitMapProps> = ({
         />
 
         {/* Real-Time User GPS Live Pin & Accuracy Circle */}
-        <Marker position={[userLocation.lat, userLocation.lng]} icon={createUserPinIcon(isGpsTracking)}>
-          <Popup>
-            <div className="p-1 min-w-[190px] text-slate-900">
-              <div className="font-bold text-xs text-slate-900 flex items-center gap-1">
-                <span>📍 Your Real-Time Location (India)</span>
+        {userLocation && (
+          <Marker position={[userLocation.lat, userLocation.lng]} icon={createUserPinIcon(isGpsTracking)}>
+            <Popup>
+              <div className="p-1 min-w-[190px] text-slate-900">
+                <div className="font-bold text-xs text-slate-900 flex items-center gap-1">
+                  <span>📍 Your Real-Time Location (India)</span>
+                </div>
+                <p className="text-[11px] text-slate-600 mt-1 font-mono">
+                  Lat: {userLocation.lat.toFixed(4)}, Lng: {userLocation.lng.toFixed(4)}
+                </p>
+                <p className="text-[10px] text-emerald-700 font-semibold mt-0.5">
+                  Accuracy: ±{userLocation.accuracy} meters • {isGpsTracking ? 'Live GPS Active' : 'Cached Position'}
+                </p>
+                <button
+                  onClick={() => onSetLocationAsOrigin(userLocation.lat, userLocation.lng, 'My Live Location')}
+                  className="mt-2 w-full py-1 rounded bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px]"
+                >
+                  Set as Journey Origin
+                </button>
               </div>
-              <p className="text-[11px] text-slate-600 mt-1 font-mono">
-                Lat: {userLocation.lat.toFixed(4)}, Lng: {userLocation.lng.toFixed(4)}
-              </p>
-              <p className="text-[10px] text-emerald-700 font-semibold mt-0.5">
-                Accuracy: ±{userLocation.accuracy} meters • {isGpsTracking ? 'Live GPS Active' : 'Cached Position'}
-              </p>
-              <button
-                onClick={() => onSetLocationAsOrigin(userLocation.lat, userLocation.lng, 'My Live Location')}
-                className="mt-2 w-full py-1 rounded bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px]"
-              >
-                Set as Journey Origin
-              </button>
-            </div>
-          </Popup>
-        </Marker>
+            </Popup>
+          </Marker>
+        )}
 
-        {isGpsTracking && userLocation.accuracy && (
+        {isGpsTracking && userLocation && userLocation.accuracy && (
           <Circle
             center={[userLocation.lat, userLocation.lng]}
             radius={Math.max(50, userLocation.accuracy)}

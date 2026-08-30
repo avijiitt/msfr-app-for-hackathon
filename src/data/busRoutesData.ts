@@ -860,35 +860,57 @@ export const STOP_COORDINATES_MAP: Record<string, [number, number]> = {
 };
 
 /**
- * Given a stop name, finds or estimates [lat, lng]
+ * Returns exact coordinates for a known Mo Bus stop or null if unknown
  */
-export function getStopCoordinates(stopName: string, routeStartCoord?: [number, number], routeEndCoord?: [number, number], stopIndex?: number, totalStops?: number): [number, number] {
-  if (!stopName) return [20.2961, 85.8245];
+export function getExactStopCoordinates(stopName: string): [number, number] | null {
+  if (!stopName) return null;
   const clean = stopName.split(',')[0].toLowerCase().trim();
-  const norm = clean.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ").trim();
-  
+  const norm = clean.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ").replace(/\s+/g, " ").trim();
+
   // 1. Direct match in dictionary
   if (STOP_COORDINATES_MAP[norm]) {
     return STOP_COORDINATES_MAP[norm];
   }
 
-  // 2. Partial match in dictionary
+  // 2. Strict whole-word or exact prefix match (min 4 chars)
   for (const [key, coords] of Object.entries(STOP_COORDINATES_MAP)) {
-    if (key === norm || (key.length >= 3 && norm.includes(key)) || (norm.length >= 3 && key.includes(norm))) {
-      return coords;
+    if (key === norm) return coords;
+    if (norm.length >= 4 && key.length >= 4) {
+      if (key === norm || key.startsWith(norm + ' ') || norm.startsWith(key + ' ')) {
+        return coords;
+      }
     }
   }
 
+  return null;
+}
 
-  // 4. Fallback interpolation between Start & End coordinates
+/**
+ * Given a stop name, finds or estimates [lat, lng]
+ */
+export function getStopCoordinates(
+  stopName: string,
+  routeStartCoord?: [number, number],
+  routeEndCoord?: [number, number],
+  stopIndex?: number,
+  totalStops?: number
+): [number, number] {
+  const exact = getExactStopCoordinates(stopName);
+  if (exact) return exact;
+
+  // Fallback interpolation between Start & End coordinates for intermediary stops along a route
   if (routeStartCoord && routeEndCoord && typeof stopIndex === 'number' && typeof totalStops === 'number' && totalStops > 1) {
     const fraction = stopIndex / (totalStops - 1);
-    const lat = routeStartCoord[0] + (routeEndCoord[0] - routeStartCoord[0]) * fraction + (Math.sin(stopIndex) * 0.003);
-    const lng = routeStartCoord[1] + (routeEndCoord[1] - routeStartCoord[1]) * fraction + (Math.cos(stopIndex) * 0.003);
+    const lat = routeStartCoord[0] + (routeEndCoord[0] - routeStartCoord[0]) * fraction + (Math.sin(stopIndex) * 0.002);
+    const lng = routeStartCoord[1] + (routeEndCoord[1] - routeStartCoord[1]) * fraction + (Math.cos(stopIndex) * 0.002);
     return [Math.round(lat * 10000) / 10000, Math.round(lng * 10000) / 10000];
   }
 
-  // Default coordinate
+  if (routeStartCoord) {
+    return routeStartCoord;
+  }
+
+  // If completely unknown and no route context
   return [20.2961, 85.8245];
 }
 

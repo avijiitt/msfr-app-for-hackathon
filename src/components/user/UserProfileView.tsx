@@ -67,7 +67,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
 
     // Sync to Supabase & Backend Database
     try {
-      await fetch('http://localhost:5000/api/users/profile', {
+      await fetch('/api/users/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

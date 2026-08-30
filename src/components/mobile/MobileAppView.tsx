@@ -36,7 +36,7 @@ interface MobileAppViewProps {
   walletBalance: number;
   userName?: string;
   vehicles: Vehicle[];
-  userLocation: LiveLocationData;
+  userLocation: LiveLocationData | null;
   originCoords: [number, number] | null;
   destCoords: [number, number] | null;
   onSelectLocationOnMap: (lat: number, lng: number, name?: string, type?: 'origin' | 'dest') => void;

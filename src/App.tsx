@@ -8,7 +8,7 @@ import { walletService } from './services/walletService';
 import { sosService } from './services/sosService';
 import { geolocationService, LiveLocationData } from './services/geolocationService';
 import { IndiaLocationResult, indiaGeocodingService, geocodeAddressIndia } from './services/indiaGeocodingService';
-import { getStopCoordinates } from './data/busRoutesData';
+import { getStopCoordinates, getExactStopCoordinates } from './data/busRoutesData';
 
 
 // Redesigned Musafir Layout & Core Components
@@ -82,7 +82,7 @@ export const App: React.FC = () => {
 
   // Real-Time GPS Location
   const [isGpsActive, setIsGpsActive] = useState(false);
-  const [userLocation, setUserLocation] = useState<LiveLocationData>(geolocationService.getLocation());
+  const [userLocation, setUserLocation] = useState<LiveLocationData | null>(geolocationService.getLocation());
 
   // Fleet & Simulator
   const [vehicles, setVehicles] = useState<Vehicle[]>(transitSimulator.getVehicles());
@@ -195,9 +195,15 @@ export const App: React.FC = () => {
       setIsGpsActive(true);
       geolocationService.startLiveTracking();
       const livePos = await geolocationService.getCurrentLivePosition();
-      setOriginCoords([livePos.lat, livePos.lng]);
-      const readable = getHumanReadableLocationName(livePos.lat, livePos.lng);
-      setOriginQuery(`Current Location (${readable.replace('Pinned Location ', '')})`);
+      if (livePos) {
+        setOriginCoords([livePos.lat, livePos.lng]);
+        setUserLocation(livePos);
+        const readable = getHumanReadableLocationName(livePos.lat, livePos.lng);
+        setOriginQuery(`Current Location (${readable.replace('Pinned Location ', '')})`);
+      } else {
+        alert('Could not acquire live GPS position. Please check your browser location permissions.');
+        setIsGpsActive(false);
+      }
     } else {
       geolocationService.stopLiveTracking();
       setIsGpsActive(false);
@@ -212,17 +218,16 @@ export const App: React.FC = () => {
 
     // 1. Resolve Origin Coordinates anywhere in India
     if (from) {
-      const origLocal = indiaGeocodingService.searchLocations(from)[0];
-      if (origLocal) {
-        setOriginCoords([origLocal.lat, origLocal.lng]);
+      if (from.includes('Current Location') && userLocation) {
+        setOriginCoords([userLocation.lat, userLocation.lng]);
       } else {
-        const origCoord = getStopCoordinates(from);
-        if (origCoord && !(origCoord[0] === 20.2961 && origCoord[1] === 85.8245)) {
-          setOriginCoords(origCoord);
-        } else if (from.length > 2 && !from.includes('Current Location')) {
-          const res = await geocodeAddressIndia(from);
-          if (res && res[0]) {
-            setOriginCoords([res[0].lat, res[0].lng]);
+        const res = await geocodeAddressIndia(from);
+        if (res && res[0] && res[0].lat && res[0].lng) {
+          setOriginCoords([res[0].lat, res[0].lng]);
+        } else {
+          const exactStop = getExactStopCoordinates(from);
+          if (exactStop) {
+            setOriginCoords(exactStop);
           }
         }
       }
@@ -230,18 +235,13 @@ export const App: React.FC = () => {
 
     // 2. Resolve Destination Coordinates anywhere in India
     if (to) {
-      const dstLocal = indiaGeocodingService.searchLocations(to)[0];
-      if (dstLocal) {
-        setDestCoords([dstLocal.lat, dstLocal.lng]);
+      const res = await geocodeAddressIndia(to);
+      if (res && res[0] && res[0].lat && res[0].lng) {
+        setDestCoords([res[0].lat, res[0].lng]);
       } else {
-        const dstCoord = getStopCoordinates(to);
-        if (dstCoord && !(dstCoord[0] === 20.2961 && dstCoord[1] === 85.8245)) {
-          setDestCoords(dstCoord);
-        } else if (to.length > 2) {
-          const res = await geocodeAddressIndia(to);
-          if (res && res[0]) {
-            setDestCoords([res[0].lat, res[0].lng]);
-          }
+        const exactStop = getExactStopCoordinates(to);
+        if (exactStop) {
+          setDestCoords(exactStop);
         }
       }
     }
@@ -636,7 +636,7 @@ export const App: React.FC = () => {
         isOpen={isSosOpen}
         onClose={() => setIsSosOpen(false)}
         userProfile={userProfile}
-        currentCoords={[userLocation.lat, userLocation.lng]}
+        currentCoords={userLocation ? [userLocation.lat, userLocation.lng] : (originCoords || [20.2961, 85.8245])}
         nearestStationName={originQuery}
         t={t}
       />

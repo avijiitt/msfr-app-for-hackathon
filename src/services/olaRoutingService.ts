@@ -5,7 +5,7 @@ import { googleGetDirections } from './googleMapsService';
  * Uses Google Maps Directions API with OLA Maps & OSRM Fallback
  */
 
-const OLA_MAPS_API_KEY = import.meta.env.VITE_OLA_MAPS_API_KEY || '63CtJZBj4maPgvCCiDSXxavc6jkxztXfRTEpwPYj';
+const OLA_MAPS_API_KEY = import.meta.env.VITE_OLA_MAPS_API_KEY || '';
 
 export interface RouteDirectionsResult {
   coordinates: [number, number][];

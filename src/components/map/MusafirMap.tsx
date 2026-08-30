@@ -154,7 +154,7 @@ const createStopDotIcon = () => {
 
 interface MusafirMapProps {
   vehicles: Vehicle[];
-  userLocation: LiveLocationData;
+  userLocation: LiveLocationData | null;
   onSelectLocationOnMap: (lat: number, lng: number, name?: string, type?: 'origin' | 'dest') => void;
   themeMode: string;
   isOffline?: boolean;
@@ -170,7 +170,7 @@ interface MusafirMapProps {
 const MapController: React.FC<{
   originCoords: [number, number] | null;
   destCoords: [number, number] | null;
-  userLocation: LiveLocationData;
+  userLocation: LiveLocationData | null;
   onMapClick: (lat: number, lng: number) => void;
 }> = ({ originCoords, destCoords, userLocation, onMapClick }) => {
   const map = useMap();
@@ -528,8 +528,8 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           onMapClick={handleMapClick}
         />
 
-        {/* Google Maps Roadmap Tile Layer (Default) */}
-        {!isOffline && mapLayerStyle === 'google-roadmap' && (
+        {/* Google Maps Roadmap Tile Layer */}
+        {!isOffline && Boolean(GOOGLE_MAPS_API_KEY) && mapLayerStyle === 'google-roadmap' && (
           <TileLayer
             attribution='&copy; <a href="https://maps.google.com">Google Maps</a>'
             url={`https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${GOOGLE_MAPS_API_KEY}`}
@@ -538,7 +538,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         )}
 
         {/* Google Maps Satellite / Hybrid Imagery */}
-        {!isOffline && mapLayerStyle === 'google-hybrid' && (
+        {!isOffline && Boolean(GOOGLE_MAPS_API_KEY) && mapLayerStyle === 'google-hybrid' && (
           <TileLayer
             attribution='&copy; <a href="https://maps.google.com">Google Maps Satellite</a>'
             url={`https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${GOOGLE_MAPS_API_KEY}`}
@@ -547,7 +547,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         )}
 
         {/* Google Maps Live Traffic Overlay */}
-        {!isOffline && mapLayerStyle === 'google-traffic' && (
+        {!isOffline && Boolean(GOOGLE_MAPS_API_KEY) && mapLayerStyle === 'google-traffic' && (
           <TileLayer
             attribution='&copy; <a href="https://maps.google.com">Google Maps Traffic</a>'
             url={`https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}&key=${GOOGLE_MAPS_API_KEY}`}
@@ -556,7 +556,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         )}
 
         {/* Google Maps Terrain Elevation View */}
-        {!isOffline && mapLayerStyle === 'google-terrain' && (
+        {!isOffline && Boolean(GOOGLE_MAPS_API_KEY) && mapLayerStyle === 'google-terrain' && (
           <TileLayer
             attribution='&copy; <a href="https://maps.google.com">Google Maps Terrain</a>'
             url={`https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}&key=${GOOGLE_MAPS_API_KEY}`}
@@ -564,8 +564,8 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
-        {/* Fallback OSM Layer */}
-        {!isOffline && mapLayerStyle === 'osm' && (
+        {/* Fallback / OSM Layer (Rendered when selected or when Google Key is not configured) */}
+        {!isOffline && (!GOOGLE_MAPS_API_KEY || mapLayerStyle === 'osm') && (
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

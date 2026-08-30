@@ -5,7 +5,7 @@ import { LiveLocationData } from '../../services/geolocationService';
 
 interface MobileLiveMapProps {
   vehicles: Vehicle[];
-  userLocation: LiveLocationData;
+  userLocation: LiveLocationData | null;
   originCoords: [number, number] | null;
   destCoords: [number, number] | null;
   originQuery: string;

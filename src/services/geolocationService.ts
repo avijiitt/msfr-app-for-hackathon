@@ -15,20 +15,12 @@ type ErrorCallback = (error: string) => void;
 
 class GeolocationService {
   private watchId: number | null = null;
-  private currentLocation: LiveLocationData = {
-    lat: 20.2961,
-    lng: 85.8245, // Default India location (Bhubaneswar Hub)
-    accuracy: 10,
-    heading: null,
-    speed: null,
-    timestamp: Date.now(),
-    address: 'Bhubaneswar Central, Odisha, India',
-  };
+  private currentLocation: LiveLocationData | null = null;
   private isTracking = false;
   private listeners: LocationCallback[] = [];
 
-  public getLocation(): LiveLocationData {
-    return { ...this.currentLocation };
+  public getLocation(): LiveLocationData | null {
+    return this.currentLocation ? { ...this.currentLocation } : null;
   }
 
   public isTrackingActive(): boolean {
@@ -37,16 +29,18 @@ class GeolocationService {
 
   public subscribe(callback: LocationCallback): () => void {
     this.listeners.push(callback);
-    callback(this.currentLocation);
+    if (this.currentLocation) {
+      callback(this.currentLocation);
+    }
     return () => {
       this.listeners = this.listeners.filter((cb) => cb !== callback);
     };
   }
 
-  public async getCurrentLivePosition(): Promise<LiveLocationData> {
-    return new Promise((resolve) => {
+  public async getCurrentLivePosition(): Promise<LiveLocationData | null> {
+    return new Promise((resolve, reject) => {
       if (!('geolocation' in navigator)) {
-        resolve(this.currentLocation);
+        reject(new Error('Geolocation not supported'));
         return;
       }
 
@@ -57,8 +51,8 @@ class GeolocationService {
         },
         (err) => {
           console.warn('Geolocation direct fetch error:', err.message);
-          // If browser GPS is denied/timeout, use central hub
-          resolve(this.currentLocation);
+          // Return null on failure instead of spoofing a fake location
+          resolve(null);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -135,6 +129,7 @@ class GeolocationService {
   }
 
   private notifyListeners(): void {
+    if (!this.currentLocation) return;
     for (const cb of this.listeners) {
       cb(this.currentLocation);
     }

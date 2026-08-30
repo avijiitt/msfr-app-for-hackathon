@@ -379,8 +379,10 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                       type="button"
                       onClick={async () => {
                         const loc = await geolocationService.getCurrentLivePosition();
-                        const name = getHumanReadableLocationName(loc.lat, loc.lng);
-                        setOriginLocation(`${name.replace('Pinned Location ', '')}, Bhubaneswar`);
+                        if (loc) {
+                          const name = getHumanReadableLocationName(loc.lat, loc.lng);
+                          setOriginLocation(`${name.replace('Pinned Location ', '')}`);
+                        }
                       }}
                       className="text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-1"
                     >
