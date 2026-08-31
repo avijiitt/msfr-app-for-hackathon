@@ -385,115 +385,68 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
         )}
       </div>
 
-      <div className="glass-panel p-3.5 rounded-2xl border border-blue-200/70 dark:border-blue-900/60 bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/60 dark:from-blue-950/40 dark:via-slate-900/80 dark:to-indigo-950/30 shadow-sm space-y-2.5">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm font-extrabold shadow-sm shadow-blue-600/30">
-              🚍
+        {/* ─── Top Instant Ride Booking Action Bar ─── */}
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-2xl p-3 text-white shadow-lg shadow-blue-600/30 flex items-center justify-between gap-3 mt-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-base flex-shrink-0">
+              🎫
             </div>
-            <div>
-              <h3 className="font-black text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
-                <span>Mo Bus Network & CRUT Hub</span>
-                <span className="bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-md">
-                  60+ Routes
-                </span>
-              </h3>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                All lines (09–94) • AC & Non-AC • Feeder EV
-              </span>
+            <div className="min-w-0">
+              <div className="text-[10px] font-extrabold uppercase opacity-85 leading-none">Instant Route Booking</div>
+              <div className="text-xs font-black truncate mt-0.5">
+                Route {selectedCardId === 'fastest' ? primaryRoute : selectedCardId === 'cheapest' ? altRoute : thirdRoute}: {cleanFrom} → {cleanTo}
+              </div>
             </div>
           </div>
 
-          {onOpenBusRoutes && (
+          <button
+            onClick={() => onTrackTrip({ selectedCardId, primaryRoute, cleanFrom, cleanTo })}
+            className="px-3.5 py-1.5 rounded-xl bg-white text-blue-700 hover:bg-blue-50 font-black text-xs shadow-sm active:scale-95 transition whitespace-nowrap flex items-center gap-1"
+          >
+            <span>Book ₹5</span>
+            <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </button>
+        </div>
+
+        {/* ─── Matched Mo Bus Route Options (Brought to the Top) ─── */}
+        <div className="flex flex-col gap-1 mt-3">
+          <div className="flex items-center justify-between">
+            <h1 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-1.5">
+              <span>Matched Mo Bus Routes</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                Live CRUT Sync
+              </span>
+            </h1>
             <button
-              onClick={onOpenBusRoutes}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-extrabold px-3 py-1 rounded-xl shadow-xs active:scale-95 transition flex items-center gap-1"
+              onClick={onOpenFareCalc}
+              className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-0.5"
             >
-              <span>Explore</span>
-              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              <span>Fare Calc</span>
             </button>
-          )}
+          </div>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+            <span className="font-bold text-slate-800 dark:text-slate-200">{cleanFrom}</span>
+            <span className="material-symbols-outlined text-[12px]">arrow_forward</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">{cleanTo}</span>
+          </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-1.5 pt-1">
-          <button
-            onClick={onOpenBusRoutes}
-            className="p-2 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 text-left hover:border-blue-500 transition active:scale-95 shadow-2xs"
-          >
-            <span className="material-symbols-outlined text-blue-600 text-[18px] block mb-0.5">
-              route
-            </span>
-            <div className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
-              All 60+ Routes
-            </div>
-            <div className="text-[9px] text-slate-500 dark:text-slate-400">
-              Routes 09–94
-            </div>
-          </button>
-
-          <button
-            onClick={onOpenFareCalc}
-            className="p-2 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 text-left hover:border-blue-500 transition active:scale-95 shadow-2xs"
-          >
-            <span className="material-symbols-outlined text-emerald-600 text-[18px] block mb-0.5">
-              calculate
-            </span>
-            <div className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
-              Fare Calculator
-            </div>
-            <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">
-              ₹5 Pass / Stages
-            </div>
-          </button>
-
-          <button
-            onClick={handleRequestLiveGPS}
-            className="p-2 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 text-left hover:border-blue-500 transition active:scale-95 shadow-2xs"
-          >
-            <span className="material-symbols-outlined text-indigo-600 text-[18px] block mb-0.5">
-              gps_fixed
-            </span>
-            <div className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
-              Live GPS Pin
-            </div>
-            <div className="text-[9px] text-slate-500 dark:text-slate-400">
-              Accurate Bay Lock
-            </div>
-          </button>
+        {/* Corridor Quick Picks */}
+        <div className="glass-panel p-2 rounded-2xl flex items-center gap-1.5 overflow-x-auto hide-scrollbar shadow-xs mt-1">
+          <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-[11px] font-bold whitespace-nowrap pl-1">
+            <span className="material-symbols-outlined text-[14px]">route</span>
+            <span>Corridor:</span>
+          </div>
+          {getNearbyLocationsAlongCorridor(originQuery, destQuery).slice(0, 6).map((loc) => (
+            <button
+              key={loc.id}
+              onClick={() => onSelectDestination(loc.name)}
+              className="px-2.5 py-0.8 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[11px] font-bold border border-slate-200 dark:border-slate-700 hover:border-blue-500 whitespace-nowrap active:scale-95 shadow-2xs transition"
+            >
+              {loc.name.split('/')[0].trim()}
+            </button>
+          ))}
         </div>
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <h1 className="font-extrabold text-lg text-slate-900 dark:text-white">
-            Matched Mo Bus Routes
-          </h1>
-          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
-            Live CRUT Sync
-          </span>
-        </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-          <span className="font-bold text-slate-800 dark:text-slate-200">{cleanFrom}</span>
-          <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-          <span className="font-bold text-slate-800 dark:text-slate-200">{cleanTo}</span>
-        </p>
-      </div>
-
-      <div className="glass-panel p-2.5 rounded-2xl flex items-center gap-2 overflow-x-auto hide-scrollbar shadow-xs">
-        <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs font-bold whitespace-nowrap pl-1">
-          <span className="material-symbols-outlined text-[16px]">route</span>
-          <span>Corridor:</span>
-        </div>
-        {getNearbyLocationsAlongCorridor(originQuery, destQuery).slice(0, 6).map((loc) => (
-          <button
-            key={loc.id}
-            onClick={() => onSelectDestination(loc.name)}
-            className="px-3 py-1 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 hover:border-blue-500 whitespace-nowrap active:scale-95 shadow-2xs transition"
-          >
-            {loc.name.split('/')[0].trim()}
-          </button>
-        ))}
-      </div>
 
       <div className="grid grid-cols-1 gap-3.5">
         <div

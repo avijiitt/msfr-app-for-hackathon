@@ -236,6 +236,124 @@ class SOSService {
     };
   }
 
+  public triggerMidRoadMedicalEmergency(
+    currentCoords: [number, number],
+    nearestStationName: string,
+    emergencyType: 'accident' | 'cardiac' | 'trauma' | 'general' = 'accident'
+  ) {
+    this.isSosActive = true;
+    const dispatchId = 'MED-EMG-' + Math.floor(100000 + Math.random() * 900000);
+    const googleMapsLink = `https://maps.google.com/?q=${currentCoords[0].toFixed(5)},${currentCoords[1].toFixed(5)}`;
+    const trackingLink = `https://msfr.app/live/medical-emergency/${dispatchId}`;
+
+    const emergencyTypeLabels: Record<string, string> = {
+      accident: '🚗 Roadside Accident / High-Impact Collision',
+      cardiac: '❤️ Cardiac / Sudden Chest Pain & Stroke',
+      trauma: '🩸 Severe Trauma / Heavy Blood Loss',
+      general: '🚨 Critical Mid-Road Medical Emergency',
+    };
+
+    const typeLabel = emergencyTypeLabels[emergencyType] || '🚨 Critical Medical Emergency';
+
+    const alertMessage = `🚨 [URGENT: MID-ROAD MEDICAL EMERGENCY & ACCIDENT DISPATCH] 🚨\nType: ${typeLabel}\nPatient: ${this.profile.name} (${this.profile.phone || 'Commuter'})\nLocation: Mid-Road near ${nearestStationName}\nGPS Coordinates: ${currentCoords[0].toFixed(5)}, ${currentCoords[1].toFixed(5)}\nGoogle Maps Pin: ${googleMapsLink}\nLive Ambulance Tracking: ${trackingLink}\nBlood Group: ${this.profile.bloodGroup || 'O+'}\nMedical Notes: ${this.profile.medicalNotes || 'None'}\n\nAmbulance 108 and nearest trauma response teams notified. Immediate roadside green corridor requested.`;
+
+    const traumaCenters = [
+      {
+        id: 'aiims-bbsr',
+        name: 'AIIMS Bhubaneswar Level-1 Trauma Center',
+        phone: '0674-2476789',
+        emergencyDirect: '108',
+        address: 'Sijua, Patrapada, Bhubaneswar',
+        lat: 20.2312,
+        lng: 85.7766,
+        facilities: ['24x7 Advanced Trauma ICU', 'Blood Bank (All Groups)', 'Neuro & Ortho Surgery'],
+      },
+      {
+        id: 'kims-hospital',
+        name: 'KIMS Super Specialty Hospital & Emergency',
+        phone: '0674-2725472',
+        emergencyDirect: '0674-2725314',
+        address: 'Kushabhadra Campus 5, Patia, Bhubaneswar',
+        lat: 20.3544,
+        lng: 85.8153,
+        facilities: ['24x7 Cardiac Cath Lab', 'Emergency Resuscitation', 'Burn & Trauma Unit'],
+      },
+      {
+        id: 'apollo-hospital',
+        name: 'Apollo Hospitals Emergency & Trauma Care',
+        phone: '0674-6661066',
+        emergencyDirect: '1066',
+        address: 'Plot No. 251, Sainik School Road, Bhubaneswar',
+        lat: 20.3061,
+        lng: 85.8340,
+        facilities: ['Rapid Response Ambulance Unit', 'Critical Care Flight/ICU', 'Comprehensive Stroke Center'],
+      },
+      {
+        id: 'sum-hospital',
+        name: 'SUM Ultimate Medicare & Trauma Care',
+        phone: '0674-2386281',
+        emergencyDirect: '0674-3500500',
+        address: 'K8 Kalinga Nagar, Ghatikia, Bhubaneswar',
+        lat: 20.2798,
+        lng: 85.7725,
+        facilities: ['Level-1 Emergency Care', 'Advanced Multi-Organ ICU', '24x7 Emergency Pharmacy'],
+      },
+      {
+        id: 'capital-hospital',
+        name: 'Capital Hospital State Central Emergency',
+        phone: '0674-2391983',
+        emergencyDirect: '108',
+        address: 'Unit 6, Ganga Nagar, Bhubaneswar',
+        lat: 20.2644,
+        lng: 85.8286,
+        facilities: ['Government Emergency Trauma', '24x7 Free Ambulance Hub', 'State Blood Transfusion Unit'],
+      },
+    ];
+
+    // Compute distance to each trauma center from current coordinates
+    const hospitalsWithDistance = traumaCenters.map((h) => {
+      const dLat = (h.lat - currentCoords[0]) * 111;
+      const dLng = (h.lng - currentCoords[1]) * 111 * Math.cos((currentCoords[0] * Math.PI) / 180);
+      const distKm = Math.sqrt(dLat * dLat + dLng * dLng);
+      return {
+        ...h,
+        distanceKm: Math.round(distKm * 10) / 10,
+        estimatedAmbulanceMinutes: Math.max(3, Math.round(distKm * 2.2)),
+      };
+    }).sort((a, b) => a.distanceKm - b.distanceKm);
+
+    return {
+      dispatchId,
+      alertMessage,
+      googleMapsLink,
+      emergencyType: typeLabel,
+      hospitals: hospitalsWithDistance,
+      primaryAmbulance: '108',
+      policeEmergency: '112',
+      nationalHighwayHelpline: '1033',
+      bloodGroup: this.profile.bloodGroup || 'O+',
+      medicalNotes: this.profile.medicalNotes || '',
+      firstAidProtocols: [
+        {
+          title: '🚨 Step 1: Ensure Mid-Road Safety First',
+          desc: 'Turn on vehicle hazard lights immediately. Place warning triangle or cones 30m behind the vehicle. Move uninjured passengers off the active driving lane.',
+        },
+        {
+          title: '🛑 Step 2: Control Severe Bleeding',
+          desc: 'Apply firm, continuous direct pressure with a clean cloth or bandage directly over any open wound. Elevate bleeding limb if no fracture is suspected.',
+        },
+        {
+          title: '🛡️ Step 3: Spinal & Neck Protection',
+          desc: 'DO NOT move or twist the patient’s head or neck if high-speed vehicle impact or fall occurred, unless immediate fire/explosion danger exists.',
+        },
+        {
+          title: '💨 Step 4: Clear Airway & Monitor Breathing',
+          desc: 'Loosen tight collar, belt, or helmets gently. If patient is unresponsive and not breathing normally, begin Hands-Only CPR in the center of the chest at 100-120 beats/min.',
+        },
+      ],
+    };
+  }
+
   public cancelEmergencySOS() {
     this.isSosActive = false;
   }

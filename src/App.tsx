@@ -11,6 +11,8 @@ import { IndiaLocationResult, indiaGeocodingService, geocodeAddressIndia } from 
 import { getStopCoordinates, getExactStopCoordinates } from './data/busRoutesData';
 
 
+import { ArrowRight } from 'lucide-react';
+
 // Redesigned Musafir Layout & Core Components
 import { MusafirHeader } from './components/layout/MusafirHeader';
 import { MusafirSidebar, MusafirSidebarTab } from './components/layout/MusafirSidebar';
@@ -515,7 +517,45 @@ export const App: React.FC = () => {
             </main>
           ) : (
             <>
-              <main className="flex-1 flex flex-col gap-6 min-w-0">
+              <main className="flex-1 flex flex-col gap-4 min-w-0">
+                {/* ─── Top Instant Ride Booking Bar (Brought to the Top) ─── */}
+                <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-3xl p-4 text-white shadow-xl shadow-blue-600/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl flex-shrink-0">
+                      🎫
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-md">
+                          Live CRUT Booking
+                        </span>
+                        <span className="text-xs font-black">
+                          {originQuery || 'Current Location'} → {destQuery || 'Select Destination'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] opacity-90 font-medium mt-0.5">
+                        Mo Bus Fleet & Feeder EV • 1-Tap QR Booking • ₹5 Student Pass / Digital Transit Pass
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <button
+                      onClick={() => setIsFareCalcOpen(true)}
+                      className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs transition border border-white/20"
+                    >
+                      Fare Calculator
+                    </button>
+                    <button
+                      onClick={handleStartNavigation}
+                      className="px-4 py-2 rounded-xl bg-white text-blue-700 hover:bg-blue-50 font-black text-xs shadow-md active:scale-95 transition flex items-center gap-1.5"
+                    >
+                      <span>⚡ Instant Book & Navigate</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
                 <MusafirMap
                   vehicles={vehicles}
                   userLocation={userLocation}
