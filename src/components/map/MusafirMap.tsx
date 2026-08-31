@@ -34,54 +34,6 @@ interface MusafirMapProps {
   isGpsActive?: boolean;
 }
 
-// Leaflet Vehicle Pin Icon
-const createLeafletVehicleIcon = (vehicle: Vehicle) => {
-  const isDelayed = vehicle.delaySeconds > 60;
-  const isPink = vehicle.routeId === 'PINK-EV';
-  const isMetro = vehicle.mode === 'metro';
-  const emoji = isPink ? '⚡' : isMetro ? '🚇' : '🚍';
-  const ringColor = isDelayed ? '#ef4444' : isPink ? '#ec4899' : isMetro ? '#f59e0b' : '#3b82f6';
-  const routeBadge = vehicle.routeId.replace('MB-', '');
-
-  return L.divIcon({
-    className: 'custom-vehicle-icon',
-    html: `
-      <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
-        <div style="
-          width: 34px; 
-          height: 34px; 
-          border-radius: 50%; 
-          background: #0f172a; 
-          border: 2px solid ${ringColor}; 
-          box-shadow: 0 0 12px ${ringColor}80;
-          display: flex; 
-          align-items: center; 
-          justify-content: center;
-          font-size: 16px;
-        ">
-          ${emoji}
-        </div>
-        <div style="
-          position: absolute; 
-          bottom: -14px; 
-          background: rgba(15, 23, 42, 0.95); 
-          color: #f8fafc; 
-          font-size: 9px; 
-          font-weight: 800; 
-          padding: 1px 5px; 
-          border-radius: 4px; 
-          border: 1px solid rgba(59, 130, 246, 0.4); 
-          white-space: nowrap;
-        ">
-          R-${routeBadge}
-        </div>
-      </div>
-    `,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-  });
-};
-
 const createLeafletPinIcon = (pinColor: string, symbol: string) => {
   return L.divIcon({
     className: 'custom-pin-icon',
@@ -326,55 +278,24 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
             />
           </>
         )}
-
-        {/* ─── Live Transit Fleet Vehicles ─── */}
-        {vehicles.map((v) => (
-          <Marker key={v.id} position={[v.lat, v.lng]} icon={createLeafletVehicleIcon(v)}>
-            <Popup>
-              <div className="text-xs font-sans p-1 text-slate-900 min-w-[170px]">
-                <div className="flex items-center justify-between">
-                  <strong className="font-extrabold text-blue-600">Mo Bus Route {v.routeId}</strong>
-                  <span className="text-[10px] bg-slate-100 px-1.5 py-0.2 rounded font-bold">
-                    {v.speedKmH || 35} km/h
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-600 mt-1">
-                  <strong>Next:</strong> {v.nextStopName || 'Approaching Bay'}
-                </div>
-                <div className="text-[11px] text-slate-600">
-                  <strong>Occupancy:</strong> <span className="capitalize font-bold">{v.occupancy || 'moderate'}</span>
-                </div>
-                <div className={`text-[10px] mt-1 font-bold ${v.delaySeconds > 60 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                  {v.delaySeconds > 60 ? `⚠️ Delay: ~${Math.round(v.delaySeconds / 60)}m` : '✓ On Time (Live GPS)'}
-                </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
       </MapContainer>
 
-      {/* ─── Top-Left Live Status Overlay ─── */}
-      <div className="absolute top-3.5 left-3.5 z-[1000] flex flex-col gap-2 pointer-events-none">
-        <div className="pointer-events-auto bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-slate-700/60 shadow-xl flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[11px] font-black text-white">
-            {mapLayerStyle === 'google-traffic' ? '🚦 Google Live Traffic: Active' : '🗺️ Google Maps: Active'}
+      {/* ─── Top-Left Compact Single-Line Live Status (No Overlap) ─── */}
+      <div className="absolute top-3 left-3 z-[1000] pointer-events-none">
+        <div className="pointer-events-auto bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700/60 shadow-lg flex items-center gap-2 text-white">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[11px] font-black">
+            {mapLayerStyle === 'google-traffic' ? '🚦 Live Traffic' : '🗺️ Google Map'}
           </span>
-          <span className="text-[9px] bg-blue-600 text-white font-extrabold px-1.5 py-0.2 rounded-md">
-            Live Stream
-          </span>
+          {routeSummary && (
+            <>
+              <span className="text-slate-600">•</span>
+              <span className="text-[11px] font-bold text-blue-400">
+                {routeSummary.distanceKm} km (~{routeSummary.durationMins}m)
+              </span>
+            </>
+          )}
         </div>
-
-        {routeSummary && (
-          <div className="pointer-events-auto bg-blue-600/95 backdrop-blur-md text-white px-3.5 py-2 rounded-2xl shadow-xl flex items-center gap-3 animate-in fade-in">
-            <div>
-              <div className="text-[10px] font-bold uppercase opacity-80">Route Corridor</div>
-              <div className="text-xs font-black">
-                {routeSummary.distanceKm} km • ~{routeSummary.durationMins} mins
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ─── Top-Right Layer Switcher Controls ─── */}
