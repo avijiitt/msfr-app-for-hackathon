@@ -1,129 +1,149 @@
-# 🚌 Musafir (मुसाफ़िर / ମୁସାଫିର)
-### Next-Gen Smart Multi-Modal Urban Mobility & Transit Ecosystem
+<div align="center">
 
-[![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![React](https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-3.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Leaflet](https://img.shields.io/badge/Leaflet_Maps-Realtime-199900?style=for-the-badge&logo=leaflet&logoColor=white)](https://leafletjs.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-Auth_%26_PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+# 🚌 **MUSAFIR** `(मुसाफ़िर / ମୁସାଫିର)`
+### 🌐 **Next-Gen 3D Smart Multi-Modal Urban Mobility & AI Transit Ecosystem**
 
----
+<p align="center">
+  <b>Unifying Mo Bus, Feeder EVs, Regional Metro, Dynamic Fare Engine, Mid-Road Medical SOS & Smart AI Cargo Logistics into One High-Performance Experience.</b>
+</p>
 
-## 🌟 Overview
+[![Live Demo](https://img.shields.io/badge/⚡_Live_Production_App-Click_Here-3B82F6?style=for-the-badge&logo=vercel&logoColor=white)](https://msfr-app-for-hackathon.vercel.app/)
+[![GitHub Repo](https://img.shields.io/badge/⭐_Star_on_GitHub-avijiitt%2Fmsfr--app--for--hackathon-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/avijiitt/msfr-app-for-hackathon)
 
-**Musafir** is a unified, intelligent, multi-modal urban transit application engineered for smart cities. Built primarily around the comprehensive **CRUT (Capital Region Urban Transport)** network covering Bhubaneswar, Cuttack, and Puri, Musafir seamlessly connects **Mo Bus**, **Mo E-Ride / Auto-Rickshaws**, **Suburban Local Trains**, **Shared Cabs**, and **Bike Taxis** into one cohesive passenger experience.
+<br/>
 
----
+[![React 19](https://img.shields.io/badge/React-19.x-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.x-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Google Maps](https://img.shields.io/badge/Google_Maps-Live_Traffic-4285F4?style=flat-square&logo=googlemaps&logoColor=white)](https://mapsplatform.google.com/)
+[![Leaflet Maps](https://img.shields.io/badge/Leaflet-Vector_Engine-199900?style=flat-square&logo=leaflet&logoColor=white)](https://leafletjs.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Auth_%26_PostgreSQL-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Google Gemini AI](https://img.shields.io/badge/Google_Gemini-2.5_Flash-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
 
-## ✨ Core Features & Modules
-
-### 1. 🗺️ Real-Time Map & GPS Fleet Tracking
-- **Interactive GPS Fleet Simulator:** Live animated buses and e-rickshaws with dynamic real-time speeds, occupancy levels, and next-stop ETAs.
-- **Dedicated Live Radar HUD:** 1-tap **Live Fleet Tracking [ON / OFF]** switch that pauses or resumes live simulation without refreshing the app.
-- **Auto-Zoom Lock:** Smart viewport control ensuring manual zoom levels (in/out) remain 100% preserved during vehicle movement ticks.
-
-### 2. 🧮 Smart Fare Calculator & Dynamic Distance Engine
-- **Auto-Calculated Road Distance:** Select any of the 30+ verified urban localities (Master Canteen, KIIT, Infocity, Baramunda ISBT, Airport, etc.) or type custom places — road distance is calculated automatically using Great-Circle geospatial geometry.
-- **Multi-Modal Fare Comparison:** Compares official ticket prices across Mo Bus AC Electric, Mo Bus Ordinary, Auto/E-Rickshaw, Cabs, Bike Taxi, and Local Trains with student/senior concession rates.
-- **Manual Distance Override:** Fine-tune distance using an interactive slider.
-
-### 3. 🛡️ Women & Passenger Safety Hub
-- **Instant Emergency SOS:** 1-tap SOS trigger broadcasting GPS coordinates to police (112), Women Helpline (1091), and emergency contacts with audible siren alarm.
-- **Live Family Location Sharing:** Generates secure real-time tracking links with route progress and vehicle ID.
-- **Digital Medical ID:** Critical health data (blood group, allergies, emergency contacts) accessible on lock screen.
-
-### 4. 🎟️ TransitPay, Passes & Digital Trip History
-- **Digital E-Tickets & QR Receipts:** Verified ticket records with unique booking references (`#MSFR-...`), route details, duration, fare paid, and carbon offset (`kg CO₂ saved`).
-- **Student & Senior Transit Passes:** Integrated pass application and concession verification.
-- **1-Tap Re-Book:** Instant re-routing from past journey activity.
-
-### 5. 📦 Smart Transit-Assisted Parcel Delivery
-- **Crowdsourced Intra-City Logistics:** Send lightweight parcels via existing transit corridors with automated locker/station hub selection and live tracking.
-
-### 6. 🤖 Musafir AI (Multilingual Voice & Chat Assistant)
-- **Natural Language Transit Planner:** Understands complex transit queries in **English, Hindi, Odia (ଓଡ଼ିଆ), Bengali, Telugu, Tamil, and Marathi**.
-- **Action Execution:** Automatically triggers route searches, fare calculations, wallet top-ups, and SOS actions directly from natural conversations.
-
-### 7. 🏪 500m Hyperlocal Amenities Discovery
-- **Corridor-Aware Verified Stores:** Dynamically discovers 24x7 pharmacies, grocery stores, food hubs, and clinics strictly within 500 meters of the chosen origin or destination stop.
+</div>
 
 ---
 
-## 🛠️ Architecture & Tech Stack
+## ⚡ **Quick Access & Deployment**
+- 🚀 **Live Production URL:** [msfr-app-for-hackathon.vercel.app](https://msfr-app-for-hackathon.vercel.app/)
+- 📦 **GitHub Repository:** [github.com/avijiitt/msfr-app-for-hackathon](https://github.com/avijiitt/msfr-app-for-hackathon)
+- 🏙️ **Primary Smart Transit Network:** Capital Region Urban Transport (CRUT) — Bhubaneswar, Cuttack & Puri Corridors
+
+---
+
+## 🌌 **The Urban Mobility Bottleneck & The Musafir Solution**
 
 ```
-musafir/
-├── src/
-│   ├── components/
-│   │   ├── ai/            # Multilingual AI Assistant (Musafir AI)
-│   │   ├── amenities/     # 500m Verified Hyperlocal Stores Drawer
-│   │   ├── auth/          # Supabase Email OTP & Profile Login Modal
-│   │   ├── fare/          # Real-time Multi-modal Fare Calculator Modal
-│   │   ├── journey/       # Multi-Stop Journey & Transit Details Panel
-│   │   ├── layout/        # Sidebar, Header, Mobile Bottom Nav & Drawers
-│   │   ├── map/           # Leaflet GPS Map, Live Radar HUD & Vehicle Markers
-│   │   ├── parcel/        # Smart Intra-City Parcel Booking & Tracking
-│   │   ├── planner/       # Best Routes Carousel (6 Smart Optimization Modes)
-│   │   ├── safety/        # SOS Emergency Hub, Family Share & Medical ID
-│   │   ├── student/       # Concession Pass Management Hub
-│   │   ├── trips/         # Verified Trip History, Receipts & Re-Booking Modal
-│   │   └── wallet/        # Musafir TransitPay Wallet & Bonus Crediting
-│   ├── data/
-│   │   ├── amenities.ts   # Hyperlocal 500m Store Generators
-│   │   └── cities/        # Bhubaneswar 82+ Mo Bus Routes, Stops & Localities
-│   ├── services/
-│   │   ├── fareMatrixService.ts   # Real-world Fare & Distance Calculation
-│   │   ├── olaRoutingService.ts   # Routing, Waypoints & Directions Engine
-│   │   ├── supabaseClient.ts      # Supabase Auth, Profiles & Data Persistence
-│   │   ├── transitSimulator.ts    # Real-time Multi-Vehicle GPS Simulator
-│   │   └── tripService.ts         # User Journey Records & Cloud Sync
-│   └── types/             # Strict TypeScript Models (Transit, Route, Safety, i18n)
+┌────────────────────────────────────────────────────────────────────────┐
+│                        THE URBAN COMMUTE PROBLEM                       │
+│   ❌ Fragmented Transit Apps     ❌ Opaque Fares & Overcharging        │
+│   ❌ No Real-Time EV Radar       ❌ Zero Hyperlocal Stops Integration │
+│   ❌ Unreliable Safety Alerts    ❌ Missing Crowdsourced Cargo         │
+└────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                       THE MUSAFIR SOLUTION 🚀                          │
+│   ✅ 1-Tap Multi-Modal Planner   ✅ Dynamic Great-Circle Fare Matrix   │
+│   ✅ 3D HUD Live GPS Fleet Radar ✅ 500m Verified Hyperlocal Radar     │
+│   ✅ Instant Medical & SOS Siren ✅ AI Multilingual Transit Assistant  │
+│   ✅ Mo Bus Individual Cargo     ✅ Smart Route Load Balancing         │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+**Musafir** solves the fragmented public transit problem by uniting **Mo Bus (60+ active corridors)**, **Mo E-Ride EVs**, **Local Trains**, **Auto Rickshaws**, and **Shared Cabs** into a single cohesive, high-performance web dashboard & mobile application.
+
+---
+
+## 💎 **Core Features & 3D Interactive Capabilities**
+
+### 🛰️ 1. 3D Floating HUD & Live GPS Fleet Simulator
+- **Live Traffic Flow & Tile Switcher:** Real-time Google Traffic layers, roadmaps, satellite hybrid, and terrain modes in a sleek floating glassmorphic dock.
+- **Smart GPS Telemetry:** Live-calculated road distances (`km`), trip durations (`mins`), and dynamic vehicle markers.
+- **Viewport Auto-Lock:** Preserves manual user zoom & pan states without jitter during real-time GPS telemetry updates.
+
+### 🚑 2. Mid-Road Medical Emergency & Trauma SOS
+- **1-Tap Direct National Dispatch:** Free Ambulance 108, Police 112 with Green Corridor signal override, and Highway Helpline 1033.
+- **Trauma Center Registry:** AIIMS Bhubaneswar, KIMS, Apollo, SUM Ultimate, and Capital Hospital sorted by live distance with 1-tap calling.
+- **Bystander First-Aid Protocols:** On-screen guide for accident trauma, bleeding control, and spinal precautions.
+
+### 🤖 3. Multilingual AI Assistant (`Musafir AI`)
+- **Natural Language Transit Voice & Text:** Query routes, calculate fares, book passes, or trigger emergency SOS in **English, Hindi, Odia (ଓଡ଼ିଆ), Bengali, Telugu, Tamil, & Marathi**.
+- **Action Execution:** Automatically parses user intent and executes in-app actions without friction.
+
+### 🧮 4. Intelligent Multi-Modal Fare Engine
+- **Precise Geodesic Distance Matrix:** Computes exact travel distances between 30+ verified urban hubs & custom pin coordinates.
+- **Side-by-Side Fare Comparison:** Compares Mo Bus AC Electric, Ordinary Bus, E-Rickshaws, Cabs, Bike Taxis, and Suburban Rail with student/senior concession rates.
+
+### 📦 5. Mo Bus Cargo & Multi-Drop Logistics Optimization
+- **Individual Parcel Weight Selection:** Select quick weights (`0.5 kg` to `50 kg`) or custom decimal kg with live cargo rate cards.
+- **Traveling Salesperson (TSP) Optimization:** Real-time multi-stop sequence planning with energy/fuel saving metrics.
+
+---
+
+## 🏗️ **System Architecture & Data Flow**
+
+```mermaid
+graph TD
+    User([👤 Commuter / Passenger]) --> UI[🎨 React 19 + Tailwind CSS Modern UI]
+    
+    subgraph "Core Client Engine"
+        UI --> Map[🗺️ 3D HUD + Live GPS Radar]
+        UI --> AI[🤖 Musafir AI Multilingual Assistant]
+        UI --> Fare[🧮 Dynamic Fare & Distance Engine]
+        UI --> Safety[🚑 Mid-Road SOS & Trauma Dispatch]
+        UI --> Cargo[📦 Mo Bus Cargo & TSP Logistics]
+    end
+    
+    subgraph "External Cloud Services"
+        Map --> GoogleMaps[📡 Google Maps Live Traffic & Tiles]
+        Map --> OlaRouting[🛣️ Routing & Waypoint Engine]
+        AI --> Gemini[🧠 Google Gemini AI Platform]
+        Safety --> GeoService[📍 Geolocation & Reverse Geocoding]
+        Cargo --> Supabase[⚡ Supabase PostgreSQL Database]
+    end
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🛠️ **Tech Stack & Engineering Highlights**
 
-### Prerequisites
-- **Node.js**: v18.0.0 or higher
-- **npm** or **yarn** or **pnpm**
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/avijiitt/msfr-app-for-hackathon.git
-   cd msfr-app-for-hackathon
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Configure Environment Variables (Optional):**
-   Create a `.env` file in the root directory:
-   ```env
-   VITE_SUPABASE_URL=your_supabase_project_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-
-4. **Start Development Server:**
-   ```bash
-   npm run dev
-   ```
-
-5. **Build for Production:**
-   ```bash
-   npm run build
-   ```
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend Framework** | `React 19` + `TypeScript 5` | Reactive, ultra-responsive UI |
+| **Build & Bundler** | `Vite 6` + `Rolldown` | Sub-second hot reloads & optimized production chunks |
+| **Styling & 3D Glass** | `Tailwind CSS 3.4` | Glassmorphism, 3D cards, dark mode |
+| **Mapping Engine** | `Google Maps Platform` + `Leaflet 1.9` | Live traffic flow, satellite imagery, O-D polylines |
+| **AI Intelligence** | `Google Gemini 2.5 Flash` | Multilingual NLP assistant & transit route reasoning |
+| **Backend & Storage** | `Supabase` + `PostgreSQL` | Real-time booking ledger, offline sync |
+| **Icons & Visuals** | `Lucide React` + `Google Material Symbols` | Modern UI symbology |
 
 ---
 
-## 👥 Hackathon Team & Contribution
+## 🚀 **Local Setup & Development**
 
-Developed with ❤️ for urban mobility, carbon reduction, and passenger safety.
-- **Live Demo:** [Vercel Deployment](https://msfr-app-for-hackathon.vercel.app/)
-- **Repository:** [GitHub: avijiitt/msfr-app-for-hackathon](https://github.com/avijiitt/msfr-app-for-hackathon)
+```bash
+# 1. Clone the repository
+git clone https://github.com/avijiitt/msfr-app-for-hackathon.git
+cd msfr-app-for-hackathon
 
+# 2. Install dependencies
+npm install
+
+# 3. Create your environment file
+cp .env.example .env
+# Add your VITE_GOOGLE_MAPS_API_KEY and VITE_GEMINI_API_KEY
+
+# 4. Start the development server
+npm run dev
+
+# 5. Build for production
+npm run build
+```
+
+---
+
+<div align="center">
+  <b>Built with ❤️ for Indian Urban Mobility & Hackathon 2026</b>
+</div>

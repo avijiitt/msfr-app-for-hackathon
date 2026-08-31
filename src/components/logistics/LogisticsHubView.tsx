@@ -152,14 +152,38 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 block mb-1">Parcel Weight (Kg)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={newWeight}
-                  onChange={(e) => setNewWeight(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-emerald-500"
-                />
+                <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                  Individual Parcel Weight (Kg)
+                </label>
+                <div className="flex flex-wrap gap-1 mb-1.5">
+                  {['0.5', '1.0', '2.5', '5.0', '10.0', '20.0', '35.0'].map((w) => (
+                    <button
+                      key={w}
+                      type="button"
+                      onClick={() => setNewWeight(w)}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold transition ${
+                        newWeight === w
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {w} kg
+                    </button>
+                  ))}
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    max="50"
+                    placeholder="Enter custom parcel weight (e.g. 3.5)"
+                    value={newWeight}
+                    onChange={(e) => setNewWeight(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                  <span className="absolute right-3 top-2 text-[10px] text-slate-400 font-bold">KG</span>
+                </div>
               </div>
 
               <button
@@ -225,8 +249,38 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
                     <div>
                       <div className="text-xs font-black text-slate-900 dark:text-white">{wp.recipientName}</div>
                       <div className="text-xs text-slate-500 truncate max-w-xs sm:max-w-md">{wp.address}</div>
-                      <div className="text-[10px] text-slate-400 font-bold mt-0.5">
-                        📦 {wp.packageWeightKg} kg • Window: {wp.timeWindow || 'Standard Delivery'}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-slate-400 font-bold">
+                          📦 Weight:
+                        </span>
+                        <div className="inline-flex items-center gap-1 bg-white dark:bg-slate-700 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-600">
+                          <button
+                            onClick={() => {
+                              const updated = waypoints.map(w => w.id === wp.id ? { ...w, packageWeightKg: Math.max(0.5, +(w.packageWeightKg - 0.5).toFixed(1)) } : w);
+                              setWaypoints(updated);
+                            }}
+                            className="text-xs font-bold text-slate-500 hover:text-emerald-600 px-1"
+                            title="Decrease weight"
+                          >
+                            -
+                          </button>
+                          <span className="text-xs font-black font-mono text-emerald-600 dark:text-emerald-400">
+                            {wp.packageWeightKg} kg
+                          </span>
+                          <button
+                            onClick={() => {
+                              const updated = waypoints.map(w => w.id === wp.id ? { ...w, packageWeightKg: Math.min(50, +(w.packageWeightKg + 0.5).toFixed(1)) } : w);
+                              setWaypoints(updated);
+                            }}
+                            className="text-xs font-bold text-slate-500 hover:text-emerald-600 px-1"
+                            title="Increase weight"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <span className="text-[9px] text-slate-400">
+                          (₹{Math.ceil(wp.packageWeightKg / 0.5) * 10} Mo Bus Cargo)
+                        </span>
                       </div>
                     </div>
                   </div>

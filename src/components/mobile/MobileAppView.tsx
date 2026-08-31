@@ -13,6 +13,7 @@ import { IndiaLocationResult } from '../../services/indiaGeocodingService';
 import { TransportationHubView } from '../transportation/TransportationHubView';
 import { LogisticsHubView } from '../logistics/LogisticsHubView';
 import { CommunityHubView } from '../community/CommunityHubView';
+import { translations } from '../../data/translations';
 
 interface MobileAppViewProps {
   originQuery: string;
@@ -80,6 +81,8 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
 
   const [activeTab, setActiveTab] = useState<MobileTab>('home');
   const [isRideDetailsOpen, setIsRideDetailsOpen] = useState(false);
+
+  const t = translations[currentLang] || translations.en;
 
   const handleTabChange = (tab: MobileTab) => {
     setActiveTab(tab);
@@ -168,6 +171,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
             onOpenAlerts={onOpenAlerts}
             onUseLiveGps={onUseLiveGps}
             isGpsActive={isGpsActive}
+            t={t}
           />
         )}
       </main>

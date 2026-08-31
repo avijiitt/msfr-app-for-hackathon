@@ -113,7 +113,7 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
       status: 'booked',
       createdAt: 'Just now',
       estimatedDelivery: deliveryType === 'express'
-        ? 'Today in 35-45 mins (Express Mo Bus Courier)'
+        ? 'Today Express (Mo Bus Courier)'
         : deliveryType === 'doorstep'
         ? 'Today in 60-90 mins (Doorstep Delivery)'
         : 'Ready for Pickup at Locker Hub in 40 mins',
@@ -126,7 +126,7 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in">
+    <div className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in">
       <div className="max-w-xl w-full bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 text-slate-900 dark:text-white space-y-4 border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -321,7 +321,7 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                       }`}
                     >
                       <Truck className="w-4 h-4" />
-                      <span className="text-[11px] font-extrabold">45-Min Express</span>
+                      <span className="text-[11px] font-extrabold">Express</span>
                       <span className="text-[10px] text-emerald-600 font-bold">₹25 / 0.5kg</span>
                     </button>
                   </div>
@@ -471,12 +471,12 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                   </div>
                 )}
 
-                {/* Package Weight & Pricing Breakdown (Max 50kg) */}
+                {/* Package Weight & Pricing Breakdown (Individual Weight Selection up to 50kg) */}
                 <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Package Weight (Max 50 kg)</span>
-                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">🛡️ Includes safe transit & tamper protection</span>
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Individual Parcel Weight (Max 50 kg)</span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">🛡️ Mo Bus Cargo Transit Protection Included</span>
                     </div>
                     <div className="text-right">
                       <span className="text-[10px] text-slate-400 block uppercase font-bold">Total Fare</span>
@@ -486,8 +486,9 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                     </div>
                   </div>
 
+                  {/* Quick Select Weight Chips */}
                   <div className="flex flex-wrap gap-1.5 items-center">
-                    {[0.5, 1.0, 2.5, 5.0, 10.0, 25.0, 50.0].map((w) => (
+                    {[0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 50.0].map((w) => (
                       <button
                         key={w}
                         type="button"
@@ -501,6 +502,26 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                         {w} kg
                       </button>
                     ))}
+                  </div>
+
+                  {/* Custom Individual Weight Input */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <label className="text-[11px] font-bold text-slate-500 whitespace-nowrap">Custom Weight:</label>
+                    <div className="relative flex-1 max-w-[130px]">
+                      <input
+                        type="number"
+                        min="0.1"
+                        max="50"
+                        step="0.1"
+                        value={weightKg}
+                        onChange={(e) => setWeightKg(Math.max(0.1, Math.min(50, parseFloat(e.target.value) || 0.5)))}
+                        className="w-full py-1 px-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold font-mono focus:border-blue-500 focus:outline-none"
+                      />
+                      <span className="absolute right-2 top-1 text-[11px] text-slate-400 font-bold">kg</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      ({halfKgUnits} × 0.5kg units)
+                    </span>
                   </div>
 
                   <div className="text-[10px] text-slate-400">

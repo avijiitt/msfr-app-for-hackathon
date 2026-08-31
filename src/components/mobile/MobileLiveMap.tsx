@@ -14,6 +14,7 @@ interface MobileLiveMapProps {
   onSelectLocationOnMap: (lat: number, lng: number, name?: string, type?: 'origin' | 'dest') => void;
   onBackToPlanner?: () => void;
   onOpenRideDetails?: () => void;
+  isAnyModalOpen?: boolean;
 }
 
 export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
@@ -27,6 +28,7 @@ export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
   onSelectLocationOnMap,
   onBackToPlanner,
   onOpenRideDetails,
+  isAnyModalOpen = false,
 }) => {
   const nearbyStops = [
     { id: '1', name: 'Jayadev Vihar Square', walkMins: 2, distanceM: 150, routes: ['Route 10', 'Route 11'] },
@@ -72,6 +74,7 @@ export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
           destCoords={destCoords}
           originName={originQuery}
           destinationName={destQuery}
+          isAnyModalOpen={isAnyModalOpen}
         />
       </div>
 

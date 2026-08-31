@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { getNearbyLocationsAlongCorridor, getHumanReadableLocationName } from '../../data/cities/bhubaneswar';
 import { findMoBusRoutesDynamic } from '../../data/busRoutesData';
 import { indiaGeocodingService, geocodeAddressIndia, IndiaLocationResult, POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
+import { TranslationDictionary } from '../../types/i18n';
 
 interface MobileTripPlannerProps {
   originQuery: string;
@@ -18,6 +19,7 @@ interface MobileTripPlannerProps {
   onOpenAlerts?: () => void;
   onUseLiveGps?: () => void;
   isGpsActive?: boolean;
+  t?: TranslationDictionary;
 }
 
 export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
@@ -35,6 +37,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
   onOpenAlerts,
   onUseLiveGps,
   isGpsActive = false,
+  t,
 }) => {
   const [selectedCardId, setSelectedCardId] = useState<'fastest' | 'cheapest' | 'eco'>('fastest');
   

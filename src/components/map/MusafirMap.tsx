@@ -155,11 +155,11 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
     : (userLocation && userLocation.lat ? [userLocation.lat, userLocation.lng] : [20.2961, 85.8245]);
 
   return (
-    <div className="relative w-full h-[420px] sm:h-[500px] lg:h-[580px] rounded-3xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-800 transition-all bg-slate-900">
+    <div className="relative w-full h-[420px] sm:h-[500px] lg:h-[580px] rounded-3xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-800 transition-all bg-slate-900 z-0 isolate">
       <MapContainer
         center={mapCenter}
         zoom={13}
-        className="w-full h-full"
+        className="w-full h-full z-0"
         zoomControl={false}
       >
         <MapController
@@ -169,7 +169,6 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         />
 
         {/* ─── Google Maps Tile Layer Engines ─── */}
-        {/* 1. Google Maps Live Traffic (Default) */}
         {!isOffline && mapLayerStyle === 'google-traffic' && (
           <TileLayer
             attribution='&copy; <a href="https://maps.google.com">Google Maps Live Traffic</a>'
@@ -178,7 +177,6 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
-        {/* 2. Google Maps Standard Roadmap */}
         {!isOffline && mapLayerStyle === 'google-roadmap' && (
           <TileLayer
             attribution='&copy; <a href="https://maps.google.com">Google Maps</a>'
@@ -187,7 +185,6 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
-        {/* 3. Google Maps Satellite / Hybrid */}
         {!isOffline && mapLayerStyle === 'google-hybrid' && (
           <TileLayer
             attribution='&copy; <a href="https://maps.google.com">Google Maps Satellite</a>'
@@ -196,7 +193,6 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
-        {/* 4. Google Maps Terrain */}
         {!isOffline && mapLayerStyle === 'google-terrain' && (
           <TileLayer
             attribution='&copy; <a href="https://maps.google.com">Google Maps Terrain</a>'
@@ -205,7 +201,6 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
-        {/* 5. Fallback OpenStreetMap */}
         {!isOffline && mapLayerStyle === 'osm' && (
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -280,78 +275,79 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         )}
       </MapContainer>
 
-      {/* ─── Top-Left Compact Single-Line Live Status (No Overlap) ─── */}
-      <div className="absolute top-3 left-3 z-[1000] pointer-events-none">
-        <div className="pointer-events-auto bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700/60 shadow-lg flex items-center gap-2 text-white">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[11px] font-black">
-            {mapLayerStyle === 'google-traffic' ? '🚦 Live Traffic' : '🗺️ Google Map'}
-          </span>
-          {routeSummary && (
-            <>
-              <span className="text-slate-600">•</span>
-              <span className="text-[11px] font-bold text-blue-400">
-                {routeSummary.distanceKm} km (~{routeSummary.durationMins}m)
-              </span>
-            </>
-          )}
+      {/* ─── Top 3D Floating Control Bar (Hidden when modals are open) ─── */}
+      {!isAnyModalOpen && (
+        <div className="absolute top-3.5 left-3.5 right-3.5 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+          <div className="pointer-events-auto bg-slate-900/90 dark:bg-slate-950/90 backdrop-blur-xl px-3.5 py-1.5 rounded-full border border-slate-700/70 shadow-2xl flex items-center gap-2 text-white">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" />
+            <span className="text-[11px] font-black tracking-tight">
+              {mapLayerStyle === 'google-traffic' ? '🚦 Live Traffic' : '🗺️ Google Map'}
+            </span>
+            {routeSummary && (
+              <>
+                <span className="text-slate-600 font-bold">•</span>
+                <span className="text-[11px] font-bold text-sky-400">
+                  {routeSummary.distanceKm} km (~{routeSummary.durationMins}m)
+                </span>
+              </>
+            )}
+          </div>
+
+          <div className="pointer-events-auto flex items-center gap-1 bg-slate-900/90 dark:bg-slate-950/90 backdrop-blur-xl p-1 rounded-2xl border border-slate-700/70 shadow-2xl">
+            <button
+              onClick={() => setMapLayerStyle('google-traffic')}
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1 transition-all ${
+                mapLayerStyle === 'google-traffic'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20 scale-100'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+              title="Google Live Traffic Flow"
+            >
+              <span>🚦 Traffic</span>
+            </button>
+
+            <button
+              onClick={() => setMapLayerStyle('google-roadmap')}
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all ${
+                mapLayerStyle === 'google-roadmap'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 scale-100'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+              title="Google Roadmap"
+            >
+              Road
+            </button>
+
+            <button
+              onClick={() => setMapLayerStyle('google-hybrid')}
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all ${
+                mapLayerStyle === 'google-hybrid'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 scale-100'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+              title="Google Satellite / Hybrid"
+            >
+              Satellite
+            </button>
+
+            <button
+              onClick={() => setMapLayerStyle('google-terrain')}
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all ${
+                mapLayerStyle === 'google-terrain'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 scale-100'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+              title="Google Terrain"
+            >
+              Terrain
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* ─── Top-Right Layer Switcher Controls ─── */}
-      <div className="absolute top-3.5 right-3.5 z-[1000] flex items-center gap-1 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700/60 shadow-xl">
-        <button
-          onClick={() => setMapLayerStyle('google-traffic')}
-          className={`px-2.5 py-1 rounded-xl text-[10px] font-black flex items-center gap-1 transition ${
-            mapLayerStyle === 'google-traffic'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-slate-400 hover:text-white'
-          }`}
-          title="Google Live Traffic Flow"
-        >
-          <span>🚦 Traffic</span>
-        </button>
-
-        <button
-          onClick={() => setMapLayerStyle('google-roadmap')}
-          className={`px-2.5 py-1 rounded-xl text-[10px] font-black transition ${
-            mapLayerStyle === 'google-roadmap'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-slate-400 hover:text-white'
-          }`}
-          title="Google Roadmap"
-        >
-          Road
-        </button>
-
-        <button
-          onClick={() => setMapLayerStyle('google-hybrid')}
-          className={`px-2.5 py-1 rounded-xl text-[10px] font-black transition ${
-            mapLayerStyle === 'google-hybrid'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-slate-400 hover:text-white'
-          }`}
-          title="Google Satellite / Hybrid"
-        >
-          Satellite
-        </button>
-
-        <button
-          onClick={() => setMapLayerStyle('google-terrain')}
-          className={`px-2.5 py-1 rounded-xl text-[10px] font-black transition ${
-            mapLayerStyle === 'google-terrain'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-slate-400 hover:text-white'
-          }`}
-          title="Google Terrain"
-        >
-          Terrain
-        </button>
-      </div>
+      )}
 
       {/* ─── Interactive Clicked Pin Action Banner ─── */}
-      {clickedPin && (
-        <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:max-w-md z-[1000] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl border-2 border-blue-500 shadow-2xl animate-in slide-in-from-bottom-2">
+      {!isAnyModalOpen && clickedPin && (
+        <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:max-w-md z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl border-2 border-blue-500 shadow-2xl animate-in slide-in-from-bottom-2">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-rose-500" />
