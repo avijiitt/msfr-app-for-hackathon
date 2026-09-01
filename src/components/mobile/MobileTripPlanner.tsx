@@ -190,6 +190,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
   const thirdRoute = r3 ? r3.route.route : 'Feeder EV';
   const thirdFrom = r3 ? r3.fromStop : cleanFrom;
   const thirdTo = r3 ? r3.toStop : cleanTo;
+  const thirdStopsCount = r3 ? r3.stopCount : 5;
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -389,7 +390,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
       </div>
 
         {/* ─── Top Instant Ride Booking Action Bar ─── */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-2xl p-3 text-white shadow-lg shadow-blue-600/30 flex items-center justify-between gap-3 mt-3">
+        <div className="bg-gradient-to-r from-violet-700 via-purple-700 to-indigo-700 rounded-2xl p-3 text-white shadow-lg shadow-violet-700/25 flex items-center justify-between gap-3 mt-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-base flex-shrink-0">
               🎫
@@ -404,7 +405,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
 
           <button
             onClick={() => onTrackTrip({ selectedCardId, primaryRoute, cleanFrom, cleanTo })}
-            className="px-3.5 py-1.5 rounded-xl bg-white text-blue-700 hover:bg-blue-50 font-black text-xs shadow-sm active:scale-95 transition whitespace-nowrap flex items-center gap-1"
+            className="px-3.5 py-1.5 rounded-xl bg-white text-violet-800 hover:bg-violet-50 font-black text-xs shadow-sm active:scale-95 transition whitespace-nowrap flex items-center gap-1"
           >
             <span>Book ₹5</span>
             <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -414,15 +415,15 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
         {/* ─── Matched Mo Bus Route Options (Brought to the Top) ─── */}
         <div className="flex flex-col gap-1 mt-3">
           <div className="flex items-center justify-between">
-            <h1 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-1.5">
+            <h1 className="font-extrabold text-base text-slate-900 dark:text-violet-100 flex items-center gap-1.5">
               <span>Matched Mo Bus Routes</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800">
                 Live CRUT Sync
               </span>
             </h1>
             <button
               onClick={onOpenFareCalc}
-              className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-0.5"
+              className="text-[11px] font-bold text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-0.5"
             >
               <span>Fare Calc</span>
             </button>
@@ -435,8 +436,8 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
         </div>
 
         {/* Corridor Quick Picks */}
-        <div className="glass-panel p-2 rounded-2xl flex items-center gap-1.5 overflow-x-auto hide-scrollbar shadow-xs mt-1">
-          <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-[11px] font-bold whitespace-nowrap pl-1">
+        <div className="glass-panel p-2 rounded-2xl flex items-center gap-1.5 overflow-x-auto hide-scrollbar shadow-xs mt-1 dark:bg-[#161026] dark:border-[#2B1D47]">
+          <div className="flex items-center gap-1 text-violet-600 dark:text-violet-400 text-[11px] font-bold whitespace-nowrap pl-1">
             <span className="material-symbols-outlined text-[14px]">route</span>
             <span>Corridor:</span>
           </div>
@@ -444,7 +445,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
             <button
               key={loc.id}
               onClick={() => onSelectDestination(loc.name)}
-              className="px-2.5 py-0.8 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[11px] font-bold border border-slate-200 dark:border-slate-700 hover:border-blue-500 whitespace-nowrap active:scale-95 shadow-2xs transition"
+              className="px-2.5 py-0.8 rounded-full bg-white dark:bg-[#20153B] text-slate-700 dark:text-violet-200 text-[11px] font-bold border border-slate-200 dark:border-[#382361] hover:border-violet-500 whitespace-nowrap active:scale-95 shadow-2xs transition"
             >
               {loc.name.split('/')[0].trim()}
             </button>
@@ -452,35 +453,36 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
         </div>
 
       <div className="grid grid-cols-1 gap-3.5">
+        {/* ── Route 1: Fastest Direct AC ── */}
         <div
           onClick={() => setSelectedCardId('fastest')}
           className={`glass-panel rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden transition-all cursor-pointer ${
             selectedCardId === 'fastest'
-              ? 'border-2 border-blue-600 dark:border-blue-500 shadow-md ring-2 ring-blue-600/20'
-              : 'border border-slate-200 dark:border-slate-800 opacity-90'
+              ? 'border-2 border-violet-500 dark:border-violet-400 shadow-lg shadow-violet-500/15 ring-2 ring-violet-500/20 dark:bg-[#1F143B]'
+              : 'border border-slate-200 dark:border-[#2B1D47] dark:bg-[#161026] opacity-90 hover:opacity-100'
           }`}
         >
           {selectedCardId === 'fastest' && (
-            <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-black px-3 py-0.5 rounded-bl-xl shadow-xs">
+            <div className="absolute top-0 right-0 bg-violet-600 text-white text-[10px] font-black px-3 py-0.5 rounded-bl-xl shadow-xs">
               Selected
             </div>
           )}
 
           <div className="flex justify-between items-start">
-            <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 px-2.5 py-0.5 rounded-full text-xs font-extrabold">
+            <div className="flex items-center gap-1.5 bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 px-2.5 py-0.5 rounded-full text-xs font-extrabold border border-violet-200 dark:border-violet-800/60">
               <span className="material-symbols-outlined text-[14px]">bolt</span>
               <span>Direct Mo Bus AC Express</span>
             </div>
-            <span className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400">
+            <span className="text-[11px] font-extrabold text-violet-600 dark:text-violet-300">
               {primaryStopsCount} Stoppages
             </span>
           </div>
 
           <div>
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight">
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-violet-100 leading-tight">
               Route {primaryRoute}: {primaryFrom} – {primaryTo}
             </h3>
-            <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-0.5">
+            <p className="text-xs text-violet-600 dark:text-violet-400 font-semibold mt-0.5">
               Mo Bus AC Electric (Route {primaryRoute})
             </p>
           </div>
@@ -500,36 +502,37 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
             </div>
           </div>
 
-          <div className="h-px bg-slate-200/80 dark:bg-slate-800 my-0.5"></div>
+          <div className="h-px bg-slate-200/80 dark:bg-[#2B1D47] my-0.5"></div>
 
           <div className="flex justify-between items-center text-xs font-semibold">
             <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               <span>Direct Line</span>
             </div>
-            <div className="flex items-center gap-1 text-slate-500">
+            <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
               <span className="material-symbols-outlined text-[14px]">directions_bus</span>
               <span>Every 8-10 mins</span>
             </div>
           </div>
         </div>
 
+        {/* ── Route 2: Cheapest Regular Ordinary ── */}
         <div
           onClick={() => setSelectedCardId('cheapest')}
           className={`glass-panel rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden transition-all cursor-pointer ${
             selectedCardId === 'cheapest'
-              ? 'border-2 border-blue-600 dark:border-blue-500 shadow-md ring-2 ring-blue-600/20'
-              : 'border border-slate-200 dark:border-slate-800 opacity-90'
+              ? 'border-2 border-emerald-500 dark:border-emerald-400 shadow-lg shadow-emerald-500/15 ring-2 ring-emerald-500/20 dark:bg-[#142322]'
+              : 'border border-slate-200 dark:border-[#2B1D47] dark:bg-[#161026] opacity-90 hover:opacity-100'
           }`}
         >
           {selectedCardId === 'cheapest' && (
-            <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-black px-3 py-0.5 rounded-bl-xl shadow-xs">
+            <div className="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-black px-3 py-0.5 rounded-bl-xl shadow-xs">
               Selected
             </div>
           )}
 
           <div className="flex justify-between items-start">
-            <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full text-xs font-extrabold">
+            <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full text-xs font-extrabold border border-emerald-200 dark:border-emerald-800/60">
               <span className="material-symbols-outlined text-[14px]">savings</span>
               <span>Mo Bus Ordinary / Non-AC</span>
             </div>
@@ -539,7 +542,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
           </div>
 
           <div>
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight">
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-emerald-100 leading-tight">
               Route {altRoute}: {altFrom} – {altTo}
             </h3>
             <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
@@ -556,98 +559,101 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
             </div>
             <div className="flex flex-col items-end">
               <span className="text-2xl font-black text-slate-900 dark:text-white">
-                ₹{Math.min(20, Math.max(10, altStopsCount * 1.2))}
+                ₹{Math.min(20, Math.max(10, Math.round(altStopsCount * 1.2)))}
               </span>
               <span className="text-[10px] text-slate-500 font-semibold">₹5 Student Pass</span>
             </div>
           </div>
 
-          <div className="h-px bg-slate-200/80 dark:bg-slate-800 my-0.5"></div>
+          <div className="h-px bg-slate-200/80 dark:bg-[#2B1D47] my-0.5"></div>
 
           <div className="flex justify-between items-center text-xs font-semibold">
             <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               <span>All Stop Transit</span>
             </div>
-            <div className="flex items-center gap-1 text-slate-500">
+            <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
               <span className="material-symbols-outlined text-[14px]">schedule</span>
               <span>Every 12 mins</span>
             </div>
           </div>
         </div>
 
+        {/* ── Route 3: Feeder EV & Metro ── */}
         <div
           onClick={() => setSelectedCardId('eco')}
           className={`glass-panel rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden transition-all cursor-pointer ${
             selectedCardId === 'eco'
-              ? 'border-2 border-emerald-600 dark:border-emerald-500 shadow-md ring-2 ring-emerald-600/20'
-              : 'border border-slate-200 dark:border-slate-800 opacity-90'
+              ? 'border-2 border-indigo-500 dark:border-indigo-400 shadow-lg shadow-indigo-500/15 ring-2 ring-indigo-500/20 dark:bg-[#16173B]'
+              : 'border border-slate-200 dark:border-[#2B1D47] dark:bg-[#161026] opacity-90 hover:opacity-100'
           }`}
         >
           {selectedCardId === 'eco' && (
-            <div className="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-black px-3 py-0.5 rounded-bl-xl shadow-xs">
+            <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] font-black px-3 py-0.5 rounded-bl-xl shadow-xs">
               Selected
             </div>
           )}
 
           <div className="flex justify-between items-start">
-            <div className="flex items-center gap-1.5 bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 px-2.5 py-0.5 rounded-full text-xs font-extrabold">
-              <span className="material-symbols-outlined text-[14px]">electric_rickshaw</span>
-              <span>Mo E-Ride Feeder + Mo Bus</span>
+            <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2.5 py-0.5 rounded-full text-xs font-extrabold border border-indigo-200 dark:border-indigo-800/60">
+              <span className="material-symbols-outlined text-[14px]">electric_car</span>
+              <span>Feeder EV & Metro</span>
             </div>
-            <span className="text-[11px] font-extrabold text-cyan-600 dark:text-cyan-400">
-              Doorstep EV
+            <span className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400">
+              {thirdStopsCount} Stoppages
             </span>
           </div>
 
           <div>
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight">
-              Mo E-Ride + Route {thirdRoute}
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-indigo-100 leading-tight">
+              Route {thirdRoute}: {thirdFrom} – {thirdTo}
             </h3>
-            <p className="text-xs text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">
-              Doorstep EV Auto to nearest Mo Bus Stoppage
+            <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
+              Mo E-Ride EV Feeder + Fast Track
             </p>
           </div>
 
           <div className="flex justify-between items-end mt-1">
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-black text-slate-900 dark:text-white">
-                {Math.max(10, primaryStopsCount * 2 - 3)}
+                {Math.max(8, thirdStopsCount * 2 - 2)}
               </span>
               <span className="text-xs font-bold text-slate-500">min</span>
             </div>
             <div className="flex flex-col items-end">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">₹25</span>
-              <span className="text-[10px] text-slate-500 font-semibold">Combined Fare</span>
+              <span className="text-2xl font-black text-slate-900 dark:text-white">
+                ₹{Math.min(25, Math.max(10, thirdStopsCount * 1.5))}
+              </span>
+              <span className="text-[10px] text-slate-500 font-semibold">Zero Emission</span>
             </div>
           </div>
 
-          <div className="h-px bg-slate-200/80 dark:bg-slate-800 my-0.5"></div>
+          <div className="h-px bg-slate-200/80 dark:bg-[#2B1D47] my-0.5"></div>
 
           <div className="flex justify-between items-center text-xs font-semibold">
             <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-              <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
-              <span>First/Last Mile Connect</span>
+              <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+              <span>Multi-Modal Sync</span>
             </div>
-            <div className="flex items-center gap-1 text-slate-500">
+            <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
               <span className="material-symbols-outlined text-[14px]">bolt</span>
-              <span>Zero Emission</span>
+              <span>100% Electric</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 shadow-xs">
+      <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-[#2B1D47] dark:bg-[#161026] space-y-3 shadow-xs">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-blue-600 text-[20px]">bar_chart</span>
-            <h4 className="font-extrabold text-xs text-slate-900 dark:text-white">
+            <span className="material-symbols-outlined text-violet-600 dark:text-violet-400 text-[20px]">bar_chart</span>
+            <h4 className="font-extrabold text-xs text-slate-900 dark:text-violet-100">
               Fare Comparison Matrix
             </h4>
           </div>
           <button
             onClick={onOpenFareCalc}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-xs active:scale-95 transition"
+            className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-sm active:scale-95 transition"
           >
             <span className="material-symbols-outlined text-[16px]">calculate</span>
             <span>Fare Calc</span>
@@ -655,16 +661,16 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-          <div className="bg-blue-50/70 dark:bg-blue-950/40 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900">
-            <div className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">Mo Bus AC Electric (Route {primaryRoute})</div>
+          <div className="bg-violet-50/70 dark:bg-violet-950/40 p-2.5 rounded-xl border border-violet-100 dark:border-violet-900/60">
+            <div className="text-[11px] text-violet-700 dark:text-violet-300 font-bold">Mo Bus AC Electric (Route {primaryRoute})</div>
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">₹15 – ₹30 • AC Trunk</div>
           </div>
-          <div className="bg-emerald-50/70 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900">
+          <div className="bg-emerald-50/70 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900/60">
             <div className="text-[11px] text-emerald-700 dark:text-emerald-300 font-bold">Mo Bus Non-AC (Route {altRoute})</div>
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">₹10 – ₹20 • ₹5 Pass</div>
           </div>
-          <div className="bg-cyan-50/70 dark:bg-cyan-950/40 p-2.5 rounded-xl border border-cyan-100 dark:border-cyan-900">
-            <div className="text-[11px] text-cyan-600 dark:text-cyan-400 font-bold">Mo E-Ride Feeder</div>
+          <div className="bg-indigo-50/70 dark:bg-indigo-950/40 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-900/60">
+            <div className="text-[11px] text-indigo-700 dark:text-indigo-300 font-bold">Mo E-Ride Feeder</div>
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">₹20 – ₹35 • Feeder EV</div>
           </div>
         </div>
@@ -673,7 +679,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
       <div className="pt-2">
         <button
           onClick={() => onTrackTrip({ selectedCardId, primaryRoute, cleanFrom, cleanTo })}
-          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-blue-600/30 flex justify-center items-center gap-2 active:scale-[0.98] transition-all"
+          className="w-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-violet-600/30 flex justify-center items-center gap-2 active:scale-[0.98] transition-all"
         >
           <span className="material-symbols-outlined text-[20px]">near_me</span>
           <span>Track & Sync Trip</span>

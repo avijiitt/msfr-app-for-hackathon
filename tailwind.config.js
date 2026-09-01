@@ -1,4 +1,4 @@
-﻿/** @type {import('tailwindcss').Config} */
+/** @type {import('tailwindcss').Config} */
 export default {
   content: [
     "./index.html",
@@ -9,32 +9,34 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#EFF6FF',
-          100: '#DBEAFE',
-          200: '#BFDBFE',
-          300: '#93C5FD',
-          400: '#60A5FA',
-          500: '#3B82F6',
-          600: '#2563EB', // Primary Musafir Blue
-          700: '#1D4ED8',
-          800: '#1E40AF',
-          900: '#1E3A8A',
+          50: '#F5F3FF',
+          100: '#EDE9FE',
+          200: '#DDD6FE',
+          300: '#C4B5FD',
+          400: '#A78BFA',
+          500: '#8B5CF6',
+          600: '#7C3AED', // Primary Royal Violet
+          700: '#6D28D9',
+          800: '#5B21B6',
+          900: '#4C1D95',
         },
         transit: {
           bus: '#10B981',    // Emerald Green
-          metro: '#2563EB',  // Electric Blue
-          train: '#8B5CF6',  // Purple
-          auto: '#F59E0B',   // Amber
-          walk: '#64748B',   // Slate
+          metro: '#6366F1',  // Indigo Metro
+          train: '#8B5CF6',  // Violet Purple
+          auto: '#F59E0B',   // Warm Amber
+          walk: '#94A3B8',   // Slate
           pink: '#EC4899',   // Women Safe Pink
           danger: '#EF4444', // Alert Red
         },
         surface: {
           light: '#FFFFFF',
           lightSubtle: '#F8FAFC',
-          dark: '#0F172A',
-          darkSubtle: '#1E293B',
-          darkCard: '#131D31',
+          dark: '#0B0813',       // Deep Purplish Obsidian
+          darkSubtle: '#140D24', // Subtle Violet Navy
+          darkCard: '#1B1230',   // Purplish Dark Card
+          darkElevated: '#261A42', // Elevated Glass Popover
+          darkBorder: '#382361', // Soft Violet Border
         }
       },
       fontFamily: {

@@ -13,13 +13,13 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   onTabChange,
 }) => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] flex justify-around items-center px-1.5 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] transition-colors">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0E091C]/95 backdrop-blur-md border-t border-slate-200 dark:border-[#2B1D47] shadow-[0_-4px_20px_rgba(7,4,15,0.2)] flex justify-around items-center px-1.5 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] transition-colors">
       <button
         onClick={() => onTabChange('home')}
         className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-200 active:scale-90 ${
           activeTab === 'home'
-            ? 'text-blue-600 dark:text-blue-400 font-extrabold bg-blue-50 dark:bg-blue-950/60 shadow-inner'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            ? 'text-violet-600 dark:text-violet-300 font-extrabold bg-violet-50 dark:bg-violet-950/60 shadow-inner'
+            : 'text-slate-500 dark:text-violet-200/60 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
         <span className="material-symbols-outlined text-[22px] mb-0.5" style={{ fontVariationSettings: activeTab === 'home' ? "'FILL' 1" : "'FILL' 0" }}>
@@ -32,8 +32,8 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
         onClick={() => onTabChange('transportation')}
         className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-200 active:scale-90 ${
           activeTab === 'transportation'
-            ? 'text-blue-600 dark:text-blue-400 font-extrabold bg-blue-50 dark:bg-blue-950/60 shadow-inner'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            ? 'text-violet-600 dark:text-violet-300 font-extrabold bg-violet-50 dark:bg-violet-950/60 shadow-inner'
+            : 'text-slate-500 dark:text-violet-200/60 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
         <span className="material-symbols-outlined text-[22px] mb-0.5" style={{ fontVariationSettings: activeTab === 'transportation' ? "'FILL' 1" : "'FILL' 0" }}>
