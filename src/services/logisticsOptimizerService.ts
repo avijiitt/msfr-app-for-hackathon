@@ -11,6 +11,7 @@ export interface DeliveryWaypoint {
   lng: number;
   packageWeightKg: number;
   timeWindow?: string;
+  priority?: string;
   status: 'pending' | 'in_transit' | 'delivered';
 }
 
@@ -20,17 +21,17 @@ export interface OptimizedLogisticsPlan {
   fuelOrEnergySavedPercent: number;
   sequencedWaypoints: DeliveryWaypoint[];
   estimatedCostInr: number;
-  vehicleType: '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van' | 'mo_bus_cargo';
+  vehicleType: '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van';
   co2EmissionsKg: number;
   summary: string;
 }
 
 export const SAMPLE_DELIVERY_STOPS: DeliveryWaypoint[] = [
-  { id: 'dp-1', recipientName: 'Dr. Debasis Pattnaik', address: 'Patia / Infocity DLF Tower, Bhubaneswar', lat: 20.3602, lng: 85.8035, packageWeightKg: 2.5, timeWindow: '10:00 - 11:30 AM', status: 'pending' },
-  { id: 'dp-2', recipientName: 'Sneha Mohapatra', address: 'Niladri Vihar / Utkal Hospital, CSPUR', lat: 20.3448, lng: 85.8062, packageWeightKg: 1.2, timeWindow: '11:30 - 01:00 PM', status: 'pending' },
-  { id: 'dp-3', recipientName: 'KIIT Central Store', address: 'KIIT Square Campus 3, Patia', lat: 20.3541, lng: 85.8175, packageWeightKg: 8.0, timeWindow: '01:00 - 02:30 PM', status: 'pending' },
-  { id: 'dp-4', recipientName: 'Manoj Tripathy', address: 'Jayadev Vihar / Pal Heights', lat: 20.3039, lng: 85.8188, packageWeightKg: 3.4, timeWindow: '03:00 - 04:30 PM', status: 'pending' },
-  { id: 'dp-5', recipientName: 'Bhubaneswar IT Hub', address: 'Rasulgarh Square Tech Plaza', lat: 20.2982, lng: 85.8643, packageWeightKg: 5.0, timeWindow: '05:00 - 06:30 PM', status: 'pending' },
+  { id: 'dp-1', recipientName: 'Dr. Debasis Pattnaik', address: 'Patia / Infocity DLF Tower, Bhubaneswar', lat: 20.3602, lng: 85.8035, packageWeightKg: 2.5, priority: 'Standard', timeWindow: '10:00 - 11:30 AM', status: 'pending' },
+  { id: 'dp-2', recipientName: 'Sneha Mohapatra', address: 'Niladri Vihar / Utkal Hospital, CSPUR', lat: 20.3448, lng: 85.8062, packageWeightKg: 1.2, priority: 'Urgent', timeWindow: '11:30 - 01:00 PM', status: 'pending' },
+  { id: 'dp-3', recipientName: 'KIIT Central Store', address: 'KIIT Square Campus 3, Patia', lat: 20.3541, lng: 85.8175, packageWeightKg: 8.0, priority: 'Fragile', timeWindow: '01:00 - 02:30 PM', status: 'pending' },
+  { id: 'dp-4', recipientName: 'Manoj Tripathy', address: 'Jayadev Vihar / Pal Heights', lat: 20.3039, lng: 85.8188, packageWeightKg: 3.4, priority: 'Standard', timeWindow: '03:00 - 04:30 PM', status: 'pending' },
+  { id: 'dp-5', recipientName: 'Bhubaneswar IT Hub', address: 'Rasulgarh Square Tech Plaza', lat: 20.2982, lng: 85.8643, packageWeightKg: 5.0, priority: 'Urgent', timeWindow: '05:00 - 06:30 PM', status: 'pending' },
 ];
 
 /**
@@ -39,7 +40,7 @@ export const SAMPLE_DELIVERY_STOPS: DeliveryWaypoint[] = [
 export function optimizeDeliverySequence(
   originHub: { name: string; lat: number; lng: number },
   waypoints: DeliveryWaypoint[],
-  vehicleType: '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van' | 'mo_bus_cargo' = '2_wheeler_ev'
+  vehicleType: '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van' = '2_wheeler_ev'
 ): OptimizedLogisticsPlan {
   if (waypoints.length === 0) {
     return {

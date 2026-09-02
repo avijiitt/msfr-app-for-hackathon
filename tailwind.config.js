@@ -32,11 +32,11 @@ export default {
         surface: {
           light: '#FFFFFF',
           lightSubtle: '#F8FAFC',
-          dark: '#0B0813',       // Deep Purplish Obsidian
-          darkSubtle: '#140D24', // Subtle Violet Navy
-          darkCard: '#1B1230',   // Purplish Dark Card
-          darkElevated: '#261A42', // Elevated Glass Popover
-          darkBorder: '#382361', // Soft Violet Border
+          dark: '#0B1120',       // Deep Navy/Slate
+          darkSubtle: '#0F172A', // Slate 900
+          darkCard: '#1E293B',   // Slate 800
+          darkElevated: '#334155', // Slate 700
+          darkBorder: '#334155', // Slate 700
         }
       },
       fontFamily: {

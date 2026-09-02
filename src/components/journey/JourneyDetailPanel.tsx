@@ -1,8 +1,56 @@
 import React, { useState } from 'react';
-import { Share2, Bus, Train, Footprints, Clock, Navigation, CheckCircle, ShieldCheck, Ticket, Plus, Trash2, Calendar, Calculator, Sparkles } from 'lucide-react';
+import { 
+  Share2, 
+  Bus, 
+  Train, 
+  Footprints, 
+  Clock, 
+  Navigation, 
+  CheckCircle, 
+  ShieldCheck, 
+  Ticket, 
+  Plus, 
+  Trash2, 
+  Calendar, 
+  Calculator, 
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  MapPin
+} from 'lucide-react';
 import { getNearbyLocationsAlongCorridor, findMatchingMoBusRoutes } from '../../data/cities/bhubaneswar';
 import { TranslationDictionary } from '../../types/i18n';
 import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
+import { MO_BUS_DETAILED_ROUTES } from '../../data/busRoutesData';
+
+// Helper to extract intermediate stops along the matched route
+function getRouteStopsList(routeNum: string, fromName: string, toName: string): string[] {
+  const cleanRoute = (routeNum || '10').replace(/\D/g, '');
+  const found = MO_BUS_DETAILED_ROUTES.find(r => r.route.replace(/\D/g, '') === cleanRoute) || MO_BUS_DETAILED_ROUTES[1]; // fallback Route 10
+  
+  if (!found || !found.stopsList || found.stopsList.length === 0) {
+    return ['Jayadev Vihar', 'Pal Heights', 'Xavier Square', 'Kalinga Hospital', 'Damana Square', 'Patia Square', 'Infocity', 'KIIT Square'];
+  }
+
+  const stops = found.stopsList;
+  const fromLower = fromName.toLowerCase();
+  const toLower = toName.toLowerCase();
+
+  let fromIdx = stops.findIndex(s => s.toLowerCase().includes(fromLower) || fromLower.includes(s.toLowerCase()));
+  let toIdx = stops.findIndex(s => s.toLowerCase().includes(toLower) || toLower.includes(s.toLowerCase()));
+
+  if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
+    if (fromIdx < toIdx) {
+      return stops.slice(fromIdx, toIdx + 1);
+    } else {
+      return stops.slice(toIdx, fromIdx + 1).reverse();
+    }
+  }
+
+  // Fallback: take a relevant slice of 6-10 stops
+  const startAt = fromIdx !== -1 ? fromIdx : 10;
+  return stops.slice(Math.max(0, startAt - 2), Math.min(stops.length, startAt + 8));
+}
 
 interface JourneyDetailPanelProps {
   originName?: string;
@@ -37,6 +85,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   const [viaStops, setViaStops] = useState<string[]>([]);
   const [newStopInput, setNewStopInput] = useState('');
   const [showAddStop, setShowAddStop] = useState(false);
+  const [showStopsDropdown, setShowStopsDropdown] = useState(true);
   const [isTicketPaymentOpen, setIsTicketPaymentOpen] = useState(false);
 
   // Dynamic matched Mo Bus routes
@@ -46,6 +95,12 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
 
   const primaryBus = matchedBus.primarySuggestion || { route: '10', path: 'Bhubaneswar Airport – MANU University' };
   const altBus = matchedBus.directRoutes[1] || matchedBus.connectedRoutes[0] || { route: '11', path: 'Bhubaneswar Railway Station – Nandankanan' };
+
+  // Intermediate Mo Bus Stops along the corridor
+  const activeRouteNum = selectedRouteId === 'route-cheap' ? altBus.route : primaryBus.route;
+  const intermediateMoBusStops = React.useMemo(() => {
+    return getRouteStopsList(activeRouteNum, originName.split(',')[0], destinationName.split(',')[0]);
+  }, [activeRouteNum, originName, destinationName]);
 
   // Dynamic road/transit distance estimation
   const distanceKm = React.useMemo(() => {
@@ -286,10 +341,63 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
                 {cleanFrom} ➔ {isEco ? 'CRUT Electric Interchange' : cleanTo}
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                <span>{Math.round(totalDurationMins * (isEco ? 0.6 : 0.9))} min • {Math.max(3, Math.round(distanceKm * 0.8))} stops</span>
+                <span>{Math.round(totalDurationMins * (isEco ? 0.6 : 0.9))} min • {intermediateMoBusStops.length} Mo Bus stops</span>
                 <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
                   Live: On Time 🟢
                 </span>
+              </div>
+
+              {/* ── All Mo Bus Route Stoppages with Names ── */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowStopsDropdown(!showStopsDropdown)}
+                  className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition"
+                >
+                  <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-extrabold text-[11px]">
+                    <Bus className="w-3.5 h-3.5" />
+                    <span>Mo Bus Stoppages ({intermediateMoBusStops.length} stops)</span>
+                  </span>
+                  <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                    <span>{showStopsDropdown ? 'Hide' : 'View All'}</span>
+                    {showStopsDropdown ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </div>
+                </button>
+
+                {showStopsDropdown && (
+                  <div className="mt-1.5 p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in">
+                    {intermediateMoBusStops.map((stopName, idx) => {
+                      const isFirst = idx === 0;
+                      const isLast = idx === intermediateMoBusStops.length - 1;
+                      return (
+                        <div key={idx} className="flex items-center gap-2 text-[11px] text-slate-700 dark:text-slate-300 py-0.5 group">
+                          <span className={`w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center shrink-0 ${
+                            isFirst 
+                              ? 'bg-blue-600 text-white' 
+                              : isLast 
+                              ? 'bg-red-500 text-white' 
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <span className={`truncate flex-1 font-medium ${isFirst || isLast ? 'font-bold text-slate-900 dark:text-white' : ''}`}>
+                            {stopName}
+                          </span>
+                          {isFirst && (
+                            <span className="text-[9px] font-extrabold px-1.5 py-0.2 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 rounded shrink-0">
+                              Board
+                            </span>
+                          )}
+                          {isLast && (
+                            <span className="text-[9px] font-extrabold px-1.5 py-0.2 bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 rounded shrink-0">
+                              Alight
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
