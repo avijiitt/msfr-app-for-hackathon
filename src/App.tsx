@@ -53,10 +53,6 @@ import { LogisticsHubView } from './components/logistics/LogisticsHubView';
 import { CommunityHubView } from './components/community/CommunityHubView';
 
 
-import { TopNavbar } from './components/layout/TopNavbar';
-import { LeftSidebar, SidebarTab } from './components/layout/LeftSidebar';
-import { DatabaseInspectorModal } from './components/admin/DatabaseInspectorModal';
-
 export const App: React.FC = () => {
   // Theme & Language
   const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
@@ -71,8 +67,7 @@ export const App: React.FC = () => {
   const [isPermissionsOpen, setIsPermissionsOpen] = useState(false);
 
   // Sidebar & Navigation
-  const [activeTab, setActiveTab] = useState<SidebarTab>('plan');
-  const [isDbInspectorOpen, setIsDbInspectorOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<MusafirSidebarTab>('logistics');
 
 
   // Search Origin, Destination & 6 Optimization Modes
@@ -449,21 +444,49 @@ export const App: React.FC = () => {
       {/* ─── Tablet & Desktop 3-Column Modern Workspace ─── */}
       <div className="hidden md:flex flex-col flex-1">
         {/* 1. Top Header */}
-        <TopNavbar
+        <MusafirHeader
+          originQuery={originQuery}
+          setOriginQuery={setOriginQuery}
+          destQuery={destQuery}
+          setDestQuery={setDestQuery}
+          onSearch={handleSearch}
+          onUseLiveGps={handleUseLiveGps}
+          isGpsActive={isGpsActive}
+          isOffline={isOffline}
+          onToggleOffline={() => setIsOffline(!isOffline)}
+          walletBalance={walletBalance}
+          onOpenWallet={() => setIsWalletOpen(true)}
           themeMode={themeMode}
           onToggleTheme={handleToggleTheme}
-          onProfileClick={() => setIsProfileOpen(true)}
-          onOpenDatabase={() => setIsDbInspectorOpen(true)}
+          unreadAlertsCount={3}
+          onOpenAlerts={() => setIsAlertsOpen(true)}
+          onOpenProfile={() => setIsProfileOpen(true)}
+          userInitial={userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
+          userName={userProfile.name}
+          onOriginSelected={handleOriginSelected}
+          onDestSelected={handleDestSelected}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+          onSearchFocusChange={setIsSearchFocused}
+          onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
+          currentLang={currentLang}
+          onOpenLanguageModal={() => setIsLangSelectOpen(true)}
+          t={t}
         />
 
         {/* 2. Main 3-Column Dashboard Body */}
         <div className="flex-1 max-w-[1600px] w-full mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 p-3 sm:p-6 pb-24 lg:pb-6">
           {/* Column 1: Left Aligned Sidebar */}
           <div className="hidden lg:block flex-shrink-0">
-            <LeftSidebar
-              activeTab={activeTab as any}
-              onTabChange={(tab) => handleSidebarTabChange(tab as any)}
-              onOpenDatabase={() => setIsDbInspectorOpen(true)}
+            <MusafirSidebar
+              activeTab={activeTab}
+              onTabChange={handleSidebarTabChange}
+              onOpenNearbyStops={() => setIsAmenitiesOpen(true)}
+              onOpenShareLocation={() => setIsFamilyShareOpen(true)}
+              onOpenSOS={() => setIsSosOpen(true)}
+              onOpenStudent={() => setIsStudentOpen(true)}
+              onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
+              onSelectSavedPlace={(place) => setDestQuery(place)}
+              t={t}
             />
           </div>
 
@@ -597,11 +620,6 @@ export const App: React.FC = () => {
       />
 
       {/* 4. Modals */}
-      <DatabaseInspectorModal
-        isOpen={isDbInspectorOpen}
-        onClose={() => setIsDbInspectorOpen(false)}
-      />
-
       <FareCalculatorModal
         isOpen={isFareCalcOpen}
         onClose={() => setIsFareCalcOpen(false)}

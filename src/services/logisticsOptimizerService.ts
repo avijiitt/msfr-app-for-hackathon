@@ -21,7 +21,7 @@ export interface OptimizedLogisticsPlan {
   fuelOrEnergySavedPercent: number;
   sequencedWaypoints: DeliveryWaypoint[];
   estimatedCostInr: number;
-  vehicleType: '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van';
+  vehicleType: '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van' | 'mo_bus_cargo';
   co2EmissionsKg: number;
   summary: string;
 }
@@ -40,7 +40,7 @@ export const SAMPLE_DELIVERY_STOPS: DeliveryWaypoint[] = [
 export function optimizeDeliverySequence(
   originHub: { name: string; lat: number; lng: number },
   waypoints: DeliveryWaypoint[],
-  vehicleType: '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van' = '2_wheeler_ev'
+  vehicleType: '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van' | 'mo_bus_cargo' = '2_wheeler_ev'
 ): OptimizedLogisticsPlan {
   if (waypoints.length === 0) {
     return {

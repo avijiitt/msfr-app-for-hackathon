@@ -633,8 +633,6 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
             )}
           </button>
 
-
-
           <div
             onClick={onOpenProfile}
             className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center cursor-pointer shadow-sm shadow-blue-500/20 hover:ring-2 hover:ring-blue-500 transition text-sm"
