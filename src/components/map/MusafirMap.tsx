@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, CircleMarker, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import {
   Clock, WifiOff, Layers, X, Navigation, MapPin, CheckCircle2, ArrowRight,
@@ -9,8 +9,8 @@ import { Vehicle } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
 import { getRouteDirections, RouteDirectionsResult } from '../../services/olaRoutingService';
 import { GOOGLE_MAPS_API_KEY } from '../../services/googleMapsService';
-import { getHumanReadableLocationName, getNearbyLocationsAlongCorridor } from '../../data/cities/bhubaneswar';
-import { findMoBusRoutesDynamic, getStopCoordinates } from '../../data/busRoutesData';
+import { getHumanReadableLocationName, BHUBANESWAR_STATIONS } from '../../data/cities/bhubaneswar';
+import { findMoBusRoutesDynamic, STOP_COORDINATES_MAP, getExactStopCoordinates } from '../../data/busRoutesData';
 import { isBhubaneswarRegion } from '../../services/fareMatrixService';
 
 // Fix leaflet default marker paths
@@ -59,45 +59,37 @@ const createLeafletPinIcon = (pinColor: string, symbol: string) => {
   });
 };
 
-const createBusStopIcon = (stopName: string, index: number) => {
-  const shortName = stopName.length > 22 ? stopName.substring(0, 20) + '…' : stopName;
-  return L.divIcon({
-    className: 'custom-bus-stop-icon',
-    html: `
-      <div style="display: flex; flex-direction: column; align-items: center; pointer-events: auto; transform: translate(-50%, -100%);">
-        <div style="
-          background: rgba(15, 23, 42, 0.95);
-          color: #38bdf8;
-          font-size: 10px;
-          font-weight: 800;
-          padding: 2.5px 8px;
-          border-radius: 9999px;
-          border: 1.5px solid rgba(56, 189, 248, 0.6);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-          white-space: nowrap;
-          margin-bottom: 3px;
-          font-family: system-ui, -apple-system, sans-serif;
-          letter-spacing: -0.2px;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        ">
-          <span style="color: #38bdf8; font-size: 11px;">🚏</span>
-          <span>${shortName}</span>
-        </div>
-        <div style="
-          width: 13px;
-          height: 13px;
-          border-radius: 50%;
-          background: #0284c7;
-          border: 2.5px solid #ffffff;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-        "></div>
-      </div>
-    `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
-  });
+// Calculate real surface distance in meters between two coordinates
+const getDistanceInMeters = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const dLat = (lat2 - lat1) * 111320;
+  const dLng = (lng2 - lng1) * 111320 * Math.cos(((lat1 + lat2) / 2 * Math.PI) / 180);
+  return Math.sqrt(dLat * dLat + dLng * dLng);
+};
+
+// Calculate perpendicular/minimum distance from a point to a polyline in meters
+const minDistanceToPolylineMeters = (point: [number, number], polyline: [number, number][]): number => {
+  if (!polyline || polyline.length === 0) return Infinity;
+  if (polyline.length === 1) return getDistanceInMeters(point[0], point[1], polyline[0][0], polyline[0][1]);
+
+  let minD = Infinity;
+  for (let i = 0; i < polyline.length - 1; i++) {
+    const p1 = polyline[i];
+    const p2 = polyline[i + 1];
+    const l2 = (p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2;
+    if (l2 === 0) {
+      const d = getDistanceInMeters(point[0], point[1], p1[0], p1[1]);
+      if (d < minD) minD = d;
+      continue;
+    }
+    let t = ((point[0] - p1[0]) * (p2[0] - p1[0]) + (point[1] - p1[1]) * (p2[1] - p1[1])) / l2;
+    t = Math.max(0, Math.min(1, t));
+    const projLat = p1[0] + t * (p2[0] - p1[0]);
+    const projLng = p1[1] + t * (p2[1] - p1[1]);
+    const d = getDistanceInMeters(point[0], point[1], projLat, projLng);
+    if (d < minD) minD = d;
+    if (minD < 8) return minD; // Stop is virtually on the road segment
+  }
+  return minD;
 };
 
 // Internal Map Controller (handles bounds & camera movement)
@@ -189,7 +181,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
     }
   }, [originCoords, destCoords]);
 
-  // Calculate intermediate Ama Bus stops with coordinates along the corridor
+  // Calculate intermediate Ama Bus stops with coordinates strictly along the route corridor (< 100 meters)
   useEffect(() => {
     if (!originName && !destinationName) {
       setRouteStops([]);
@@ -202,32 +194,107 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
       return;
     }
 
-    const match = findMoBusRoutesDynamic(originName || 'Jayadev Vihar', destinationName || 'KIIT Square');
-    const primary = match.matchedRoutes[0];
-    if (primary && primary.subStops && primary.subStops.length > 0) {
-      const stopsWithCoords: { name: string; coords: [number, number]; idx: number }[] = [];
-      primary.subStops.forEach((stopName, idx) => {
-        const coords = getStopCoordinates(stopName);
-        if (coords && coords[0] && coords[1]) {
-          // Check if not identical to originCoords or destCoords (within ~150m)
-          const isAtOrigin = originCoords && Math.hypot(coords[0] - originCoords[0], coords[1] - originCoords[1]) < 0.002;
-          const isAtDest = destCoords && Math.hypot(coords[0] - destCoords[0], coords[1] - destCoords[1]) < 0.002;
-          if (!isAtOrigin && !isAtDest) {
-            stopsWithCoords.push({ name: stopName, coords, idx: idx + 1 });
-          }
+    // Determine the route polyline to measure distances from
+    const polyline: [number, number][] =
+      routeCoordinates.length > 1
+        ? routeCoordinates
+        : originCoords && destCoords
+        ? [originCoords, destCoords]
+        : [];
+
+    if (polyline.length === 0) {
+      setRouteStops([]);
+      return;
+    }
+
+    // Gather all candidate Ama Bus stops
+    const rawCandidates: { name: string; coords: [number, number] }[] = [];
+
+    // 1. From STOP_COORDINATES_MAP (comprehensive 200+ bus stop network)
+    for (const [key, coords] of Object.entries(STOP_COORDINATES_MAP)) {
+      if (coords && coords[0] && coords[1]) {
+        const formatted = key
+          .split(' ')
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+        rawCandidates.push({ name: formatted, coords });
+      }
+    }
+
+    // 2. From BHUBANESWAR_STATIONS
+    BHUBANESWAR_STATIONS.forEach((station) => {
+      if (station.lat && station.lng) {
+        rawCandidates.push({ name: station.name, coords: [station.lat, station.lng] });
+      }
+    });
+
+    // 3. From dynamic Mo Bus route substops (ONLY if exact coordinates exist, NEVER centroid fallback)
+    const match = findMoBusRoutesDynamic(originName || '', destinationName || '');
+    if (match.matchedRoutes && match.matchedRoutes.length > 0) {
+      match.matchedRoutes.forEach((route) => {
+        if (route.subStops) {
+          route.subStops.forEach((sName) => {
+            const exact = getExactStopCoordinates(sName);
+            if (exact) {
+              rawCandidates.push({ name: sName, coords: exact });
+            }
+          });
         }
       });
-      setRouteStops(stopsWithCoords);
-    } else {
-      const corridor = getNearbyLocationsAlongCorridor(originName || '', destinationName || '');
-      const stopsWithCoords = corridor.slice(0, 8).map((loc, idx) => ({
-        name: loc.name,
-        coords: [loc.lat, loc.lng] as [number, number],
-        idx: idx + 1,
-      }));
-      setRouteStops(stopsWithCoords);
     }
-  }, [originName, destinationName, originCoords, destCoords]);
+
+    // Filter strictly within 100 meters of the active road corridor
+    const MAX_CORRIDOR_METERS = 100;
+    const acceptedStops: { name: string; coords: [number, number]; distFromOrigin: number }[] = [];
+
+    for (const candidate of rawCandidates) {
+      const [cLat, cLng] = candidate.coords;
+
+      // Ensure distance from polyline is <= 100m
+      const distToLine = minDistanceToPolylineMeters(candidate.coords, polyline);
+      if (distToLine > MAX_CORRIDOR_METERS) {
+        continue;
+      }
+
+      // Check distance from origin and destination (exclude if within 70m of endpoints)
+      if (originCoords) {
+        const dOrigin = getDistanceInMeters(cLat, cLng, originCoords[0], originCoords[1]);
+        if (dOrigin < 70) continue;
+      }
+      if (destCoords) {
+        const dDest = getDistanceInMeters(cLat, cLng, destCoords[0], destCoords[1]);
+        if (dDest < 70) continue;
+      }
+
+      // Deduplicate if already within 65m of an already accepted stop
+      const isDuplicate = acceptedStops.some(
+        (acc) => getDistanceInMeters(cLat, cLng, acc.coords[0], acc.coords[1]) < 65
+      );
+      if (isDuplicate) continue;
+
+      // Distance from origin along progress
+      const distFromStart = originCoords
+        ? getDistanceInMeters(cLat, cLng, originCoords[0], originCoords[1])
+        : acceptedStops.length;
+
+      acceptedStops.push({
+        name: candidate.name,
+        coords: candidate.coords,
+        distFromOrigin: distFromStart,
+      });
+    }
+
+    // Sort sequentially from start of route to end
+    acceptedStops.sort((a, b) => a.distFromOrigin - b.distFromOrigin);
+
+    const indexedStops = acceptedStops.map((item, idx) => ({
+      name: item.name,
+      coords: item.coords,
+      idx: idx + 1,
+    }));
+
+    setRouteStops(indexedStops);
+  }, [originName, destinationName, originCoords, destCoords, routeCoordinates]);
 
   const handleMapClick = (lat: number, lng: number) => {
     const readable = getHumanReadableLocationName(lat, lng);
@@ -326,20 +393,32 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           </Marker>
         )}
 
-        {/* ─── Intermediate Ama Bus Stops along Route Corridor ─── */}
+        {/* ─── Intermediate Ama Bus Stops along Route Corridor (Clean Minimal Points within 100m) ─── */}
         {showStops && routeStops.map((stop, i) => (
-          <Marker
+          <CircleMarker
             key={`stop-${stop.name}-${i}`}
-            position={stop.coords}
-            icon={createBusStopIcon(stop.name, stop.idx)}
+            center={stop.coords}
+            radius={5.5}
+            pathOptions={{
+              color: '#0284c7', // Sky-600 outer border
+              fillColor: '#ffffff', // Clean white inner point
+              fillOpacity: 1,
+              weight: 2.5,
+            }}
           >
+            <Tooltip direction="top" offset={[0, -6]} opacity={0.95}>
+              <div className="text-[11px] font-bold text-slate-900 flex items-center gap-1">
+                <span>🚏</span>
+                <span>{stop.name}</span>
+              </div>
+            </Tooltip>
             <Popup>
-              <div className="text-xs font-bold text-slate-900 p-1 min-w-[160px]">
+              <div className="text-xs font-bold text-slate-900 p-1 min-w-[170px]">
                 <div className="flex items-center gap-1 text-sky-600 font-extrabold uppercase text-[10px] mb-0.5">
                   <span>🚏 Ama Bus Stoppage #{stop.idx}</span>
                 </div>
                 <div className="text-xs font-black text-slate-900">{stop.name}</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Scheduled Stop on Route</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Route Corridor Stoppage (&lt;100m)</div>
                 <div className="flex gap-1.5 mt-2 pt-1.5 border-t border-slate-100">
                   <button
                     onClick={() => onSelectLocationOnMap(stop.coords[0], stop.coords[1], stop.name, 'origin')}
@@ -356,7 +435,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
                 </div>
               </div>
             </Popup>
-          </Marker>
+          </CircleMarker>
         ))}
 
         {/* ─── Clicked Temporary Pin ─── */}
