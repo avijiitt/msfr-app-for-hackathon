@@ -62,7 +62,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       setIsListening(true);
       setTimeout(() => {
         setIsListening(false);
-        handleSendMessage('What is the fastest Mo Bus to Patia right now?');
+        handleSendMessage('What is the fastest Ama Bus to Patia right now?');
       }, 2000);
     } else {
       setIsListening(false);

@@ -66,8 +66,8 @@ export const App: React.FC = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(() => !localStorage.getItem('musafir_profile_completed'));
   const [isPermissionsOpen, setIsPermissionsOpen] = useState(false);
 
-  // Sidebar & Navigation
-  const [activeTab, setActiveTab] = useState<MusafirSidebarTab>('logistics');
+  // Sidebar & Navigation (Default to Interactive Map & Plan)
+  const [activeTab, setActiveTab] = useState<MusafirSidebarTab>('plan');
 
 
   // Search Origin, Destination & 6 Optimization Modes
@@ -295,7 +295,8 @@ export const App: React.FC = () => {
       setIsProfileOpen(true);
     } else if (tab === 'trips') {
       setIsTripsOpen(true);
-    } else if (tab === 'tracking') {
+    } else if (tab === 'tracking' || tab === 'plan') {
+      setActiveTab('plan');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -534,7 +535,7 @@ export const App: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-[11px] opacity-90 font-medium mt-0.5">
-                        Mo Bus Fleet & Feeder EV • 1-Tap QR Booking • ₹5 Student Pass / Digital Transit Pass
+                        Ama Bus Fleet & Feeder EV • 1-Tap QR Booking • ₹5 Student Pass / Digital Transit Pass
                       </p>
                     </div>
                   </div>
@@ -809,7 +810,7 @@ export const App: React.FC = () => {
         onClose={() => setIsLangSelectOpen(false)}
       />
 
-      {/* Bus Routes Network Modal (82+ CRUT Mo Bus Lines) */}
+      {/* Bus Routes Network Modal (82+ CRUT Ama Bus Lines) */}
       <BusRoutesModal
         isOpen={isBusRoutesOpen}
         onClose={() => setIsBusRoutesOpen(false)}

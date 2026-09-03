@@ -20,9 +20,9 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     hasParcelLocker: true,
     isCoveredWalkway: true,
     departures: [
-      { routeId: 'MOBUS-10', lineName: 'Mo Bus 10 (AC Electric Trunk)', destination: 'Patia / KIIT / InfoCity', mode: 'bus', etaMinutes: 3, delayMinutes: 0, platform: 'Bay 1', occupancy: 'moderate' },
-      { routeId: 'MOBUS-11', lineName: 'Mo Bus 11 (Affordable Non-AC)', destination: 'Cuttack Badambadi', mode: 'bus', etaMinutes: 6, delayMinutes: 1, platform: 'Bay 2', occupancy: 'low' },
-      { routeId: 'PINK-EV', lineName: 'Women Pink Mo Bus', destination: 'Patia IT Corridor', mode: 'bus', etaMinutes: 8, delayMinutes: 0, platform: 'Bay W (Pink)', occupancy: 'low' },
+      { routeId: 'MOBUS-10', lineName: 'Ama Bus 10 (AC Electric Trunk)', destination: 'Patia / KIIT / InfoCity', mode: 'bus', etaMinutes: 3, delayMinutes: 0, platform: 'Bay 1', occupancy: 'moderate' },
+      { routeId: 'MOBUS-11', lineName: 'Ama Bus 11 (Affordable Non-AC)', destination: 'Cuttack Badambadi', mode: 'bus', etaMinutes: 6, delayMinutes: 1, platform: 'Bay 2', occupancy: 'low' },
+      { routeId: 'PINK-EV', lineName: 'Women Pink Ama Bus', destination: 'Patia IT Corridor', mode: 'bus', etaMinutes: 8, delayMinutes: 0, platform: 'Bay W (Pink)', occupancy: 'low' },
     ],
   },
   {

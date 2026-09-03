@@ -37,7 +37,7 @@ export const BusRoutesModal: React.FC<BusRoutesModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg sm:text-xl font-black tracking-tight">CRUT Mo Bus Route Network</h1>
+                <h1 className="text-lg sm:text-xl font-black tracking-tight">CRUT Ama Bus Route Network</h1>
                 <span className="text-[10px] bg-emerald-500/30 text-emerald-100 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">
                   82+ Official Lines
                 </span>

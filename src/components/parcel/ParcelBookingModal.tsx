@@ -113,7 +113,7 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
       status: 'booked',
       createdAt: 'Just now',
       estimatedDelivery: deliveryType === 'express'
-        ? 'Today Express (Mo Bus Courier)'
+        ? 'Today Express (Ama Bus Courier)'
         : deliveryType === 'doorstep'
         ? 'Today in 60-90 mins (Doorstep Delivery)'
         : 'Ready for Pickup at Locker Hub in 40 mins',
@@ -476,7 +476,7 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Individual Parcel Weight (Max 50 kg)</span>
-                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">🛡️ Mo Bus Cargo Transit Protection Included</span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">🛡️ Ama Bus Cargo Transit Protection Included</span>
                     </div>
                     <div className="text-right">
                       <span className="text-[10px] text-slate-400 block uppercase font-bold">Total Fare</span>

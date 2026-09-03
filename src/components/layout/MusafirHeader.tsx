@@ -570,11 +570,11 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
             <button
               type="button"
               onClick={onOpenBusRoutes}
-              title="Explore all 82+ CRUT Mo Bus Routes"
+              title="Explore all 82+ CRUT Ama Bus Routes"
               className="px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 text-xs font-bold flex items-center gap-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition active:scale-95"
             >
               <Bus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <span className="hidden sm:inline">Mo Bus (82)</span>
+              <span className="hidden sm:inline">Ama Bus (82)</span>
             </button>
           )}
 

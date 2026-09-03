@@ -67,8 +67,7 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   t,
 }) => {
   const mainNav = [
-    { id: 'plan' as MusafirSidebarTab, label: t?.navRoutes || 'Plan & Routes', icon: Navigation2 },
-    { id: 'tracking' as MusafirSidebarTab, label: t?.navMap || 'Live Map', icon: MapPin },
+    { id: 'plan' as MusafirSidebarTab, label: 'Live Map & Trip Plan', icon: MapPin },
     { id: 'transportation' as MusafirSidebarTab, label: 'Transit Hub', icon: Zap, badge: 'Smart' },
     { id: 'logistics' as MusafirSidebarTab, label: 'Logistics Optimizer', icon: Truck, badge: 'TSP' },
     { id: 'community' as MusafirSidebarTab, label: 'Civic Community', icon: Users, badge: 'Feed' },
@@ -85,7 +84,7 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   ];
 
   const quickAccess = [
-    { label: 'Mo Bus (82 Lines)', icon: Bus, color: 'text-blue-600 font-bold', action: onOpenBusRoutes || onOpenNearbyStops },
+    { label: 'Ama Bus (82 Lines)', icon: Bus, color: 'text-blue-600 font-bold', action: onOpenBusRoutes || onOpenNearbyStops },
     { label: 'Nearby Stores', icon: MapPin, color: 'text-emerald-600', action: onOpenNearbyStops },
     { label: t?.studentPass || 'Student Pass', icon: GraduationCap, color: 'text-purple-600', action: onOpenStudent },
     { label: t?.shareLocationFamily || 'Share Trip', icon: Share2, color: 'text-indigo-600', action: onOpenShareLocation },

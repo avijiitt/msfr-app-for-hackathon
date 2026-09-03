@@ -57,7 +57,7 @@ export const AnnouncementsDrawer: React.FC<AnnouncementsDrawerProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Live Traffic, Mo Bus, Metro & BMC Commuter News Feed
+                Live Traffic, Ama Bus, Metro & BMC Commuter News Feed
               </p>
             </div>
           </div>

@@ -99,7 +99,7 @@ export const TripsHistoryModal: React.FC<TripsHistoryModalProps> = ({
             <div className="flex justify-between items-center text-xs">
               <div>
                 <span className="text-white/70 block text-[10px]">ROUTE NAME</span>
-                <span className="font-bold text-sm">{selectedTicket.route_name || 'Mo Bus AC Express'}</span>
+                <span className="font-bold text-sm">{selectedTicket.route_name || 'Ama Bus AC Express'}</span>
               </div>
               <div className="text-right">
                 <span className="text-white/70 block text-[10px]">TICKET REF</span>
@@ -156,7 +156,7 @@ export const TripsHistoryModal: React.FC<TripsHistoryModalProps> = ({
                       {trip.mode === 'auto' ? <Zap className="w-3.5 h-3.5" /> : <Bus className="w-3.5 h-3.5" />}
                     </span>
                     <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
-                      {trip.route_name || 'Mo Bus Transit Route'}
+                      {trip.route_name || 'Ama Bus Transit Route'}
                     </h4>
                     <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold flex-shrink-0">
                       Completed

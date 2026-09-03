@@ -309,7 +309,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
                         <h4 className="font-bold text-xs text-slate-900 dark:text-white">Student Pass Yearly</h4>
                         <span className="text-[9px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-extrabold px-2 py-0.5 rounded-full uppercase">1 Year Unlimited</span>
                       </div>
-                      <p className="text-[11px] text-slate-500">Full 365-day access across all Mo Bus routes for verified students</p>
+                      <p className="text-[11px] text-slate-500">Full 365-day access across all Ama Bus routes for verified students</p>
                       <span className="text-xs font-mono font-extrabold text-blue-600">₹1,700 / year</span>
                     </div>
                   </div>

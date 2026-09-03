@@ -104,7 +104,7 @@ export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
                 Transit Fare Calculator
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Compare official Mo Bus, Auto, Cab & Bike fares for any manual route
+                Compare official Ama Bus (CRUT Slabs), Auto, Cab & Bike fares for any route
               </p>
             </div>
           </div>
@@ -229,7 +229,7 @@ export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
           </div>
         </div>
 
-        {/* 💰 All Available Fares Grid (Mo Bus, Auto, Cab, Bike, Train) */}
+        {/* 💰 All Available Fares Grid (Ama Bus, Auto, Cab, Bike, Train) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {fareData.modes.map((mode, idx) => (
             <div

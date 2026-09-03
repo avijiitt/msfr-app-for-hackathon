@@ -53,7 +53,7 @@ export const MobileRideDetails: React.FC<MobileRideDetailsProps> = ({
         <div>
           <h2 className="font-extrabold text-lg text-slate-900 dark:text-white">Selected Ride Details</h2>
           <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mt-0.5">
-            Mo Bus AC Electric Express (Route 10)
+            Ama Bus AC Electric Express (Route 10)
           </p>
         </div>
 
@@ -121,7 +121,7 @@ export const MobileRideDetails: React.FC<MobileRideDetailsProps> = ({
               <div className="flex justify-between items-start">
                 <div>
                   <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">
-                    Mo Bus Route 10 / 24
+                    Ama Bus Route 10 / 24
                   </h4>
                   <p className="text-[11px] text-slate-500 mt-0.5">
                     {cleanFrom} ➔ {cleanTo}

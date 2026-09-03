@@ -78,7 +78,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
               Multi-Drop Route Optimization & Parcel Dispatch
             </h1>
             <p className="text-emerald-100 text-xs md:text-sm mt-1 max-w-xl font-medium">
-              Traveling Salesperson (TSP) algorithm with Google Maps turn-by-turn routing, fleet capacity management, and Mo Bus cargo transport.
+              Traveling Salesperson (TSP) algorithm with Google Maps turn-by-turn routing, fleet capacity management, and Ama Bus cargo transport.
             </p>
           </div>
 
@@ -103,7 +103,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
                 { id: '2_wheeler_ev', label: '🛵 E-Bike / 2W EV', cap: '25 kg payload' },
                 { id: '3_wheeler_e_loader', label: '🛺 3W E-Loader', cap: '200 kg payload' },
                 { id: 'e_van', label: '🚐 Electric E-Van', cap: '650 kg payload' },
-                { id: 'mo_bus_cargo', label: '🚍 Mo Bus Cargo', cap: 'Inter-hub transit' },
+                { id: 'mo_bus_cargo', label: '🚍 Ama Bus Cargo', cap: 'Inter-hub transit' },
               ].map((v) => (
                 <button
                   key={v.id}
@@ -279,7 +279,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
                           </button>
                         </div>
                         <span className="text-[9px] text-slate-400">
-                          (₹{Math.ceil(wp.packageWeightKg / 0.5) * 10} Mo Bus Cargo)
+                          (₹{Math.ceil(wp.packageWeightKg / 0.5) * 10} Ama Bus Cargo)
                         </span>
                       </div>
                     </div>

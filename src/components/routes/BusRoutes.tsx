@@ -37,7 +37,7 @@ export const BusRoutes: React.FC<BusRoutesProps> = ({ onSelectRoute, onClose }) 
         <div>
           <h2 className="flex items-center gap-2">
             <Bus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <span>CRUT Mo Bus Routes & Stoppages Network</span>
+            <span>CRUT Ama Bus Routes & Stoppages Network</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Comprehensive routes connecting Bhubaneswar, Cuttack, Puri, Khordha, Jatani & Konark

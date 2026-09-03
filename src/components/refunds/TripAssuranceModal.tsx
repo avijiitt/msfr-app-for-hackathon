@@ -60,7 +60,7 @@ export const TripAssuranceModal: React.FC<TripAssuranceModalProps> = ({
               ⏱️ Punctuality Guarantee
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-400">
-              If a <strong>Mo Bus</strong> is delayed by &gt;15 mins, get an automated <strong>₹5 Micro-Refund</strong> credited to your Mo-Wallet.
+              If an <strong>Ama Bus</strong> is delayed by &gt;15 mins, get an automated <strong>₹5 Micro-Refund</strong> credited to your Wallet.
             </p>
           </div>
 
@@ -69,7 +69,7 @@ export const TripAssuranceModal: React.FC<TripAssuranceModalProps> = ({
               ⚡ Missed Connection Assurance
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-400">
-              If an initial feeder/auto delay causes a missed bus, receive an instant <strong>Free Mo E-Ride Voucher</strong>.
+              If an initial feeder/auto delay causes a missed bus, receive an instant <strong>Free Ama E-Ride Voucher</strong>.
             </p>
           </div>
 
@@ -81,13 +81,13 @@ export const TripAssuranceModal: React.FC<TripAssuranceModalProps> = ({
           </div>
         </div>
 
-        {/* 1-Tap Quick Assurance Actions (Punctuality Guarantee & Free Mo E-Ride Voucher) */}
+        {/* 1-Tap Quick Assurance Actions (Punctuality Guarantee & Free Ama E-Ride Voucher) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Action 1: Punctuality Guarantee */}
           <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-extrabold text-xs text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
-                <span>⏱️</span> Punctuality Guarantee (Mo Bus)
+                <span>⏱️</span> Punctuality Guarantee (Ama Bus)
               </span>
               <span className="px-2 py-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 font-bold text-[10px]">
                 +₹5 Instant
@@ -99,9 +99,9 @@ export const TripAssuranceModal: React.FC<TripAssuranceModalProps> = ({
             <button
               type="button"
               onClick={() => {
-                const res = refundService.fileInstantRefund('Mo Bus Route 10 / 24 (Punctuality Guarantee)', 5, 'Severe Delay (>15 mins)');
+                const res = refundService.fileInstantRefund('Ama Bus Route 10 / 24 (Punctuality Guarantee)', 5, 'Severe Delay (>15 mins)');
                 setClaims(refundService.getClaims());
-                setClaimSuccessMsg(`🎉 ₹5 Punctuality Guarantee micro-refund credited to your Mo-Wallet (Claim: ${res.claim.id})!`);
+                setClaimSuccessMsg(`🎉 ₹5 Punctuality Guarantee micro-refund credited to your Wallet (Claim: ${res.claim.id})!`);
                 if (onRefundClaimed) onRefundClaimed(res.newBalance);
               }}
               className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
@@ -121,20 +121,20 @@ export const TripAssuranceModal: React.FC<TripAssuranceModalProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-300">
-              Missed connecting bus due to feeder delay? Get a complimentary <strong>Mo E-Ride EV Voucher</strong> code.
+              Missed connecting bus due to feeder delay? Get a complimentary <strong>Ama E-Ride EV Voucher</strong> code.
             </p>
             <button
               type="button"
               onClick={() => {
-                const voucherCode = 'MOERIDE-FREE-' + Math.floor(1000 + Math.random() * 9000);
-                const res = refundService.fileInstantRefund('Multi-Modal Connection (Mo E-Ride Bridge)', 25, 'Missed Connecting Transfer');
+                const voucherCode = 'AMAERIDE-FREE-' + Math.floor(1000 + Math.random() * 9000);
+                const res = refundService.fileInstantRefund('Multi-Modal Connection (Ama E-Ride Bridge)', 25, 'Missed Connecting Transfer');
                 setClaims(refundService.getClaims());
-                setClaimSuccessMsg(`🎟️ Free Mo E-Ride Voucher generated: ${voucherCode} (₹25 value credited)!`);
+                setClaimSuccessMsg(`🎟️ Free Ama E-Ride Voucher generated: ${voucherCode} (₹25 value credited)!`);
                 if (onRefundClaimed) onRefundClaimed(res.newBalance);
               }}
               className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
             >
-              Get Free Mo E-Ride Voucher
+              Get Free Ama E-Ride Voucher
             </button>
           </div>
         </div>

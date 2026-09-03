@@ -11,6 +11,7 @@ import { getRouteDirections, RouteDirectionsResult } from '../../services/olaRou
 import { GOOGLE_MAPS_API_KEY } from '../../services/googleMapsService';
 import { getHumanReadableLocationName, getNearbyLocationsAlongCorridor } from '../../data/cities/bhubaneswar';
 import { findMoBusRoutesDynamic, getStopCoordinates } from '../../data/busRoutesData';
+import { isBhubaneswarRegion } from '../../services/fareMatrixService';
 
 // Fix leaflet default marker paths
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
@@ -55,6 +56,47 @@ const createLeafletPinIcon = (pinColor: string, symbol: string) => {
     `,
     iconSize: [36, 36],
     iconAnchor: [18, 36],
+  });
+};
+
+const createBusStopIcon = (stopName: string, index: number) => {
+  const shortName = stopName.length > 22 ? stopName.substring(0, 20) + '…' : stopName;
+  return L.divIcon({
+    className: 'custom-bus-stop-icon',
+    html: `
+      <div style="display: flex; flex-direction: column; align-items: center; pointer-events: auto; transform: translate(-50%, -100%);">
+        <div style="
+          background: rgba(15, 23, 42, 0.95);
+          color: #38bdf8;
+          font-size: 10px;
+          font-weight: 800;
+          padding: 2.5px 8px;
+          border-radius: 9999px;
+          border: 1.5px solid rgba(56, 189, 248, 0.6);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          white-space: nowrap;
+          margin-bottom: 3px;
+          font-family: system-ui, -apple-system, sans-serif;
+          letter-spacing: -0.2px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        ">
+          <span style="color: #38bdf8; font-size: 11px;">🚏</span>
+          <span>${shortName}</span>
+        </div>
+        <div style="
+          width: 13px;
+          height: 13px;
+          border-radius: 50%;
+          background: #0284c7;
+          border: 2.5px solid #ffffff;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        "></div>
+      </div>
+    `,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
   });
 };
 
@@ -127,6 +169,9 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
     name: string;
   } | null>(null);
 
+  const [showStops, setShowStops] = useState(true);
+  const [routeStops, setRouteStops] = useState<{ name: string; coords: [number, number]; idx: number }[]>([]);
+
   // Fetch Route Corridor Polylines
   useEffect(() => {
     if (originCoords && destCoords) {
@@ -143,6 +188,46 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
       setRouteSummary(null);
     }
   }, [originCoords, destCoords]);
+
+  // Calculate intermediate Ama Bus stops with coordinates along the corridor
+  useEffect(() => {
+    if (!originName && !destinationName) {
+      setRouteStops([]);
+      return;
+    }
+
+    const isBbsr = isBhubaneswarRegion(originName, destinationName, originCoords, destCoords);
+    if (!isBbsr) {
+      setRouteStops([]);
+      return;
+    }
+
+    const match = findMoBusRoutesDynamic(originName || 'Jayadev Vihar', destinationName || 'KIIT Square');
+    const primary = match.matchedRoutes[0];
+    if (primary && primary.subStops && primary.subStops.length > 0) {
+      const stopsWithCoords: { name: string; coords: [number, number]; idx: number }[] = [];
+      primary.subStops.forEach((stopName, idx) => {
+        const coords = getStopCoordinates(stopName);
+        if (coords && coords[0] && coords[1]) {
+          // Check if not identical to originCoords or destCoords (within ~150m)
+          const isAtOrigin = originCoords && Math.hypot(coords[0] - originCoords[0], coords[1] - originCoords[1]) < 0.002;
+          const isAtDest = destCoords && Math.hypot(coords[0] - destCoords[0], coords[1] - destCoords[1]) < 0.002;
+          if (!isAtOrigin && !isAtDest) {
+            stopsWithCoords.push({ name: stopName, coords, idx: idx + 1 });
+          }
+        }
+      });
+      setRouteStops(stopsWithCoords);
+    } else {
+      const corridor = getNearbyLocationsAlongCorridor(originName || '', destinationName || '');
+      const stopsWithCoords = corridor.slice(0, 8).map((loc, idx) => ({
+        name: loc.name,
+        coords: [loc.lat, loc.lng] as [number, number],
+        idx: idx + 1,
+      }));
+      setRouteStops(stopsWithCoords);
+    }
+  }, [originName, destinationName, originCoords, destCoords]);
 
   const handleMapClick = (lat: number, lng: number) => {
     const readable = getHumanReadableLocationName(lat, lng);
@@ -241,6 +326,39 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           </Marker>
         )}
 
+        {/* ─── Intermediate Ama Bus Stops along Route Corridor ─── */}
+        {showStops && routeStops.map((stop, i) => (
+          <Marker
+            key={`stop-${stop.name}-${i}`}
+            position={stop.coords}
+            icon={createBusStopIcon(stop.name, stop.idx)}
+          >
+            <Popup>
+              <div className="text-xs font-bold text-slate-900 p-1 min-w-[160px]">
+                <div className="flex items-center gap-1 text-sky-600 font-extrabold uppercase text-[10px] mb-0.5">
+                  <span>🚏 Ama Bus Stoppage #{stop.idx}</span>
+                </div>
+                <div className="text-xs font-black text-slate-900">{stop.name}</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Scheduled Stop on Route</div>
+                <div className="flex gap-1.5 mt-2 pt-1.5 border-t border-slate-100">
+                  <button
+                    onClick={() => onSelectLocationOnMap(stop.coords[0], stop.coords[1], stop.name, 'origin')}
+                    className="flex-1 px-2 py-1 rounded-md bg-blue-600 text-white text-[10px] font-bold hover:bg-blue-700 transition"
+                  >
+                    Start Here
+                  </button>
+                  <button
+                    onClick={() => onSelectLocationOnMap(stop.coords[0], stop.coords[1], stop.name, 'dest')}
+                    className="flex-1 px-2 py-1 rounded-md bg-rose-600 text-white text-[10px] font-bold hover:bg-rose-700 transition"
+                  >
+                    Drop Here
+                  </button>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
         {/* ─── Clicked Temporary Pin ─── */}
         {clickedPin && (
           <Marker position={[clickedPin.lat, clickedPin.lng]} icon={createLeafletPinIcon('#e11d48', '📍')}>
@@ -291,9 +409,31 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
                 </span>
               </>
             )}
+            {routeStops.length > 0 && (
+              <>
+                <span className="text-slate-600 font-bold">•</span>
+                <span className="text-[10px] font-bold text-emerald-400">
+                  {routeStops.length} Ama Bus Stops
+                </span>
+              </>
+            )}
           </div>
 
           <div className="pointer-events-auto flex items-center gap-1 bg-slate-900/90 dark:bg-slate-950/90 backdrop-blur-xl p-1 rounded-2xl border border-slate-700/70 shadow-2xl">
+            {routeStops.length > 0 && (
+              <button
+                onClick={() => setShowStops(!showStops)}
+                className={`px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1 transition-all ${
+                  showStops
+                    ? 'bg-sky-500/30 text-sky-300 border border-sky-400/40 shadow-xs'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                }`}
+                title="Toggle Stoppage Names on Route"
+              >
+                <span>🚏 Stops {showStops ? 'ON' : 'OFF'}</span>
+              </button>
+            )}
+
             <button
               onClick={() => setMapLayerStyle('google-traffic')}
               className={`px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1 transition-all ${

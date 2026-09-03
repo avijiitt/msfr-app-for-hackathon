@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { JourneyOption, Vehicle } from '../../types/transit';
 import { ShieldCheck, AlertTriangle, RefreshCw, X, ArrowRight, CheckCircle2, Navigation, Volume2 } from 'lucide-react';
 import { audioService } from '../../services/audioService';
@@ -133,10 +133,10 @@ export const ActiveTripHUD: React.FC<ActiveTripHUDProps> = ({
               <span>Delay Warning: High risk of missing {nextLeg.lineName}!</span>
             </div>
             <p className="text-[11px] text-rose-100">
-              ⚡ <strong>TransitSync Rescue Recommendation:</strong> Switch to <em>Mo Bus 11 (Non-AC Express)</em> arriving at Platform 2 in 4 mins to reach on time.
+              ⚡ <strong>TransitSync Rescue Recommendation:</strong> Switch to <em>Ama Bus 11 (Non-AC Express)</em> arriving at Platform 2 in 4 mins to reach on time.
             </p>
             <button
-              onClick={() => onApplyReroute('Mo Bus 11 Express Rescue Reroute')}
+              onClick={() => onApplyReroute('Ama Bus 11 Express Rescue Reroute')}
               className="w-full py-1.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5"
             >
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />

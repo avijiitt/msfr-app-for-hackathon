@@ -16,6 +16,7 @@ interface ReportIncidentDrawerProps {
     severity: SeverityLevel;
     isEmergency: boolean;
     reporterName: string;
+    photoUrl?: string;
   }) => void;
   onDuplicateWarning?: (category: ReportCategory, lat: number, lng: number) => boolean; // returns true if duplicate exists
 }
@@ -29,10 +30,40 @@ export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onCl
   const [description, setDescription] = useState('');
   const [locationName, setLocationName] = useState('');
   const [hasDuplicate, setHasDuplicate] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Mock location bounds for Bhubaneswar
   const mockLat = 20.3010 + (Math.random() * 0.05);
   const mockLng = 85.8150 + (Math.random() * 0.05);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Compress & convert to base64 image data URL
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const scale = Math.min(1, MAX_WIDTH / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+          setPhotoUrl(compressedDataUrl);
+        } else {
+          setPhotoUrl(event.target?.result as string);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const categories: { id: ReportCategory; icon: string; label: string }[] = [
     { id: 'overcrowding', icon: '🚨', label: 'Overcrowding' },
@@ -67,7 +98,8 @@ export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onCl
       lng: mockLng,
       severity,
       isEmergency,
-      reporterName: 'You (Verified Citizen)'
+      reporterName: 'You (Verified Citizen)',
+      photoUrl: photoUrl || undefined
     });
   };
 
@@ -215,12 +247,43 @@ export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onCl
               </div>
 
               <div className="space-y-3">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Evidence (Optional)</label>
-                <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/40 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                  <Camera className="w-6 h-6 text-slate-400 mb-2" />
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Tap to upload photo</span>
-                  <span className="text-[9px] text-slate-500">+10 Karma for verified evidence</span>
-                </div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Evidence Photo (Optional)</label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+
+                {photoUrl ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-purple-500/50 bg-slate-900 p-2">
+                    <img
+                      src={photoUrl}
+                      alt="Uploaded Evidence"
+                      className="w-full h-44 object-cover rounded-xl"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPhotoUrl(null)}
+                      className="absolute top-4 right-4 px-2.5 py-1 rounded-lg bg-black/70 text-white hover:bg-rose-600 transition text-xs flex items-center gap-1 font-bold shadow-md"
+                    >
+                      <X className="w-3.5 h-3.5" /> Remove
+                    </button>
+                    <div className="mt-2 text-center text-[10px] text-emerald-500 dark:text-emerald-400 font-bold">
+                      ✓ Photo attached successfully (+10 Karma)
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/40 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-purple-400 transition"
+                  >
+                    <Camera className="w-6 h-6 text-purple-500 mb-2" />
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Tap to upload / take photo</span>
+                    <span className="text-[9px] text-slate-500 mt-0.5">+10 Karma for verified evidence</span>
+                  </div>
+                )}
               </div>
             </div>
           )}

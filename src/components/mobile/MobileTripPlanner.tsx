@@ -316,7 +316,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
                   <span className="text-[10px] bg-blue-200 dark:bg-blue-800 px-1.5 py-0.2 rounded-full">Fast</span>
                 </div>
                 <div className="text-[11px] text-blue-600/80 dark:text-blue-400 truncate">
-                  Auto-detect exact GPS coordinates & nearest Mo Bus bay
+                  Auto-detect exact GPS coordinates & nearest Ama Bus bay
                 </div>
               </div>
             </button>
@@ -412,11 +412,11 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
           </button>
         </div>
 
-        {/* ─── Matched Mo Bus Route Options (Brought to the Top) ─── */}
+        {/* ─── Matched Ama Bus Route Options (Brought to the Top) ─── */}
         <div className="flex flex-col gap-1 mt-3">
           <div className="flex items-center justify-between">
             <h1 className="font-extrabold text-base text-slate-900 dark:text-violet-100 flex items-center gap-1.5">
-              <span>Matched Mo Bus Routes</span>
+              <span>Matched Ama Bus Routes</span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800">
                 Live CRUT Sync
               </span>
@@ -471,7 +471,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-1.5 bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 px-2.5 py-0.5 rounded-full text-xs font-extrabold border border-violet-200 dark:border-violet-800/60">
               <span className="material-symbols-outlined text-[14px]">bolt</span>
-              <span>Direct Mo Bus AC Express</span>
+              <span>Direct Ama Bus AC Express</span>
             </div>
             <span className="text-[11px] font-extrabold text-violet-600 dark:text-violet-300">
               {primaryStopsCount} Stoppages
@@ -483,7 +483,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
               Route {primaryRoute}: {primaryFrom} – {primaryTo}
             </h3>
             <p className="text-xs text-violet-600 dark:text-violet-400 font-semibold mt-0.5">
-              Mo Bus AC Electric (Route {primaryRoute})
+              Ama Bus AC Electric (Route {primaryRoute})
             </p>
           </div>
 
@@ -534,7 +534,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full text-xs font-extrabold border border-emerald-200 dark:border-emerald-800/60">
               <span className="material-symbols-outlined text-[14px]">savings</span>
-              <span>Mo Bus Ordinary / Non-AC</span>
+              <span>Ama Bus Ordinary / Non-AC</span>
             </div>
             <span className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400">
               {altStopsCount} Stoppages
@@ -546,7 +546,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
               Route {altRoute}: {altFrom} – {altTo}
             </h3>
             <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
-              Mo Bus Regular Ordinary (Route {altRoute})
+              Ama Bus Regular Ordinary (Route {altRoute})
             </p>
           </div>
 
@@ -662,15 +662,15 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
           <div className="bg-violet-50/70 dark:bg-violet-950/40 p-2.5 rounded-xl border border-violet-100 dark:border-violet-900/60">
-            <div className="text-[11px] text-violet-700 dark:text-violet-300 font-bold">Mo Bus AC Electric (Route {primaryRoute})</div>
+            <div className="text-[11px] text-violet-700 dark:text-violet-300 font-bold">Ama Bus AC Electric (Route {primaryRoute})</div>
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">₹15 – ₹30 • AC Trunk</div>
           </div>
           <div className="bg-emerald-50/70 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900/60">
-            <div className="text-[11px] text-emerald-700 dark:text-emerald-300 font-bold">Mo Bus Non-AC (Route {altRoute})</div>
+            <div className="text-[11px] text-emerald-700 dark:text-emerald-300 font-bold">Ama Bus Non-AC (Route {altRoute})</div>
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">₹10 – ₹20 • ₹5 Pass</div>
           </div>
           <div className="bg-indigo-50/70 dark:bg-indigo-950/40 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-900/60">
-            <div className="text-[11px] text-indigo-700 dark:text-indigo-300 font-bold">Mo E-Ride Feeder</div>
+            <div className="text-[11px] text-indigo-700 dark:text-indigo-300 font-bold">Ama E-Ride Feeder</div>
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">₹20 – ₹35 • Feeder EV</div>
           </div>
         </div>

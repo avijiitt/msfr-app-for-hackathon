@@ -193,6 +193,16 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
                         </p>
                       </div>
 
+                      {report.photoUrl && (
+                        <div className="pl-1 pt-1">
+                          <img 
+                            src={report.photoUrl} 
+                            alt="Attached Evidence" 
+                            className="w-full max-h-48 object-cover rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs"
+                          />
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium pl-1">
                         <MapPin className="w-3.5 h-3.5 text-rose-500" />
                         <span>{report.locationName}</span>

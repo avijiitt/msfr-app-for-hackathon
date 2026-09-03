@@ -117,7 +117,7 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
   const [liveTimestamp, setLiveTimestamp] = useState<string>('Live Stream Active');
   const [cityHealthScore, setCityHealthScore] = useState<number>(78);
   const [aiUrbanSummary, setAiUrbanSummary] = useState<string>(
-    'Google Maps live traffic stream shows optimal flow on arterial corridors. Janpath & Nandankanan corridors operating smoothly with Mo Bus load balancing active.'
+    'Google Maps live traffic stream shows optimal flow on arterial corridors. Janpath & Nandankanan corridors operating smoothly with Ama Bus load balancing active.'
   );
   const [liveCorridors, setLiveCorridors] = useState<LiveCorridorTelemetry[]>([]);
 
@@ -829,7 +829,7 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
                         onClick={() => setReservingParkingModal(p)}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
                       >
-                        Reserve Parking Spot & Mo Bus Pass (₹{p.currentDynamicRateInr}/hr) ➔
+                        Reserve Parking Spot & Ama Bus Pass (₹{p.currentDynamicRateInr}/hr) ➔
                       </button>
                     </div>
                   </div>
@@ -1287,7 +1287,7 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
                       Fuel, Financial & CO₂ Pollution Savings Calculator
                     </h2>
                     <p className="text-xs text-slate-500">
-                      Calculates how shifting from single-occupant private cars to Mo Bus electric fleets saves money and reduces urban emissions.
+                      Calculates how shifting from single-occupant private cars to Ama Bus electric fleets saves money and reduces urban emissions.
                     </p>
                   </div>
                 </div>
@@ -1367,7 +1367,7 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
                   </div>
                 ) : (
                   <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-200 font-medium">
-                    Current corridor has balanced passenger distribution. Standard Mo Bus direct transit is optimal.
+                    Current corridor has balanced passenger distribution. Standard Ama Bus direct transit is optimal.
                   </div>
                 )}
               </div>
@@ -1609,7 +1609,7 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
             <div>
               <h3 className="font-black text-base text-slate-900 dark:text-white">Standby Extra Bus Dispatched!</h3>
               <p className="text-xs text-slate-500 mt-1">
-                Extra Electric Mo Bus deployed to <strong>{dispatchedBusInfo.routeId}</strong> from <strong>{dispatchedBusInfo.depot}</strong> at {dispatchedBusInfo.time}.
+                Extra Electric Ama Bus deployed to <strong>{dispatchedBusInfo.routeId}</strong> from <strong>{dispatchedBusInfo.depot}</strong> at {dispatchedBusInfo.time}.
               </p>
             </div>
 

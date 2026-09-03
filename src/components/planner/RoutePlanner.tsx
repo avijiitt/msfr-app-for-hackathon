@@ -96,7 +96,7 @@ export const RoutePlanner: React.FC<RoutePlannerProps> = ({
             Multi-Modal Route Optimizer
           </h1>
           <p className="text-on-surface-variant text-xs sm:text-sm mt-1">
-            Plan your journey with multi-modal options, real-time GPS tracking, and live Mo Bus CRUT sync.
+            Plan your journey with multi-modal options, real-time GPS tracking, and live Ama Bus CRUT sync.
           </p>
         </div>
         <span className="text-xs text-tertiary flex items-center gap-1 font-label-caps">

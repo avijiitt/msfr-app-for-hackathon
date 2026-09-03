@@ -50,14 +50,18 @@ export const IncidentDetailsModal: React.FC<IncidentDetailsModalProps> = ({ repo
             </p>
           </div>
 
-          {/* Evidence Gallery (Mock) */}
+          {/* Evidence Gallery */}
           <div className="space-y-2">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Evidence</h4>
-            <div className="h-32 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden relative group">
-              {report.evidenceUrls && report.evidenceUrls.length > 0 ? (
-                <img src={report.evidenceUrls[0]} alt="Incident Evidence" className="w-full h-full object-cover" />
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Evidence Photo</h4>
+            <div className="min-h-36 max-h-64 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden relative group">
+              {(report.photoUrl || (report.evidenceUrls && report.evidenceUrls.length > 0)) ? (
+                <img 
+                  src={report.photoUrl || report.evidenceUrls![0]} 
+                  alt="Incident Evidence" 
+                  className="w-full h-full max-h-64 object-cover" 
+                />
               ) : (
-                <div className="text-center text-slate-400">
+                <div className="text-center text-slate-400 py-6">
                   <CameraIcon />
                   <p className="text-[10px] font-bold mt-1">No photos provided</p>
                 </div>

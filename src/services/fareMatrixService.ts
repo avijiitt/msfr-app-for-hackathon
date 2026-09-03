@@ -97,36 +97,149 @@ export function calculateDistanceBetweenLocations(
   return 6.0;
 }
 
+/**
+ * Official CRUT / AMA BUS Fare Stages for Non-AC Bus Services
+ * Stages 1 to 25 (w.e.f 01-12-2019)
+ */
+export function calculateAmaBusNonAcFare(distanceKm: number): number {
+  const km = Math.max(0, distanceKm);
+  if (km <= 4) return 5;
+  if (km <= 8) return 10;
+  if (km <= 12) return 15;
+  if (km <= 17) return 20;
+  if (km <= 22) return 25;
+  if (km <= 27) return 30;
+  if (km <= 33) return 35;
+  if (km <= 39) return 40;
+  if (km <= 45) return 45;
+  if (km <= 51) return 50;
+  if (km <= 57) return 55;
+  if (km <= 63) return 60;
+  if (km <= 69) return 65;
+  if (km <= 75) return 70;
+  if (km <= 81) return 75;
+  if (km <= 87) return 80;
+  if (km <= 93) return 85;
+  if (km <= 99) return 90;
+  if (km <= 105) return 95;
+  if (km <= 111) return 100;
+  if (km <= 117) return 105;
+  if (km <= 123) return 110;
+  if (km <= 129) return 115;
+  if (km <= 135) return 120;
+  if (km <= 141) return 125;
+  return 125 + Math.ceil((km - 141) / 6) * 5;
+}
+
+/**
+ * Official CRUT / AMA BUS Fare Stages for AC Bus Services
+ * Stages 1 to 26 (w.e.f 01-12-2019)
+ */
+export function calculateAmaBusAcFare(distanceKm: number): number {
+  const km = Math.max(0, distanceKm);
+  if (km <= 2) return 5;
+  if (km <= 4) return 10;
+  if (km <= 7) return 15;
+  if (km <= 10) return 20;
+  if (km <= 14) return 25;
+  if (km <= 18) return 30;
+  if (km <= 22) return 35;
+  if (km <= 27) return 40;
+  if (km <= 32) return 45;
+  if (km <= 37) return 50;
+  if (km <= 43) return 55;
+  if (km <= 49) return 60;
+  if (km <= 55) return 65;
+  if (km <= 61) return 70;
+  if (km <= 67) return 75;
+  if (km <= 73) return 80;
+  if (km <= 79) return 85;
+  if (km <= 85) return 90;
+  if (km <= 91) return 95;
+  if (km <= 97) return 100;
+  if (km <= 103) return 105;
+  if (km <= 109) return 110;
+  if (km <= 115) return 115;
+  if (km <= 121) return 120;
+  if (km <= 127) return 125;
+  if (km <= 133) return 130;
+  return 130 + Math.ceil((km - 133) / 6) * 5;
+}
+
+/**
+ * Check if the trip is strictly within the Bhubaneswar / CRUT Capital Region
+ */
+export function isBhubaneswarRegion(
+  originQuery?: string,
+  destQuery?: string,
+  originCoords?: [number, number] | null,
+  destCoords?: [number, number] | null
+): boolean {
+  // If coordinates are given, check against Bhubaneswar & CRUT bounding box
+  if (originCoords && destCoords) {
+    const [lat1, lng1] = originCoords;
+    const [lat2, lng2] = destCoords;
+    const inBbsr1 = lat1 >= 19.6 && lat1 <= 20.7 && lng1 >= 85.2 && lng1 <= 86.4;
+    const inBbsr2 = lat2 >= 19.6 && lat2 <= 20.7 && lng2 >= 85.2 && lng2 <= 86.4;
+    return inBbsr1 && inBbsr2;
+  }
+
+  // String checking against well-known non-Bhubaneswar cities
+  const nonBbsrCities = [
+    'delhi', 'mumbai', 'bangalore', 'bengaluru', 'kolkata', 'chennai',
+    'hyderabad', 'pune', 'jaipur', 'ahmedabad', 'lucknow', 'chandigarh',
+    'patna', 'bhopal', 'indore', 'surat', 'nagpur', 'kochi', 'guwahati'
+  ];
+
+  const o = (originQuery || '').toLowerCase();
+  const d = (destQuery || '').toLowerCase();
+
+  for (const city of nonBbsrCities) {
+    if (o.includes(city) || d.includes(city)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function calculateAreaFareMatrix(
   originName: string,
   destName: string,
-  distanceKm = 8.5
+  distanceKm = 8.5,
+  originCoords?: [number, number] | null,
+  destCoords?: [number, number] | null
 ): AreaFareComparison {
-  const modes: TransitModeFare[] = [
+  const isBbsr = isBhubaneswarRegion(originName, destName, originCoords, destCoords);
+
+  // Exact Ama Bus fares from CRUT tariff stages (only for BBSR)
+  const acBusFare = isBbsr ? calculateAmaBusAcFare(distanceKm) : Math.round(distanceKm * 2.5);
+  const nonAcBusFare = isBbsr ? calculateAmaBusNonAcFare(distanceKm) : Math.round(distanceKm * 1.5);
+
+  const modes: TransitModeFare[] = isBbsr ? [
     {
       mode: 'bus',
-      title: 'City Bus (AC Electric / Mo Bus / DTC / BEST)',
+      title: 'Ama Bus AC Express (CRUT Stage Fare)',
       category: 'Public Transit',
-      fareInr: Math.max(10, Math.round(distanceKm * 2.2)),
-      concessionFareInr: Math.max(5, Math.round(distanceKm * 1.1)),
-      durationMins: Math.round(distanceKm * 2.5) + 5,
-      carbonGrams: 320,
+      fareInr: acBusFare,
+      concessionFareInr: Math.max(5, Math.round(acBusFare * 0.5)),
+      durationMins: Math.round(distanceKm * 2.4) + 4,
+      carbonGrams: 310,
       availability: 'High Frequency (Every 3-5 mins)',
-      badge: '💰 Best Value',
+      badge: '❄️ AC Stage Fare',
       color: '#10B981',
       icon: '🚍',
     },
-
     {
       mode: 'bus',
-      title: 'Mo Bus Ordinary (Non-AC / ₹5 Student Pass)',
+      title: 'Ama Bus Ordinary (Non-AC / ₹5 Student Pass)',
       category: 'Public Transit',
-      fareInr: Math.max(5, Math.round(distanceKm * 1.2)),
+      fareInr: nonAcBusFare,
       concessionFareInr: 5,
-      durationMins: Math.round(distanceKm * 2.8),
-      carbonGrams: 270,
+      durationMins: Math.round(distanceKm * 2.7),
+      carbonGrams: 260,
       availability: 'Scheduled',
-      badge: '🎟️ Lowest Fare',
+      badge: '🎟️ Official Tariff',
       color: '#3B82F6',
       icon: '🚌',
     },
@@ -165,6 +278,57 @@ export function calculateAreaFareMatrix(
       badge: '💨 Traffic Buster',
       color: '#06B6D4',
       icon: '🛵',
+    },
+  ] : [
+    {
+      mode: 'train',
+      title: 'Indian Railways Express (Sleeper / 3AC)',
+      category: 'Public Transit',
+      fareInr: Math.max(120, Math.round(distanceKm * 0.95)),
+      concessionFareInr: Math.max(60, Math.round(distanceKm * 0.5)),
+      durationMins: Math.round(distanceKm * 1.1) + 30,
+      carbonGrams: 180,
+      availability: 'Scheduled',
+      badge: '🚆 Best Intercity',
+      color: '#3B82F6',
+      icon: '🚆',
+    },
+    {
+      mode: 'bus',
+      title: 'Intercity State Transport Express (OSRTC / Volvo)',
+      category: 'Public Transit',
+      fareInr: Math.max(150, Math.round(distanceKm * 1.8)),
+      concessionFareInr: Math.max(100, Math.round(distanceKm * 1.2)),
+      durationMins: Math.round(distanceKm * 1.3) + 20,
+      carbonGrams: 350,
+      availability: 'Scheduled',
+      badge: '🚌 Highway Express',
+      color: '#10B981',
+      icon: '🚍',
+    },
+    {
+      mode: 'cab',
+      title: 'Outstation Intercity Cab',
+      category: 'On-Demand',
+      fareInr: Math.max(500, Math.round(distanceKm * 14) + 150),
+      durationMins: Math.round(distanceKm * 1.0) + 15,
+      carbonGrams: 850,
+      availability: 'Instant Booking',
+      badge: '🚗 Direct Highway',
+      color: '#EC4899',
+      icon: '🚕',
+    },
+    {
+      mode: 'ferry',
+      title: 'Direct Domestic Flight / Regional Air',
+      category: 'On-Demand',
+      fareInr: Math.max(2800, Math.round(distanceKm * 4.5)),
+      durationMins: Math.min(180, Math.round(distanceKm * 0.15) + 90),
+      carbonGrams: 1500,
+      availability: 'Scheduled',
+      badge: '✈️ Fastest Route',
+      color: '#8B5CF6',
+      icon: '✈️',
     },
   ];
 

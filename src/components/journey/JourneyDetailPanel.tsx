@@ -3,6 +3,7 @@ import { Share2, Bus, Train, Footprints, Clock, Navigation, CheckCircle, ShieldC
 import { getNearbyLocationsAlongCorridor, findMatchingMoBusRoutes } from '../../data/cities/bhubaneswar';
 import { TranslationDictionary } from '../../types/i18n';
 import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
+import { isBhubaneswarRegion, calculateAmaBusAcFare, calculateAmaBusNonAcFare } from '../../services/fareMatrixService';
 
 interface JourneyDetailPanelProps {
   originName?: string;
@@ -62,33 +63,41 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   const cleanFrom = originName.split(',')[0] || 'Origin';
   const cleanTo = destinationName.split(',')[0] || 'Destination';
 
+  const isBbsr = isBhubaneswarRegion(originName, destinationName, originCoords, destCoords);
+  const acFare = isBbsr ? calculateAmaBusAcFare(distanceKm) : Math.round(distanceKm * 2.2);
+  const nonAcFare = isBbsr ? calculateAmaBusNonAcFare(distanceKm) : Math.round(distanceKm * 1.2);
+
   // Dynamic calculated metrics based on selected route mode
   const isCheap = selectedRouteId === 'route-cheap';
   const isEco = selectedRouteId === 'route-eco';
 
-  const totalDurationMins = isEco
-    ? Math.max(14, Math.round(distanceKm * 2.1))
-    : isCheap
-    ? Math.max(18, Math.round(distanceKm * 3.2))
-    : Math.max(12, Math.round(distanceKm * 2.4));
+  const totalDurationMins = !isBbsr
+    ? (isCheap ? Math.max(110, Math.round(distanceKm * 1.3) + 30) : isEco ? Math.min(180, Math.round(distanceKm * 0.15) + 90) : Math.max(90, Math.round(distanceKm * 1.1) + 20))
+    : (isEco
+      ? Math.max(14, Math.round(distanceKm * 2.1))
+      : isCheap
+      ? Math.max(18, Math.round(distanceKm * 3.2))
+      : Math.max(12, Math.round(distanceKm * 2.4)));
 
-  const totalFareInr = isEco
-    ? Math.max(25, Math.min(45, Math.round(15 + distanceKm * 2.0)))
-    : isCheap
-    ? Math.max(10, Math.min(20, Math.round(5 + distanceKm * 1.0)))
-    : Math.max(15, Math.min(35, Math.round(10 + distanceKm * 1.5)));
+  const totalFareInr = !isBbsr
+    ? (isCheap ? Math.max(150, Math.round(distanceKm * 1.8)) : isEco ? Math.max(2800, Math.round(distanceKm * 4.5)) : Math.max(120, Math.round(distanceKm * 0.95)))
+    : (isEco ? nonAcFare + 10 : isCheap ? nonAcFare : acFare);
 
-  const serviceName = isEco
-    ? 'Mo E-Ride Electric Auto + Pink Shuttle'
-    : isCheap
-    ? `Mo Bus Ordinary Non-AC (Route ${altBus.route})`
-    : `Mo Bus AC Electric Express (Route ${primaryBus.route})`;
+  const serviceName = !isBbsr
+    ? (isCheap ? 'State Transport Coach (OSRTC / Volvo)' : isEco ? 'Direct Domestic Air Flight' : 'Indian Railways Express (Superfast / Vande Bharat)')
+    : (isEco
+      ? 'Ama E-Ride Electric Auto + Feeder'
+      : isCheap
+      ? `Ama Bus Ordinary Non-AC (Route ${altBus.route})`
+      : `Ama Bus AC Electric Express (Route ${primaryBus.route})`);
 
-  const serviceBadge = isEco
-    ? '🌿 100% Zero-Emission Feeder'
-    : isCheap
-    ? '💰 Lowest Public Bus Fare'
-    : '⚡ Fastest Direct AC Corridor';
+  const serviceBadge = !isBbsr
+    ? (isCheap ? '🚌 Highway Intercity Express' : isEco ? '✈️ Direct Flight Transit' : '🚆 Indian Railways Superfast')
+    : (isEco
+      ? '🌿 100% Zero-Emission Feeder'
+      : isCheap
+      ? '💰 Lowest Public Bus Fare'
+      : '⚡ Fastest Direct AC Corridor');
 
   const now = new Date();
   const formatTime = (addMins: number) => {
@@ -278,15 +287,17 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {isEco ? 'Mo E-Ride Electric Auto' : isCheap ? 'Mo Bus Route 11 / 20 (Non-AC)' : 'Mo Bus Route 10 / 24 (AC Electric)'}
+                  {!isBbsr
+                    ? (isCheap ? 'OSRTC Intercity AC Coach' : isEco ? 'Connecting Air Flight Transfer' : 'Indian Railways Express (Superfast / Vande Bharat)')
+                    : (isEco ? 'Ama E-Ride Electric Auto' : isCheap ? `Ama Bus Route ${altBus.route} (Non-AC)` : `Ama Bus Route ${primaryBus.route} (AC Electric)`)}
                 </span>
                 <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-semibold">{formatTime(2)}</span>
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                {cleanFrom} ➔ {isEco ? 'CRUT Electric Interchange' : cleanTo}
+                {cleanFrom} ➔ {!isBbsr ? cleanTo : (isEco ? 'Ama Transit Interchange' : cleanTo)}
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                <span>{Math.round(totalDurationMins * (isEco ? 0.6 : 0.9))} min • {Math.max(3, Math.round(distanceKm * 0.8))} stops</span>
+                <span>{Math.round(totalDurationMins * (isEco ? 0.6 : 0.9))} min • {!isBbsr ? 'Direct Corridor' : `${Math.max(3, Math.round(distanceKm * 0.8))} stops`}</span>
                 <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
                   Live: On Time 🟢
                 </span>
@@ -312,7 +323,9 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
                 </div>
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-900 dark:text-white">Pink Safe Mo Bus Feeder</span>
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {isBbsr ? 'Pink Safe Ama Bus Feeder' : 'Station Connection Feeder'}
+                    </span>
                     <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-semibold">{formatTime(Math.round(totalDurationMins * 0.6) + 5)}</span>
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -392,11 +405,11 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
         isOpen={isTicketPaymentOpen}
         onClose={() => setIsTicketPaymentOpen(false)}
         amount={totalFareInr}
-        purpose={`Unified Connected QR Pass: ${cleanFrom} ➔ ${cleanTo} (All Feeder + Mo Bus + Interchanges Included)`}
+        purpose={`Unified Connected QR Pass: ${cleanFrom} ➔ ${cleanTo} (All Feeder + Ama Bus + Interchanges Included)`}
         customerName="Traveller"
         onPaymentSuccess={(result) => {
           setIsTicketPaymentOpen(false);
-          alert(`🎉 Unified Connected QR Pass Active!\nReceipt: ${result.receiptNumber}\nValid across all connected rides (Feeder + Mo Bus) with a single QR scan.`);
+          alert(`🎉 Unified Connected QR Pass Active!\nReceipt: ${result.receiptNumber}\nValid across all connected rides (Feeder + Ama Bus) with a single QR scan.`);
         }}
       />
     </div>

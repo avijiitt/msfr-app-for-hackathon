@@ -4,6 +4,7 @@ import { RouteMode } from '../../types/transit';
 import { getNearbyLocationsAlongCorridor } from '../../data/cities/bhubaneswar';
 import { findMoBusRoutesDynamic } from '../../data/busRoutesData';
 import { TranslationDictionary } from '../../types/i18n';
+import { isBhubaneswarRegion, calculateAmaBusAcFare, calculateAmaBusNonAcFare } from '../../services/fareMatrixService';
 
 
 export interface RouteCardOption {
@@ -113,8 +114,67 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
     : { route: 'EV Feeder', path: `${cleanFrom} – ${cleanTo}` };
 
 
+  const isBbsr = isBhubaneswarRegion(originName, destinationName, originCoords, destCoords);
+  const acFare = isBbsr ? calculateAmaBusAcFare(distanceKm) : Math.round(distanceKm * 2.2);
+  const nonAcFare = isBbsr ? calculateAmaBusNonAcFare(distanceKm) : Math.round(distanceKm * 1.2);
+
   // Dynamic Route Generation for All Modes (3 Optimized Options per Mode)
   const getRoutesForMode = (): RouteCardOption[] => {
+    // ─── If Outside Bhubaneswar: Show Intercity Rail, Express Coach, and Air Transit ───
+    if (!isBbsr) {
+      return [
+        {
+          id: 'route-rec',
+          badge: '🚆 Indian Railways (Recommended)',
+          badgeColor: 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
+          isStar: true,
+          modeType: 'fastest',
+          serviceType: 'Indian Railways Express (Superfast / Vande Bharat)',
+          routeNumber: 'IR Superfast Express',
+          lineTitle: `Rail Express: ${cleanFrom} ➔ ${cleanTo}`,
+          durationMins: Math.max(90, Math.round(distanceKm * 1.1) + 20),
+          transfersCount: 0,
+          fareInr: Math.max(120, Math.round(distanceKm * 0.95)),
+          fareNote: 'Standard Reserved 3AC / Sleeper',
+          arrivalTime: getArrivalTime(Math.max(90, Math.round(distanceKm * 1.1) + 20)),
+          co2SavedGrams: Math.round(distanceKm * 65),
+          safetyScore: 98,
+        },
+        {
+          id: 'route-cheap',
+          badge: '🚌 Highway Express Coach',
+          badgeColor: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
+          modeType: 'cheapest',
+          serviceType: 'Intercity State Transport Express (OSRTC / Volvo AC)',
+          routeNumber: 'Highway Coach',
+          lineTitle: `State Transport: ${cleanFrom} ➔ ${cleanTo}`,
+          durationMins: Math.max(110, Math.round(distanceKm * 1.3) + 30),
+          transfersCount: 0,
+          fareInr: Math.max(150, Math.round(distanceKm * 1.8)),
+          fareNote: 'Highway Direct Non-Stop Service',
+          arrivalTime: getArrivalTime(Math.max(110, Math.round(distanceKm * 1.3) + 30)),
+          co2SavedGrams: Math.round(distanceKm * 50),
+          safetyScore: 94,
+        },
+        {
+          id: 'route-eco',
+          badge: '✈️ Direct Flight / Fast Air',
+          badgeColor: 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800',
+          modeType: 'eco',
+          serviceType: 'Direct Domestic Air Flight / Regional Transit',
+          routeNumber: 'Air Transit',
+          lineTitle: `Flight Transit: ${cleanFrom} ➔ ${cleanTo}`,
+          durationMins: Math.min(180, Math.round(distanceKm * 0.15) + 90),
+          transfersCount: 0,
+          fareInr: Math.max(2800, Math.round(distanceKm * 4.5)),
+          fareNote: 'Fastest Intercity Travel',
+          arrivalTime: getArrivalTime(Math.min(180, Math.round(distanceKm * 0.15) + 90)),
+          co2SavedGrams: Math.round(distanceKm * 15),
+          safetyScore: 99,
+        },
+      ];
+    }
+
     if (activeFilterMode === 'senior') {
       return [
         {
@@ -123,13 +183,13 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           badgeColor: 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800',
           isStar: true,
           modeType: 'senior',
-          serviceType: `Low-Floor Kneeling Mo Bus ${primaryBus.route} (CRUT)`,
-          routeNumber: `Mo Bus ${primaryBus.route} (Low-Floor)`,
-          lineTitle: `Mo Bus ${primaryBus.route} • ${primaryBus.path.split('–')[1] || primaryBus.path}`,
+          serviceType: `Low-Floor Kneeling Ama Bus ${primaryBus.route} (CRUT)`,
+          routeNumber: `Ama Bus ${primaryBus.route} (Low-Floor)`,
+          lineTitle: `Ama Bus ${primaryBus.route} • ${primaryBus.path.split('–')[1] || primaryBus.path}`,
           durationMins: Math.max(14, Math.round(distanceKm * 2.6)),
           transfersCount: 0,
           fareInr: 0,
-          fareNote: 'Free with Senior Citizen Pass (or ₹15)',
+          fareNote: 'Free with Senior Citizen Pass (or 50% Concession)',
           arrivalTime: getArrivalTime(Math.max(14, Math.round(distanceKm * 2.6))),
           co2SavedGrams: Math.round(distanceKm * 50),
           safetyScore: 99,
@@ -139,12 +199,12 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           badge: '💺 Priority Seating',
           badgeColor: 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
           modeType: 'senior',
-          serviceType: `Mo Bus AC Express ${altBus.route}`,
-          routeNumber: `Mo Bus ${altBus.route} AC`,
-          lineTitle: `Mo Bus ${altBus.route} • ${altBus.path.split('–')[1] || altBus.path}`,
+          serviceType: `Ama Bus AC Express ${altBus.route}`,
+          routeNumber: `Ama Bus ${altBus.route} AC`,
+          lineTitle: `Ama Bus ${altBus.route} • ${altBus.path.split('–')[1] || altBus.path}`,
           durationMins: Math.max(12, Math.round(distanceKm * 2.4)),
           transfersCount: 0,
-          fareInr: Math.max(10, Math.min(20, Math.round(5 + distanceKm * 1.0))),
+          fareInr: Math.max(5, Math.round(acFare * 0.5)),
           fareNote: '50% Concession with Senior ID',
           arrivalTime: getArrivalTime(Math.max(12, Math.round(distanceKm * 2.4))),
           co2SavedGrams: Math.round(distanceKm * 55),
@@ -155,9 +215,9 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           badge: '🚪 Doorstep E-Ride',
           badgeColor: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
           modeType: 'senior',
-          serviceType: 'Mo E-Ride Assisted Auto Feeder',
-          routeNumber: 'Mo E-Ride Assisted',
-          lineTitle: 'Mo E-Ride Assisted Electric Auto',
+          serviceType: 'Ama E-Ride Assisted Auto Feeder',
+          routeNumber: 'Ama E-Ride Assisted',
+          lineTitle: 'Ama E-Ride Assisted Electric Auto',
           durationMins: Math.max(13, Math.round(distanceKm * 2.2)),
           transfersCount: 0,
           fareInr: Math.max(20, Math.min(35, Math.round(15 + distanceKm * 1.5))),
@@ -177,12 +237,12 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           badgeColor: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800',
           isStar: true,
           modeType: 'weather',
-          serviceType: `Monsoon Resilient Mo Bus ${primaryBus.route} AC`,
+          serviceType: `Monsoon Resilient Ama Bus ${primaryBus.route} AC`,
           routeNumber: `Route ${primaryBus.route} Rain Shield`,
-          lineTitle: `Mo Bus ${primaryBus.route} AC • ${primaryBus.path.split('–')[1] || primaryBus.path}`,
+          lineTitle: `Ama Bus ${primaryBus.route} AC • ${primaryBus.path.split('–')[1] || primaryBus.path}`,
           durationMins: Math.max(13, Math.round(distanceKm * 2.5)),
           transfersCount: 0,
-          fareInr: Math.max(15, Math.min(35, Math.round(10 + distanceKm * 1.5))),
+          fareInr: acFare,
           fareNote: '100% Covered Walkways & Stops',
           arrivalTime: getArrivalTime(Math.max(13, Math.round(distanceKm * 2.5))),
           co2SavedGrams: Math.round(distanceKm * 52),
@@ -193,12 +253,12 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           badge: '🛡️ Flood Safe Trunk',
           badgeColor: 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
           modeType: 'weather',
-          serviceType: `All-Weather Mo Bus ${altBus.route} Express`,
+          serviceType: `All-Weather Ama Bus ${altBus.route} Express`,
           routeNumber: `Route ${altBus.route} Weather Trunk`,
-          lineTitle: `Mo Bus ${altBus.route} • High-Clearance Fleet`,
+          lineTitle: `Ama Bus ${altBus.route} • High-Clearance Fleet`,
           durationMins: Math.max(15, Math.round(distanceKm * 2.7)),
           transfersCount: 0,
-          fareInr: Math.max(15, Math.min(30, Math.round(10 + distanceKm * 1.3))),
+          fareInr: nonAcFare,
           fareNote: 'Bypasses Waterlogged Areas',
           arrivalTime: getArrivalTime(Math.max(15, Math.round(distanceKm * 2.7))),
           co2SavedGrams: Math.round(distanceKm * 48),
@@ -209,9 +269,9 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           badge: '☂️ Covered Feeder',
           badgeColor: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
           modeType: 'weather',
-          serviceType: 'Weather-Protected Mo E-Ride Feeder',
-          routeNumber: 'Mo E-Ride Raincover',
-          lineTitle: 'Mo E-Ride Auto with Rain Shield Canopy',
+          serviceType: 'Weather-Protected Ama E-Ride Feeder',
+          routeNumber: 'Ama E-Ride Raincover',
+          lineTitle: 'Ama E-Ride Auto with Rain Shield Canopy',
           durationMins: Math.max(16, Math.round(distanceKm * 2.3)),
           transfersCount: 1,
           fareInr: Math.max(25, Math.min(40, Math.round(15 + distanceKm * 1.8))),
@@ -231,12 +291,12 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           badgeColor: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800',
           isStar: true,
           modeType: 'night',
-          serviceType: `Night Owl Mo Bus ${primaryBus.route}N (CRUT)`,
+          serviceType: `Night Owl Ama Bus ${primaryBus.route}N (CRUT)`,
           routeNumber: `Route ${primaryBus.route}N Owl`,
-          lineTitle: `Night Owl Mo Bus ${primaryBus.route}N • Well-Lit Corridor`,
+          lineTitle: `Night Owl Ama Bus ${primaryBus.route}N • Well-Lit Corridor`,
           durationMins: Math.max(12, Math.round(distanceKm * 2.3)),
           transfersCount: 0,
-          fareInr: Math.max(20, Math.min(40, Math.round(15 + distanceKm * 1.8))),
+          fareInr: acFare,
           fareNote: '24x7 GPS Tracked & Police Linked',
           arrivalTime: getArrivalTime(Math.max(12, Math.round(distanceKm * 2.3))),
           co2SavedGrams: Math.round(distanceKm * 50),
@@ -247,12 +307,12 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           badge: '🛡️ Pink Safe Night',
           badgeColor: 'bg-pink-50 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300 border border-pink-200 dark:border-pink-800',
           modeType: 'night',
-          serviceType: 'Women Pink Mo Bus Night Shuttle',
+          serviceType: 'Women Pink Ama Bus Night Shuttle',
           routeNumber: 'Pink Safe Night',
-          lineTitle: 'Pink Mo Bus • On-Board Safety Marshal',
+          lineTitle: 'Pink Ama Bus • On-Board Safety Marshal',
           durationMins: Math.max(14, Math.round(distanceKm * 2.5)),
           transfersCount: 0,
-          fareInr: Math.max(15, Math.min(30, Math.round(10 + distanceKm * 1.4))),
+          fareInr: nonAcFare,
           fareNote: 'Dedicated Female Safety Marshals',
           arrivalTime: getArrivalTime(Math.max(14, Math.round(distanceKm * 2.5))),
           co2SavedGrams: Math.round(distanceKm * 60),
@@ -263,9 +323,9 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           badge: '🚨 SOS-Linked Auto',
           badgeColor: 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
           modeType: 'night',
-          serviceType: 'Night Mo E-Ride Shared Feeder',
-          routeNumber: 'Mo E-Ride Night',
-          lineTitle: 'Night Mo E-Ride • Live Telemetry Active',
+          serviceType: 'Night Ama E-Ride Shared Feeder',
+          routeNumber: 'Ama E-Ride Night',
+          lineTitle: 'Night Ama E-Ride • Live Telemetry Active',
           durationMins: Math.max(13, Math.round(distanceKm * 2.0)),
           transfersCount: 0,
           fareInr: Math.max(25, Math.min(45, Math.round(15 + distanceKm * 2.0))),
@@ -281,17 +341,17 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
     return [
       {
         id: 'route-rec',
-        badge: `⚡ Fastest Mo Bus (Route ${primaryBus.route})`,
+        badge: `⚡ Fastest Ama Bus (Route ${primaryBus.route})`,
         badgeColor: 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
         isStar: true,
         modeType: 'fastest',
-        serviceType: `Mo Bus AC Electric (Route ${primaryBus.route})`,
+        serviceType: `Ama Bus AC Electric (Route ${primaryBus.route})`,
         routeNumber: `Route ${primaryBus.route} AC`,
-        lineTitle: `Mo Bus ${primaryBus.route}: ${primaryBus.path}`,
+        lineTitle: `Ama Bus ${primaryBus.route}: ${primaryBus.path}`,
         durationMins: Math.max(12, Math.round(distanceKm * 2.4)),
         transfersCount: 0,
-        fareInr: Math.max(15, Math.min(35, Math.round(10 + distanceKm * 1.5))),
-        fareNote: 'AC Stage Fare (₹15–₹35)',
+        fareInr: acFare,
+        fareNote: `Official AC Stage Fare (${distanceKm} km)`,
         arrivalTime: getArrivalTime(Math.max(12, Math.round(distanceKm * 2.4))),
         co2SavedGrams: Math.round(distanceKm * 55),
         safetyScore: 98,
@@ -301,12 +361,12 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
         badge: `💰 Lowest Fare (Route ${altBus.route})`,
         badgeColor: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
         modeType: 'cheapest',
-        serviceType: `Mo Bus Ordinary Non-AC (Route ${altBus.route})`,
+        serviceType: `Ama Bus Ordinary Non-AC (Route ${altBus.route})`,
         routeNumber: `Route ${altBus.route} Ordinary`,
-        lineTitle: `Mo Bus ${altBus.route}: ${altBus.path}`,
+        lineTitle: `Ama Bus ${altBus.route}: ${altBus.path}`,
         durationMins: Math.max(18, Math.round(distanceKm * 3.2)),
         transfersCount: 0,
-        fareInr: Math.max(10, Math.min(20, Math.round(5 + distanceKm * 1.0))),
+        fareInr: nonAcFare,
         fareNote: 'Ordinary Fare (₹5 with Student Pass)',
         arrivalTime: getArrivalTime(Math.max(18, Math.round(distanceKm * 3.2))),
         co2SavedGrams: Math.round(distanceKm * 42),
@@ -317,12 +377,12 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
         badge: `🌿 100% Eco Feeder / Route ${thirdBus.route}`,
         badgeColor: 'bg-pink-50 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300 border border-pink-200 dark:border-pink-800',
         modeType: 'eco',
-        serviceType: `Mo E-Ride EV Feeder + Mo Bus ${thirdBus.route}`,
-        routeNumber: `Mo E-Ride + ${thirdBus.route}`,
-        lineTitle: `Mo E-Ride Auto + Mo Bus ${thirdBus.route}`,
+        serviceType: `Ama E-Ride EV Feeder + Ama Bus ${thirdBus.route}`,
+        routeNumber: `Ama E-Ride + ${thirdBus.route}`,
+        lineTitle: `Ama E-Ride Auto + Ama Bus ${thirdBus.route}`,
         durationMins: Math.max(14, Math.round(distanceKm * 2.1)),
         transfersCount: 1,
-        fareInr: Math.max(25, Math.min(45, Math.round(15 + distanceKm * 2.0))),
+        fareInr: nonAcFare + 10,
         fareNote: 'Shared EV Auto & Connected Bus',
         arrivalTime: getArrivalTime(Math.max(14, Math.round(distanceKm * 2.1))),
         co2SavedGrams: Math.round(distanceKm * 78),
@@ -376,14 +436,16 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
             </span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Compare live CRUT Mo Bus fares and transit times to your destination
+            {isBbsr 
+              ? 'Compare live CRUT Ama Bus fares and transit times to your destination' 
+              : 'Intercity corridor routes & connecting express transit outside Bhubaneswar'}
           </p>
         </div>
         <button
           onClick={handleRefresh}
           className="self-start sm:self-auto text-xs text-slate-500 hover:text-blue-600 flex items-center gap-1.5 font-semibold transition bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm"
         >
-          <span>Mo Bus Fleet Sync</span>
+          <span>{isBbsr ? 'Ama Bus Fleet Sync' : 'Intercity Transit Sync'}</span>
           <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
         </button>
       </div>
@@ -523,16 +585,28 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
           <div className="p-2.5 rounded-xl bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
-            <span className="font-bold text-blue-700 dark:text-blue-300 block">Mo Bus AC Electric (Route 10 / 24)</span>
-            <span className="text-slate-600 dark:text-slate-300 font-semibold">₹15 – ₹30 • AC Trunk Corridor</span>
+            <span className="font-bold text-blue-700 dark:text-blue-300 block">
+              {isBbsr ? `Ama Bus AC Electric (${primaryBus.route})` : 'Indian Railways Express (3AC / CC)'}
+            </span>
+            <span className="text-slate-600 dark:text-slate-300 font-semibold">
+              {isBbsr ? `₹${acFare} • Official CRUT Tariff` : `₹${Math.max(120, Math.round(distanceKm * 0.95))} • Reserved Express`}
+            </span>
           </div>
           <div className="p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
-            <span className="font-bold text-emerald-700 dark:text-emerald-300 block">Mo Bus Non-AC Ordinary (Route 11 / 20)</span>
-            <span className="text-slate-600 dark:text-slate-300 font-semibold">₹10 – ₹15 • ₹5 for Student Pass</span>
+            <span className="font-bold text-emerald-700 dark:text-emerald-300 block">
+              {isBbsr ? `Ama Bus Non-AC Ordinary (${altBus.route})` : 'State Transport Coach (OSRTC)'}
+            </span>
+            <span className="text-slate-600 dark:text-slate-300 font-semibold">
+              {isBbsr ? `₹${nonAcFare} • ₹5 Student Pass` : `₹${Math.max(150, Math.round(distanceKm * 1.8))} • Highway Bus`}
+            </span>
           </div>
           <div className="p-2.5 rounded-xl bg-pink-50/60 dark:bg-pink-900/20 border border-pink-100 dark:border-pink-800">
-            <span className="font-bold text-pink-700 dark:text-pink-300 block">Mo E-Ride / Pink Shuttle</span>
-            <span className="text-slate-600 dark:text-slate-300 font-semibold">₹25 – ₹40 • Zero-Emission Feeder</span>
+            <span className="font-bold text-pink-700 dark:text-pink-300 block">
+              {isBbsr ? 'Ama E-Ride / Feeder EV' : 'Direct Air Transit / Flight'}
+            </span>
+            <span className="text-slate-600 dark:text-slate-300 font-semibold">
+              {isBbsr ? `₹${nonAcFare + 10} • Zero-Emission Feeder` : `₹${Math.max(2800, Math.round(distanceKm * 4.5))} • Domestic Air`}
+            </span>
           </div>
         </div>
       </div>
