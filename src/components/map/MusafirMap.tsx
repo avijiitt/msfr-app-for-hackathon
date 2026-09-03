@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { Vehicle } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
-import { getRouteDirections, RouteDirectionsResult } from '../../services/olaRoutingService';
+import { getAlternativeRoutes, RouteOption } from '../../services/olaRoutingService';
 import { GOOGLE_MAPS_API_KEY } from '../../services/googleMapsService';
 import { getHumanReadableLocationName, BHUBANESWAR_STATIONS } from '../../data/cities/bhubaneswar';
 import { findMoBusRoutesDynamic, STOP_COORDINATES_MAP, getExactStopCoordinates } from '../../data/busRoutesData';
@@ -92,6 +92,43 @@ const minDistanceToPolylineMeters = (point: [number, number], polyline: [number,
   return minD;
 };
 
+// Route Label Floating Bubble Icon (Apple / Google Maps style)
+const routeLabelIcon = (route: RouteOption, isSelected: boolean) =>
+  L.divIcon({
+    className: 'route-label-bubble',
+    html: `
+      <div style="
+        background: ${isSelected ? '#1d4ed8' : '#0f172a'};
+        color: #fff;
+        padding: 5px 11px;
+        border-radius: 12px;
+        font-family: system-ui, -apple-system, sans-serif;
+        text-align: center;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+        border: 1.5px solid ${isSelected ? 'rgba(147,197,253,0.9)' : 'rgba(255,255,255,0.2)'};
+        white-space: nowrap;
+        cursor: pointer;
+        pointer-events: auto;
+        transform: translate(-50%, -50%);
+        transition: transform 0.15s ease, background 0.2s ease;
+      ">
+        <div style="font-weight: 800; font-size: 12px; line-height: 1.1;">${route.durationMinutes} min</div>
+        ${route.label ? `<div style="font-size: 9px; font-weight: 700; color: ${isSelected ? '#bfdbfe' : '#93c5fd'};">${route.label}</div>` : ''}
+      </div>
+    `,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+
+const getRouteBubblePosition = (route: RouteOption, idx: number): [number, number] => {
+  if (!route.coordinates || route.coordinates.length === 0) return [20.2961, 85.8245];
+  // Slightly stagger along length so multiple route bubbles don't stack directly over each other
+  const fractions = [0.5, 0.38, 0.62, 0.45];
+  const fraction = fractions[idx % fractions.length];
+  const targetIdx = Math.floor(route.coordinates.length * fraction);
+  return route.coordinates[targetIdx] || route.coordinates[0];
+};
+
 // Internal Map Controller (handles bounds & camera movement)
 const MapController: React.FC<{
   originCoords: [number, number] | null;
@@ -148,12 +185,8 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
 }) => {
   // Google Map Tile Layer Types
   const [mapLayerStyle, setMapLayerStyle] = useState<'google-traffic' | 'google-roadmap' | 'google-hybrid' | 'google-terrain' | 'osm'>('google-traffic');
-  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
-  const [routeSummary, setRouteSummary] = useState<{
-    distanceKm: number;
-    durationMins: number;
-    pointsCount: number;
-  } | null>(null);
+  const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
 
   const [clickedPin, setClickedPin] = useState<{
     lat: number;
@@ -164,22 +197,21 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   const [showStops, setShowStops] = useState(true);
   const [routeStops, setRouteStops] = useState<{ name: string; coords: [number, number]; idx: number }[]>([]);
 
-  // Fetch Route Corridor Polylines
+  // Fetch Route Corridor Polylines (with all alternatives from Google Maps / OSRM)
   useEffect(() => {
     if (originCoords && destCoords) {
-      getRouteDirections(originCoords, destCoords).then((res) => {
-        setRouteCoordinates(res.coordinates);
-        setRouteSummary({
-          distanceKm: res.distanceKm,
-          durationMins: res.durationMinutes,
-          pointsCount: res.coordinates.length,
-        });
+      getAlternativeRoutes(originCoords, destCoords).then((routes) => {
+        setRouteOptions(routes);
+        setSelectedRouteId(routes[0]?.id ?? null);
       });
     } else {
-      setRouteCoordinates([]);
-      setRouteSummary(null);
+      setRouteOptions([]);
+      setSelectedRouteId(null);
     }
   }, [originCoords, destCoords]);
+
+  const selectedRoute = routeOptions.find((r) => r.id === selectedRouteId) || routeOptions[0];
+  const routeCoordinates = selectedRoute ? selectedRoute.coordinates : [];
 
   // Calculate intermediate Ama Bus stops with coordinates strictly along the route corridor (< 100 meters)
   useEffect(() => {
@@ -361,12 +393,36 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
-        {/* ─── Route Polyline ─── */}
-        {routeCoordinates.length > 0 && (
-          <Polyline
-            positions={routeCoordinates}
-            pathOptions={{ color: '#2563eb', weight: 6, opacity: 0.9 }}
-          />
+        {/* ─── Non-selected alternate routes (drawn first, dim + clickable) ─── */}
+        {routeOptions
+          .filter((r) => r.id !== selectedRouteId)
+          .map((route, idx) => (
+            <React.Fragment key={route.id}>
+              <Polyline
+                positions={route.coordinates}
+                pathOptions={{ color: '#94a3b8', weight: 5, opacity: 0.65 }}
+                eventHandlers={{ click: () => setSelectedRouteId(route.id) }}
+              />
+              <Marker
+                position={getRouteBubblePosition(route, idx + 1)}
+                icon={routeLabelIcon(route, false)}
+                eventHandlers={{ click: () => setSelectedRouteId(route.id) }}
+              />
+            </React.Fragment>
+          ))}
+
+        {/* ─── Selected route on top, bold blue ─── */}
+        {selectedRoute && (
+          <React.Fragment key={selectedRoute.id}>
+            <Polyline
+              positions={selectedRoute.coordinates}
+              pathOptions={{ color: '#2563eb', weight: 7, opacity: 0.95 }}
+            />
+            <Marker
+              position={getRouteBubblePosition(selectedRoute, 0)}
+              icon={routeLabelIcon(selectedRoute, true)}
+            />
+          </React.Fragment>
         )}
 
         {/* ─── Origin Pin ─── */}
@@ -480,12 +536,17 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
             <span className="text-[11px] font-black tracking-tight">
               {mapLayerStyle === 'google-traffic' ? '🚦 Live Traffic' : '🗺️ Google Map'}
             </span>
-            {routeSummary && (
+            {selectedRoute && (
               <>
                 <span className="text-slate-600 font-bold">•</span>
                 <span className="text-[11px] font-bold text-sky-400">
-                  {routeSummary.distanceKm} km (~{routeSummary.durationMins}m)
+                  {selectedRoute.distanceKm} km (~{selectedRoute.durationMinutes}m)
                 </span>
+                {selectedRoute.label && (
+                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-blue-600/80 text-white rounded-md tracking-tight">
+                    {selectedRoute.label}
+                  </span>
+                )}
               </>
             )}
             {routeStops.length > 0 && (

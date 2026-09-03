@@ -210,3 +210,56 @@ export async function googleGetDirections(
 
   return null;
 }
+
+export interface GoogleRouteOption {
+  coordinates: [number, number][];
+  distanceKm: number;
+  durationMinutes: number;
+  summary: string;
+  turns: number;
+  steps: Array<{ instruction: string; distance: string; duration: string }>;
+}
+
+export async function googleGetAllDirections(
+  origin: [number, number] | string,
+  destination: [number, number] | string,
+  mode: 'transit' | 'driving' | 'walking' = 'driving'
+): Promise<GoogleRouteOption[]> {
+  const origStr = typeof origin === 'string' ? origin : `${origin[0]},${origin[1]}`;
+  const destStr = typeof destination === 'string' ? destination : `${destination[0]},${destination[1]}`;
+
+  try {
+    const proxyUrl = `/api/maps/directions?origin=${encodeURIComponent(origStr)}&destination=${encodeURIComponent(destStr)}&mode=${mode}`;
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(5000) });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'OK' && Array.isArray(data.routes) && data.routes.length > 0) {
+        return data.routes
+          .map((route: any) => {
+            const leg = route.legs?.[0];
+            const polylineStr = route.overview_polyline?.points;
+            const coordinates = polylineStr ? decodeGooglePolyline(polylineStr) : [];
+            const distanceKm = leg?.distance?.value ? Math.round((leg.distance.value / 1000) * 10) / 10 : 0;
+            const durationMinutes = leg?.duration?.value ? Math.round(leg.duration.value / 60) : 0;
+            const steps = Array.isArray(leg?.steps) ? leg.steps : [];
+            return {
+              coordinates,
+              distanceKm,
+              durationMinutes,
+              summary: route.summary || leg?.start_address || 'Route',
+              turns: steps.length,
+              steps: steps.map((st: any) => ({
+                instruction: st.html_instructions ? st.html_instructions.replace(/<[^>]*>?/gm, '') : st.instructions || '',
+                distance: st.distance?.text || '',
+                duration: st.duration?.text || '',
+              })),
+            };
+          })
+          .filter((r: GoogleRouteOption) => r.coordinates.length > 1);
+      }
+    }
+  } catch (err) {
+    console.warn('Google Directions (all routes) proxy error:', err);
+  }
+  return [];
+}

@@ -1,4 +1,4 @@
-import { googleGetDirections } from './googleMapsService';
+import { googleGetDirections, googleGetAllDirections } from './googleMapsService';
 
 /**
  * Maps Routing & Navigation Service
@@ -182,3 +182,109 @@ export async function getRouteDirections(
     source: 'interpolated',
   };
 }
+
+export interface RouteOption {
+  id: string;
+  coordinates: [number, number][];
+  distanceKm: number;
+  durationMinutes: number;
+  turns: number;
+  summary: string;
+  label: 'Fastest' | 'Fewer turns' | 'Shortest' | null;
+  source: 'google_maps' | 'osrm_fallback' | 'interpolated';
+}
+
+export async function getAlternativeRoutes(
+  origin: [number, number],
+  destination: [number, number]
+): Promise<RouteOption[]> {
+  let raw: Array<{
+    coordinates: [number, number][];
+    distanceKm: number;
+    durationMinutes: number;
+    turns: number;
+    summary: string;
+    source: 'google_maps' | 'osrm_fallback' | 'interpolated';
+  }> = [];
+
+  // 1. Google Maps — server proxy already sends alternatives=true
+  try {
+    const gRoutes = await googleGetAllDirections(origin, destination, 'driving');
+    if (gRoutes.length > 0) {
+      raw = gRoutes.map((r) => ({ ...r, source: 'google_maps' as const }));
+    }
+  } catch (e) {
+    console.warn('Alternative routes (Google) error:', e);
+  }
+
+  // 2. OSRM fallback with alternatives, only if Google gave nothing
+  if (raw.length === 0) {
+    try {
+      const [oLat, oLng] = origin;
+      const [dLat, dLng] = destination;
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=full&geometries=geojson&alternatives=true&steps=true`;
+      const osrmRes = await fetch(osrmUrl, { signal: AbortSignal.timeout(4000) });
+      if (osrmRes.ok) {
+        const osrmData = await osrmRes.json();
+        if (Array.isArray(osrmData.routes)) {
+          raw = osrmData.routes.map((route: any) => {
+            const geoCoords = route.geometry.coordinates as [number, number][];
+            const coordinates: [number, number][] = geoCoords.map(([lng, lat]) => [lat, lng]);
+            const legSteps = route.legs?.[0]?.steps || [];
+            return {
+              coordinates,
+              distanceKm: Math.round((route.distance / 1000) * 10) / 10,
+              durationMinutes: Math.round(route.duration / 60),
+              turns: legSteps.length,
+              summary: 'OSRM Route',
+              source: 'osrm_fallback' as const,
+            };
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Alternative routes (OSRM) error:', e);
+    }
+  }
+
+  if (raw.length === 0) {
+    // If offline or both fail, fallback to single direct corridor route
+    const single = await getRouteDirections(origin, destination);
+    if (single && single.coordinates.length > 0) {
+      return [{
+        id: 'route-0',
+        coordinates: single.coordinates,
+        distanceKm: single.distanceKm,
+        durationMinutes: single.durationMinutes,
+        turns: 4,
+        summary: single.summary,
+        label: 'Fastest',
+        source: single.source as any,
+      }];
+    }
+    return [];
+  }
+
+  // Drop near-duplicate routes
+  const deduped = raw.filter(
+    (r, idx, arr) =>
+      arr.findIndex(
+        (x) => Math.abs(x.distanceKm - r.distanceKm) < 0.05 && Math.abs(x.durationMinutes - r.durationMinutes) < 0.5
+      ) === idx
+  );
+
+  const fastestIdx = deduped.reduce((best, r, i, a) => (r.durationMinutes < a[best].durationMinutes ? i : best), 0);
+  const fewerTurnsIdx = deduped.reduce((best, r, i, a) => (r.turns < a[best].turns ? i : best), 0);
+  const shortestIdx = deduped.reduce((best, r, i, a) => (r.distanceKm < a[best].distanceKm ? i : best), 0);
+
+  return deduped
+    .map((r, i) => {
+      let label: RouteOption['label'] = null;
+      if (i === fastestIdx) label = 'Fastest';
+      else if (i === fewerTurnsIdx && fewerTurnsIdx !== fastestIdx) label = 'Fewer turns';
+      else if (i === shortestIdx && shortestIdx !== fastestIdx && shortestIdx !== fewerTurnsIdx) label = 'Shortest';
+      return { id: `route-${i}`, ...r, label };
+    })
+    .sort((a, b) => a.durationMinutes - b.durationMinutes);
+}
+
