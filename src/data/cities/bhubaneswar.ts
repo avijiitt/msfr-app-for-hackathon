@@ -746,7 +746,16 @@ export function findMatchingMoBusRoutes(originQuery: string, destQuery: string):
   // Fallbacks if no direct match is found
   if (directMatches.length === 0) {
     // Check popular corridors
-    if (normO.includes('airport') || normD.includes('airport')) {
+    if (normO.includes('trident') || normD.includes('trident')) {
+      directMatches.push(
+        {
+          route: '10',
+          path: 'Biju Patnaik Airport – Infocity Square (Drop at Infocity Square ➔ 200m Walk or Auto to Trident)',
+          origin: 'Biju Patnaik Airport',
+          destination: 'Infocity Square (Connect to Trident)'
+        }
+      );
+    } else if (normO.includes('airport') || normD.includes('airport')) {
       directMatches.push(
         STANDARD_MO_BUS_ROUTES.find((r) => r.route === '10')!,
         STANDARD_MO_BUS_ROUTES.find((r) => r.route === '17')!,

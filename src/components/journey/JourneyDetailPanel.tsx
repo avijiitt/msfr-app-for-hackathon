@@ -342,6 +342,37 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
             </>
           )}
 
+          {/* Trident College Transfer Leg (Bus 10 drops at Infocity Sq ➔ 200m Walk or Auto) */}
+          {(cleanTo.toLowerCase().includes('trident') || destinationName.toLowerCase().includes('trident')) && (
+            <>
+              <div className="pl-1.5 ml-2.5 border-l-2 border-dashed border-amber-400 dark:border-amber-600 py-1 space-y-1">
+                <div className="pl-4 flex items-center gap-2 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
+                  <span>🛺 Shared Auto or 🚶 200m Walk</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-semibold ml-auto">{formatTime(Math.round(totalDurationMins * 0.85))}</span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 relative">
+                <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm text-xs font-bold">
+                  🚶
+                </div>
+                <div className="flex-1 space-y-1 bg-amber-50/70 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/60">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-amber-900 dark:text-amber-200">
+                      Infocity Square ➔ Trident College
+                    </span>
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-1.5 py-0.5 rounded">
+                      200 m (3 min)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
+                    ℹ️ Bus No. 10 Infocity Square tak aati hai. Wahan se Trident College sirf 200 m walk ya 1 min e-auto hai.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Step 4: Arrival at Destination */}
           <div className="flex items-start gap-3 relative pt-1">
             <div className="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0 z-10 text-[9px] shadow-sm font-bold">
