@@ -16,7 +16,6 @@ interface MobileLiveMapProps {
   onBackToPlanner?: () => void;
   onOpenRideDetails?: () => void;
   isAnyModalOpen?: boolean;
-  logisticsWaypoints?: DeliveryWaypoint[];
 }
 
 export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
@@ -31,7 +30,6 @@ export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
   onBackToPlanner,
   onOpenRideDetails,
   isAnyModalOpen = false,
-  logisticsWaypoints,
 }) => {
   const nearbyStops = [
     { id: '1', name: 'Jayadev Vihar Square', walkMins: 2, distanceM: 150, routes: ['Route 10', 'Route 11'] },
@@ -78,7 +76,6 @@ export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
           originName={originQuery}
           destinationName={destQuery}
           isAnyModalOpen={isAnyModalOpen}
-          logisticsWaypoints={logisticsWaypoints}
         />
       </div>
 

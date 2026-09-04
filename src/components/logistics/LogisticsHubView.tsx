@@ -38,7 +38,9 @@ import {
   Activity,
   ArrowLeft,
   MoreVertical,
-  Info
+  Info,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -285,6 +287,10 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
 
   // Active View Tab on small devices: 'form' | 'route' | 'safety'
   const [activeMobileView, setActiveMobileView] = useState<'both' | 'form' | 'route' | 'safety'>('both');
+
+  // Full-screen Logistics Map State & Google Maps Layer
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [logisticsMapLayer, setLogisticsMapLayer] = useState<'google-traffic' | 'google-roadmap' | 'google-hybrid'>('google-traffic');
 
   // Compute Anti-Gravity / Multi-Objective Route Plan
   const plan: AntiGravityRoutePlan = computeAntiGravityRoute(
@@ -1078,20 +1084,23 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-white">Optimized Route Corridor</h3>
-                  <p className="text-[11px] text-slate-400">Live Multi-Drop Road GPS Tracking</p>
+                  <h3 className="text-sm font-black text-white flex items-center gap-1.5">
+                    <span>Optimized Route Corridor</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-600/20 text-blue-400 border border-blue-500/30 font-bold">Google Maps</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">Live Multi-Drop Road GPS Tracking (Zero API Key Required)</p>
                 </div>
                 <button
                   type="button"
-                  onClick={onNavigateToMap}
-                  className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition"
+                  onClick={() => setIsMapExpanded(true)}
+                  className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111B2E] border border-slate-700 hover:border-emerald-500/40 transition cursor-pointer"
                 >
-                  <span>Full Map</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>Expand Map</span>
                 </button>
               </div>
 
-              {/* Real-time Interactive Leaflet Map Preview with Multi-Stop Polyline */}
+              {/* Real-time Interactive Google Maps Preview with Multi-Stop Polyline */}
               <div className="relative h-64 sm:h-72 rounded-2xl overflow-hidden bg-[#0A111E] border border-slate-800">
                 <MapContainer
                   center={[originHub.lat, originHub.lng]}
@@ -1106,10 +1115,17 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                     ]}
                   />
 
+                  {/* Google Maps Real-Time Tile Layer (Zero API Key Required) */}
                   <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                    attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-                    maxZoom={19}
+                    url={
+                      logisticsMapLayer === 'google-traffic'
+                        ? 'https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}'
+                        : logisticsMapLayer === 'google-hybrid'
+                        ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
+                        : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
+                    }
+                    attribution='&copy; <a href="https://maps.google.com">Google Maps</a>'
+                    maxZoom={20}
                   />
 
                   {/* Warehouse Origin Pin */}
@@ -1175,7 +1191,44 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                 {/* Live Floating Badge on Map */}
                 <div className="absolute top-2.5 left-2.5 z-[1000] bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-800 text-[11px] text-white flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="font-bold">Live GPS Corridor: {waypoints.length} Stops Active</span>
+                  <span className="font-bold">Google Maps Live: {waypoints.length} Stops Active</span>
+                </div>
+
+                {/* Google Maps Layer Selector (Zero API Key) */}
+                <div className="absolute bottom-2.5 right-2.5 z-[1000] flex gap-1 bg-slate-950/90 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setLogisticsMapLayer('google-traffic')}
+                    className={`px-2 py-0.5 rounded-lg font-bold transition cursor-pointer ${
+                      logisticsMapLayer === 'google-traffic'
+                        ? 'bg-emerald-600 text-white'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🚦 Traffic
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogisticsMapLayer('google-roadmap')}
+                    className={`px-2 py-0.5 rounded-lg font-bold transition cursor-pointer ${
+                      logisticsMapLayer === 'google-roadmap'
+                        ? 'bg-emerald-600 text-white'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🗺️ Roads
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogisticsMapLayer('google-hybrid')}
+                    className={`px-2 py-0.5 rounded-lg font-bold transition cursor-pointer ${
+                      logisticsMapLayer === 'google-hybrid'
+                        ? 'bg-emerald-600 text-white'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🛰️ Satellite
+                  </button>
                 </div>
               </div>
 
@@ -1257,7 +1310,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                onClick={onNavigateToMap}
+                onClick={() => setIsMapExpanded(true)}
                 className="flex-1 py-3.5 rounded-full border border-slate-700 bg-[#111B2E] hover:bg-slate-800 text-white font-black text-xs md:text-sm flex items-center justify-center gap-2 transition cursor-pointer"
               >
                 <Layers className="w-4 h-4" />
@@ -1558,6 +1611,171 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                 <Send className="w-4 h-4" />
                 <span>Dispatch Alert & Photo</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-Screen Google Maps Logistics Corridor Modal (Zero API Key) */}
+      {isMapExpanded && (
+        <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex flex-col p-3 sm:p-6 animate-in fade-in">
+          <div className="bg-[#0C1322] border border-slate-800 rounded-3xl flex-1 flex flex-col overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+              <div className="flex items-center gap-3">
+                <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
+                <div>
+                  <h3 className="text-sm font-black text-white flex items-center gap-2">
+                    <span>Google Maps Logistics Corridor</span>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono">
+                      Zero API Key Required
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    Warehouse + {waypoints.length} Dispatch Stops Active
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Layer switch */}
+                <div className="flex gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setLogisticsMapLayer('google-traffic')}
+                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                      logisticsMapLayer === 'google-traffic'
+                        ? 'bg-emerald-600 text-white'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🚦 Live Traffic
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogisticsMapLayer('google-roadmap')}
+                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                      logisticsMapLayer === 'google-roadmap'
+                        ? 'bg-emerald-600 text-white'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🗺️ Roads
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogisticsMapLayer('google-hybrid')}
+                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                      logisticsMapLayer === 'google-hybrid'
+                        ? 'bg-emerald-600 text-white'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🛰️ Satellite
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsMapExpanded(false)}
+                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
+                  title="Close Map"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Map */}
+            <div className="flex-1 w-full h-full relative">
+              <MapContainer
+                center={[originHub.lat, originHub.lng]}
+                zoom={13}
+                className="w-full h-full z-0"
+                zoomControl={true}
+              >
+                <MapBoundsUpdater
+                  coords={[
+                    [originHub.lat, originHub.lng],
+                    ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
+                  ]}
+                />
+                <TileLayer
+                  url={
+                    logisticsMapLayer === 'google-traffic'
+                      ? 'https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}'
+                      : logisticsMapLayer === 'google-hybrid'
+                      ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
+                      : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
+                  }
+                  attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a>'
+                  maxZoom={20}
+                />
+
+                {/* Warehouse Origin Marker */}
+                <Marker
+                  position={[originHub.lat, originHub.lng]}
+                  icon={createLogisticsWarehouseIcon()}
+                >
+                  <Popup>
+                    <div className="text-xs font-bold text-slate-900 p-1">
+                      <div className="text-emerald-700 font-extrabold flex items-center gap-1">
+                        <span>🏭 Logistics Base Hub</span>
+                      </div>
+                      <div className="text-slate-800 font-bold mt-1">{originHub.name}</div>
+                      <div className="text-[10px] text-slate-500 font-mono mt-1">
+                        Google Maps: {originHub.lat.toFixed(4)}, {originHub.lng.toFixed(4)}
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+
+                {/* Route Path */}
+                <Polyline
+                  positions={[
+                    [originHub.lat, originHub.lng],
+                    ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
+                  ]}
+                  pathOptions={{ color: '#10b981', weight: 5, opacity: 0.9 }}
+                />
+
+                {/* Waypoints */}
+                {waypoints.map((wp, idx) => {
+                  const isLast = idx === waypoints.length - 1;
+                  return (
+                    <Marker
+                      key={wp.id}
+                      position={[wp.lat, wp.lng]}
+                      icon={createLogisticsStopIcon(idx + 1, isLast)}
+                    >
+                      <Popup>
+                        <div className="text-xs font-bold text-slate-900 p-1 min-w-[200px]">
+                          <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+                            <span className="text-emerald-600 font-extrabold">Stop #{idx + 1}</span>
+                            <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono">
+                              {wp.packageWeightKg} kg
+                            </span>
+                          </div>
+                          <div className="text-xs font-black text-slate-900 mt-1 capitalize">{wp.recipientName}</div>
+                          <div className="text-[11px] text-slate-600 mt-0.5">{wp.address}</div>
+                          <div className="text-[10px] text-slate-500 font-mono mt-1">
+                            Google Maps: {wp.lat.toFixed(4)}, {wp.lng.toFixed(4)}
+                          </div>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${wp.lat},${wp.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:underline font-bold mt-1.5"
+                          >
+                            <span>📍 Verify on Google Maps</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+              </MapContainer>
             </div>
           </div>
         </div>

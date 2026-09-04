@@ -619,7 +619,6 @@ export const App: React.FC = () => {
                   destinationName={destQuery}
                   isAnyModalOpen={isAnyModalOpen}
                   isGpsActive={isGpsActive}
-                  logisticsWaypoints={logisticsWaypoints}
                 />
 
                 <BestRoutesCarousel

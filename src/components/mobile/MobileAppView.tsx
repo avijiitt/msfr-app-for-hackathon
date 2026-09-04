@@ -144,7 +144,6 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
             onSelectLocationOnMap={onSelectLocationOnMap}
             onBackToPlanner={() => setActiveTab('home')}
             onOpenRideDetails={() => setIsRideDetailsOpen(true)}
-            logisticsWaypoints={logisticsWaypoints}
           />
         ) : activeTab === 'transportation' ? (
           <TransportationHubView
