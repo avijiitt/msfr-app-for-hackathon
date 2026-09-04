@@ -504,7 +504,6 @@ export const App: React.FC = () => {
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           onSearchFocusChange={setIsSearchFocused}
           onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
-          onOpenAI={() => setIsAIAssistantOpen(true)}
           currentLang={currentLang}
           onOpenLanguageModal={() => setIsLangSelectOpen(true)}
           t={t}
@@ -522,7 +521,6 @@ export const App: React.FC = () => {
               onOpenSOS={() => setIsSosOpen(true)}
               onOpenStudent={() => setIsStudentOpen(true)}
               onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
-              onOpenAI={() => setIsAIAssistantOpen(true)}
               onSelectSavedPlace={(place) => setDestQuery(place)}
               t={t}
             />

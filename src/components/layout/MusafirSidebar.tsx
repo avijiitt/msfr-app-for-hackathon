@@ -87,7 +87,6 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   ];
 
   const quickAccess = [
-    ...(onOpenAI ? [{ label: '🤖 Musafir AI Assistant', icon: Sparkles, color: 'text-violet-600 font-bold', action: onOpenAI }] : []),
     { label: 'Ama Bus (82 Lines)', icon: Bus, color: 'text-blue-600 font-bold', action: onOpenBusRoutes || onOpenNearbyStops },
     { label: 'Nearby Stores', icon: MapPin, color: 'text-emerald-600', action: onOpenNearbyStops },
     { label: t?.studentPass || 'Student Pass', icon: GraduationCap, color: 'text-purple-600', action: onOpenStudent },
@@ -104,26 +103,6 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
 
   return (
     <aside className="w-full lg:w-64 flex-shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-130px)] lg:sticky lg:top-24 shadow-sm">
-      {/* 0. Musafir AI Assistant Quick Trigger */}
-      {onOpenAI && (
-        <button
-          onClick={onOpenAI}
-          type="button"
-          className="w-full p-3 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white flex items-center justify-between shadow-sm shadow-violet-500/25 hover:brightness-105 active:scale-95 transition group"
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-            </div>
-            <div className="text-left">
-              <div className="text-xs font-black tracking-wide">Musafir AI</div>
-              <div className="text-[10px] text-violet-100 opacity-90">Ask route, fare & SOS</div>
-            </div>
-          </div>
-          <span className="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-bold">Ask</span>
-        </button>
-      )}
-
       {/* 1. Main Navigation Items */}
       <nav className="space-y-1">
         {mainNav.map((item) => {

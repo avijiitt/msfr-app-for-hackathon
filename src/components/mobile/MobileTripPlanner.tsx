@@ -96,18 +96,68 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
     }, 500);
   }, [onDestChange]);
 
+  const handleVoiceOrigin = useCallback((spoken: string) => {
+    const clean = spoken.trim().replace(/[.,;!?]+$/, '');
+    onOriginChange(clean);
+    setIsOriginFocused(true);
+
+    const matched = indiaGeocodingService.findBestVoiceMatch(clean);
+    const results = indiaGeocodingService.searchLocations(clean);
+    setOriginSuggestions(results);
+
+    if (matched) {
+      onOriginChange(matched.name);
+      onOriginSelected?.(matched);
+      if (destQuery) {
+        onSearch(matched.name, destQuery);
+      }
+    } else {
+      searchOrigin(clean);
+    }
+  }, [destQuery, onOriginChange, onOriginSelected, onSearch, searchOrigin]);
+
+  const handleVoiceDest = useCallback((spoken: string) => {
+    const clean = spoken.trim().replace(/[.,;!?]+$/, '');
+    onDestChange(clean);
+    setIsDestFocused(true);
+
+    const matched = indiaGeocodingService.findBestVoiceMatch(clean);
+    const results = indiaGeocodingService.searchLocations(clean);
+    setDestSuggestions(results);
+
+    if (matched) {
+      onDestChange(matched.name);
+      onDestSelected?.(matched);
+      if (originQuery) {
+        onSearch(originQuery, matched.name);
+      }
+    } else {
+      searchDest(clean);
+    }
+  }, [originQuery, onDestChange, onDestSelected, onSearch, searchDest]);
+
   const originVoice = useVoiceInput({
-    onResult: (spoken) => {
-      searchOrigin(spoken);
+    onInterimResult: (interim) => {
+      onOriginChange(interim);
       setIsOriginFocused(true);
+      const results = indiaGeocodingService.searchLocations(interim);
+      setOriginSuggestions(results);
+    },
+    onResult: (spoken) => {
+      handleVoiceOrigin(spoken);
     },
     lang: 'en-IN',
   });
 
   const destVoice = useVoiceInput({
-    onResult: (spoken) => {
-      searchDest(spoken);
+    onInterimResult: (interim) => {
+      onDestChange(interim);
       setIsDestFocused(true);
+      const results = indiaGeocodingService.searchLocations(interim);
+      setDestSuggestions(results);
+    },
+    onResult: (spoken) => {
+      handleVoiceDest(spoken);
     },
     lang: 'en-IN',
   });

@@ -37,9 +37,6 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
     controlledOnClose?.();
   };
 
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState('');
-
   const [messages, setMessages] = useState<AIMessage[]>([
     {
       id: 'init-msg',
@@ -277,13 +274,6 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
 
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setShowApiKeyModal(!showApiKeyModal)}
-                className="p-2 rounded-xl hover:bg-white/20 text-white transition text-xs font-bold flex items-center gap-1"
-                title="Custom Gemini API Key"
-              >
-                🔑
-              </button>
-              <button
                 onClick={() => setIsVoiceOutputEnabled(!isVoiceOutputEnabled)}
                 className="p-2 rounded-xl hover:bg-white/20 text-white transition"
                 title={isVoiceOutputEnabled ? 'Voice audio enabled' : 'Voice audio muted'}
@@ -299,37 +289,6 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
               </button>
             </div>
           </div>
-
-          {/* Optional Custom Gemini API Key Drawer */}
-          {showApiKeyModal && (
-            <div className="p-3 bg-violet-50 dark:bg-violet-950/70 border-b border-violet-200 dark:border-violet-800 text-xs flex flex-col gap-2 animate-in fade-in">
-              <div className="flex items-center justify-between font-bold text-violet-900 dark:text-violet-200">
-                <span>🔑 Custom Google Gemini API Key</span>
-                <button onClick={() => setShowApiKeyModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  placeholder="Paste AI Studio API Key..."
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                  className="flex-1 px-3 py-1.5 rounded-xl border border-violet-300 dark:border-violet-700 bg-white dark:bg-slate-900 text-xs"
-                />
-                <button
-                  onClick={() => {
-                    aiAssistantService.setApiKey(apiKeyInput);
-                    setShowApiKeyModal(false);
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-violet-600 text-white font-bold text-xs shadow-sm hover:bg-violet-700"
-                >
-                  Save
-                </button>
-              </div>
-              <span className="text-[10px] text-violet-600 dark:text-violet-400">
-                Offline intelligent action operator is active by default. Key enables live Google Gemini 2.0.
-              </span>
-            </div>
-          )}
 
           {/* Quick Action Suggestion Chips */}
           <div className="p-2.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto">

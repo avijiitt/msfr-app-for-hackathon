@@ -164,7 +164,15 @@ export const MobileRideDetails: React.FC<MobileRideDetailsProps> = ({
       </div>
 
       {/* Bottom Floating CTA Button */}
-      <div className="p-4 pt-2">
+      <div className="p-4 pt-2 space-y-2">
+        <button
+          onClick={() => alert('Unified Connected QR Pass: Single digital ticket valid across Feeder + Ama Bus.')}
+          className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-2xl font-extrabold text-xs shadow-md shadow-emerald-600/30 flex justify-center items-center gap-2 active:scale-[0.98] transition"
+        >
+          <span className="material-symbols-outlined text-[18px]">confirmation_number</span>
+          <span>🎟️ Book Unified Transit Pass (₹15)</span>
+        </button>
+
         <button
           onClick={onStartTracking}
           className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-xl shadow-blue-600/30 flex justify-center items-center gap-2 active:scale-[0.98] transition"

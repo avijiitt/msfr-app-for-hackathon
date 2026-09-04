@@ -252,9 +252,59 @@ export async function geocodeAddressIndia(query: string): Promise<IndiaLocationR
 import { STOP_COORDINATES_MAP } from '../data/busRoutesData';
 
 class IndiaGeocodingService {
+  public findBestVoiceMatch(query: string): IndiaLocationResult | undefined {
+    const q = (query || '').toLowerCase().trim().replace(/[.,;!?]+$/, '');
+    if (!q) return undefined;
+
+    // Phonetic & spoken aliases for Bhubaneswar and transit corridors
+    const aliases: { match: RegExp; id: string }[] = [
+      { match: /\b(jayadev|jaydev|jaidev|jayadev\s*vihar|jaydev\s*vihar)\b/i, id: 'bbs-jayadev' },
+      { match: /\b(kiit|k\s*i\s*i\s*t|kit|kiit\s*square|kiit\s*university)\b/i, id: 'bbs-kiit' },
+      { match: /\b(airport|biman\s*bandar|biju\s*patnaik|bbi|flight)\b/i, id: 'bbs-airport' },
+      { match: /\b(master\s*canteen|railway\s*station|station\s*plaza|train\s*station|station)\b/i, id: 'bbs-master-canteen' },
+      { match: /\b(baramunda|isbt|bus\s*stand|barmunda|babasaheb)\b/i, id: 'bbs-baramunda' },
+      { match: /\b(patia|patia\s*square|patia\s*station|patia\s*chhak)\b/i, id: 'bbs-patia' },
+      { match: /\b(damana|damana\s*square|damana\s*chhak|cspur|chandrasekharpur)\b/i, id: 'bbs-damana' },
+      { match: /\b(khandagiri|udayagiri|khandagiri\s*square|khandagiri\s*caves)\b/i, id: 'bbs-khandagiri' },
+      { match: /\b(rasulgarh|rasulgarh\s*square|cuttack\s*road)\b/i, id: 'bbs-rasulgarh' },
+      { match: /\b(vani\s*vihar|banivihar|utkal\s*university|vani\s*bihar)\b/i, id: 'bbs-vanivihar' },
+      { match: /\b(aiims|aiims\s*hospital|patrapada|sijua)\b/i, id: 'bbs-aiims' },
+      { match: /\b(infocity|dlf|cybercity|cyber\s*city)\b/i, id: 'bbs-infocity' },
+      { match: /\b(iter|soa|jagamara|siksha\s*o\s*anusandhan)\b/i, id: 'bbs-iter' },
+      { match: /\b(silicon|silicon\s*tech|silicon\s*university)\b/i, id: 'bbs-silicon' },
+      { match: /\b(kims|kims\s*hospital)\b/i, id: 'bbs-kims' },
+      { match: /\b(sum\s*hospital|sum|ims\s*sum)\b/i, id: 'bbs-sum-hosp' },
+      { match: /\b(utkal\s*hospital|niladri\s*vihar)\b/i, id: 'bbs-utkal-hosp' },
+      { match: /\b(care\s*hospital|care)\b/i, id: 'bbs-care-hosp' },
+      { match: /\b(kalinga\s*hospital)\b/i, id: 'bbs-kalinga-hosp' },
+      { match: /\b(nandankanan|zoo|botanical)\b/i, id: 'bbs-nandankanan' },
+      { match: /\b(cuttack|badambadi)\b/i, id: 'bbs-cuttack' },
+      { match: /\b(puri|jagannath)\b/i, id: 'bbs-puri' },
+      { match: /\b(kalpana|bjb\s*college|state\s*museum)\b/i, id: 'bbs-kalpana' },
+      { match: /\b(sailashree\s*vihar|sailashree)\b/i, id: 'bbs-sailashree' },
+      { match: /\b(lingaraj|lingaraj\s*temple|old\s*town)\b/i, id: 'bbs-lingaraj' },
+      { match: /\b(royal\s*lagoon)\b/i, id: 'bbs-royal-lagoon' },
+      { match: /\b(trident)\b/i, id: 'bbs-trident-infocity' },
+      { match: /\b(outr|cet|ghatikia)\b/i, id: 'bbs-outr' },
+      { match: /\b(cvrce|cv\s*raman)\b/i, id: 'bbs-cvrce' },
+    ];
+
+    for (const a of aliases) {
+      if (a.match.test(q)) {
+        return POPULAR_INDIAN_LOCATIONS.find(l => l.id === a.id);
+      }
+    }
+
+    return POPULAR_INDIAN_LOCATIONS.find(loc =>
+      loc.name.toLowerCase().includes(q) || q.includes(loc.name.toLowerCase().split(',')[0].trim())
+    );
+  }
+
   public searchLocations(query: string): IndiaLocationResult[] {
     const q = (query || '').trim().toLowerCase();
     if (!q) return POPULAR_INDIAN_LOCATIONS.slice(0, 10);
+
+    const voiceBest = this.findBestVoiceMatch(q);
     
     // 1. Check POPULAR_INDIAN_LOCATIONS
     const directMatches = POPULAR_INDIAN_LOCATIONS.filter(loc =>
@@ -263,6 +313,15 @@ class IndiaGeocodingService {
       loc.state.toLowerCase().includes(q) ||
       loc.formattedAddress.toLowerCase().includes(q)
     );
+
+    // If voice best match exists, ensure it is at index 0
+    if (voiceBest) {
+      const idx = directMatches.findIndex(m => m.id === voiceBest.id);
+      if (idx > -1) {
+        directMatches.splice(idx, 1);
+      }
+      directMatches.unshift(voiceBest);
+    }
 
     // 2. Also search all Mo Bus Stoppages from STOP_COORDINATES_MAP only if query looks like a local stop name
     const stopMatches: IndiaLocationResult[] = [];

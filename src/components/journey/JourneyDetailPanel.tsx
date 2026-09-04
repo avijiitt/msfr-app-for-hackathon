@@ -125,7 +125,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   };
 
   return (
-    <div className="w-full lg:w-96 flex-shrink-0 dashboard-card rounded-3xl p-5 flex flex-col justify-between gap-5">
+    <div className="w-full lg:w-96 flex-shrink-0 dashboard-card rounded-3xl p-5 flex flex-col justify-start gap-4 lg:self-start lg:sticky lg:top-24 max-h-[calc(100vh-120px)] overflow-y-auto">
       {/* Top Header */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -360,10 +360,45 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
         </div>
       </div>
 
-      {/* Bottom Actions: Fare Breakdown, Trip Assurance & Start Navigation */}
+      {/* Bottom Actions: Ticket Booking directly under plan, Navigation & Assurance */}
       <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+        {/* Prominent Unified Ticket Booking Card right below trip plan */}
+        <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-emerald-500/5 border border-emerald-500/30 dark:border-emerald-500/20 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Ticket className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs font-black text-slate-900 dark:text-white">Unified Connected QR Pass</span>
+            </div>
+            <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700">₹{totalFareInr}</span>
+          </div>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
+            Single digital pass valid across all connected Feeder + Ama Bus routes. No cash ticket needed.
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsTicketPaymentOpen(true)}
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/30 transition active:scale-98 flex items-center justify-center gap-1.5"
+          >
+            <Ticket className="w-4 h-4" />
+            <span>🎟️ Book Unified Ticket Pass (₹{totalFareInr})</span>
+          </button>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={onStartNavigation}
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition active:scale-98"
+          >
+            <Navigation className="w-4 h-4 fill-white" />
+            <span>{t?.startTripSync || 'Track & Sync Trip'}</span>
+          </button>
+        </div>
+
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={onOpenFareDetails}
             className="flex-1 flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold transition"
           >
@@ -372,6 +407,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={onOpenTripAssurance}
             className="flex-1 flex items-center justify-center gap-1.5 p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 transition"
           >
@@ -379,25 +415,6 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
             <span>Assurance</span>
           </button>
         </div>
-        
-        {/* Actions */}
-        <div className="pt-2 flex flex-col gap-2">
-          <button
-            onClick={onStartNavigation}
-            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition active:scale-98"
-          >
-            <Navigation className="w-4 h-4 fill-white" />
-            <span>{t?.startTripSync || 'Track & Sync Trip'}</span>
-          </button>
-        </div>
-
-        <button
-          onClick={() => setIsTicketPaymentOpen(true)}
-          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 text-white font-extrabold text-xs shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-1.5"
-        >
-          <Ticket className="w-4 h-4" />
-          <span>🎟️ Unified Connected QR Pass — Pay Once for All Rides (₹{totalFareInr})</span>
-        </button>
       </div>
 
       {/* Ticket Booking Payment Gateway Modal */}

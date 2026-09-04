@@ -128,18 +128,68 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
     onSearch(destQuery, temp);
   };
 
+  const handleVoiceOriginResult = useCallback((spokenText: string) => {
+    const clean = spokenText.trim().replace(/[.,;!?]+$/, '');
+    setOriginQuery(clean);
+    handleFocusOrigin(true);
+
+    const matched = indiaGeocodingService.findBestVoiceMatch(clean);
+    const results = indiaGeocodingService.searchLocations(clean);
+    setOriginSuggestions(results);
+
+    if (matched) {
+      setOriginQuery(matched.name);
+      onOriginSelected?.(matched);
+      if (destQuery) {
+        onSearch(matched.name, destQuery);
+      }
+    } else {
+      searchOrigin(clean);
+    }
+  }, [destQuery, onOriginSelected, onSearch, searchOrigin]);
+
+  const handleVoiceDestResult = useCallback((spokenText: string) => {
+    const clean = spokenText.trim().replace(/[.,;!?]+$/, '');
+    setDestQuery(clean);
+    handleFocusDest(true);
+
+    const matched = indiaGeocodingService.findBestVoiceMatch(clean);
+    const results = indiaGeocodingService.searchLocations(clean);
+    setDestSuggestions(results);
+
+    if (matched) {
+      setDestQuery(matched.name);
+      onDestSelected?.(matched);
+      if (originQuery) {
+        onSearch(originQuery, matched.name);
+      }
+    } else {
+      searchDest(clean);
+    }
+  }, [originQuery, onDestSelected, onSearch, searchDest]);
+
   const originVoice = useVoiceInput({
-    onResult: (spokenText) => {
-      searchOrigin(spokenText);
+    onInterimResult: (interim) => {
+      setOriginQuery(interim);
       handleFocusOrigin(true);
+      const results = indiaGeocodingService.searchLocations(interim);
+      setOriginSuggestions(results);
+    },
+    onResult: (spokenText) => {
+      handleVoiceOriginResult(spokenText);
     },
     lang: 'en-IN',
   });
 
   const destVoice = useVoiceInput({
-    onResult: (spokenText) => {
-      searchDest(spokenText);
+    onInterimResult: (interim) => {
+      setDestQuery(interim);
       handleFocusDest(true);
+      const results = indiaGeocodingService.searchLocations(interim);
+      setDestSuggestions(results);
+    },
+    onResult: (spokenText) => {
+      handleVoiceDestResult(spokenText);
     },
     lang: 'en-IN',
   });
@@ -409,22 +459,45 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
                   </div>
                 )}
 
+                {originVoice.isListening && (
+                  <div className="p-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800 flex items-center gap-2 text-violet-700 dark:text-violet-300 text-xs font-bold animate-pulse mb-1">
+                    <Mic className="w-4 h-4 animate-bounce text-violet-600" />
+                    <span>🎙️ Listening to Departure... Speak city or stop name</span>
+                  </div>
+                )}
+                {originVoice.errorMessage && (
+                  <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[11px] font-semibold mb-1">
+                    ⚠️ {originVoice.errorMessage}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between px-2 pt-1 pb-1 border-t border-slate-100 dark:border-slate-700">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    🇮🇳 Search Results / Stations
+                    {originQuery ? '🎯 Matched Locations & Suggestions' : '🇮🇳 Search Results / Stations'}
                   </span>
                   {isOriginLoading && <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />}
                 </div>
-                {originSuggestions.map((item) => (
+                {originSuggestions.map((item, idx) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => handleSelectOrigin(item)}
-                    className="w-full text-left p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800/80 flex items-start gap-2.5 text-xs transition group"
+                    className={`w-full text-left p-2 rounded-xl flex items-start gap-2.5 text-xs transition group ${
+                      idx === 0 && originQuery.trim().length >= 2
+                        ? 'bg-blue-50/80 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                        : 'hover:bg-blue-50 dark:hover:bg-slate-800/80'
+                    }`}
                   >
                     <MapPin className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
-                    <div className="min-w-0">
-                      <strong className="text-slate-800 dark:text-slate-200 block truncate group-hover:text-blue-600">{item.name}</strong>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <strong className="text-slate-800 dark:text-slate-200 block truncate group-hover:text-blue-600">{item.name}</strong>
+                        {idx === 0 && originQuery.trim().length >= 2 && (
+                          <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-blue-600 text-white flex-shrink-0">
+                            Matched
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[10px] text-slate-400 truncate block">{item.city}, {item.state}</span>
                     </div>
                   </button>
@@ -580,22 +653,45 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
                   </div>
                 )}
 
+                {destVoice.isListening && (
+                  <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs font-bold animate-pulse mb-1">
+                    <Mic className="w-4 h-4 animate-bounce text-rose-600" />
+                    <span>🎙️ Listening to Destination... Speak city or stop name</span>
+                  </div>
+                )}
+                {destVoice.errorMessage && (
+                  <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[11px] font-semibold mb-1">
+                    ⚠️ {destVoice.errorMessage}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between px-2 pt-1 pb-1 border-t border-slate-100 dark:border-slate-700">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    🇮🇳 All India Search Suggestions
+                    {destQuery ? '🎯 Matched Locations & Suggestions' : '🇮🇳 All India Search Suggestions'}
                   </span>
                   {isDestLoading && <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />}
                 </div>
-                {destSuggestions.map((item) => (
+                {destSuggestions.map((item, idx) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => handleSelectDest(item)}
-                    className="w-full text-left p-2 rounded-xl hover:bg-red-50 dark:hover:bg-slate-800/80 flex items-start gap-2.5 text-xs transition group"
+                    className={`w-full text-left p-2 rounded-xl flex items-start gap-2.5 text-xs transition group ${
+                      idx === 0 && destQuery.trim().length >= 2
+                        ? 'bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-950/50'
+                        : 'hover:bg-red-50 dark:hover:bg-slate-800/80'
+                    }`}
                   >
                     <MapPin className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
-                    <div className="min-w-0">
-                      <strong className="text-slate-800 dark:text-slate-200 block truncate group-hover:text-red-600">{item.name}</strong>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <strong className="text-slate-800 dark:text-slate-200 block truncate group-hover:text-red-600">{item.name}</strong>
+                        {idx === 0 && destQuery.trim().length >= 2 && (
+                          <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-rose-600 text-white flex-shrink-0">
+                            Matched
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[10px] text-slate-400 truncate block">{item.city}, {item.state}</span>
                     </div>
                   </button>
@@ -619,18 +715,6 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
 
         {/* Right Controls */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          {onOpenAI && (
-            <button
-              type="button"
-              onClick={onOpenAI}
-              title="Musafir AI Transit Assistant"
-              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-violet-500/25 hover:brightness-110 active:scale-95 transition"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-              <span className="hidden sm:inline">Musafir AI</span>
-            </button>
-          )}
-
           {onOpenBusRoutes && (
             <button
               type="button"
