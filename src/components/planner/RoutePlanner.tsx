@@ -20,8 +20,10 @@ import {
   ShieldCheck,
   AlertTriangle,
   MapPin,
-  LocateFixed
+  LocateFixed,
+  Mic
 } from 'lucide-react';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
 
 interface RoutePlannerProps {
   availableStations: Station[];
@@ -62,6 +64,24 @@ export const RoutePlanner: React.FC<RoutePlannerProps> = ({
     setOriginStation(destinationStation);
     setDestinationStation(temp);
   };
+
+  const originVoice = useVoiceInput({
+    onResult: (spoken) => {
+      const q = spoken.toLowerCase().trim();
+      const match = availableStations.find(s => s.name.toLowerCase().includes(q) || q.includes(s.name.toLowerCase().split(' ')[0]));
+      if (match) setOriginStation(match);
+    },
+    lang: 'en-IN',
+  });
+
+  const destVoice = useVoiceInput({
+    onResult: (spoken) => {
+      const q = spoken.toLowerCase().trim();
+      const match = availableStations.find(s => s.name.toLowerCase().includes(q) || q.includes(s.name.toLowerCase().split(' ')[0]));
+      if (match) setDestinationStation(match);
+    },
+    lang: 'en-IN',
+  });
 
   const handleAddViaStop = () => {
     const available = availableStations.find(
@@ -132,8 +152,8 @@ export const RoutePlanner: React.FC<RoutePlannerProps> = ({
                   <span>Use My Live Location (GPS)</span>
                 </button>
               </div>
-              <div className="bg-surface-container border border-primary/20 rounded-xl p-2.5 flex items-center">
-                <MapPin className="w-4 h-4 text-tertiary mr-2 flex-shrink-0" />
+              <div className="bg-surface-container border border-primary/20 rounded-xl p-2.5 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-tertiary flex-shrink-0" />
                 <select
                   value={originStation.id}
                   onChange={(e) => {
@@ -148,6 +168,18 @@ export const RoutePlanner: React.FC<RoutePlannerProps> = ({
                     </option>
                   ))}
                 </select>
+                <button
+                  type="button"
+                  onClick={originVoice.toggleListening}
+                  className={`p-1.5 rounded-lg text-xs transition flex-shrink-0 ${
+                    originVoice.isListening
+                      ? 'bg-rose-600 text-white animate-pulse'
+                      : 'text-tertiary hover:bg-tertiary/20'
+                  }`}
+                  title="Voice Select Departure (बोलें)"
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
 
@@ -155,8 +187,8 @@ export const RoutePlanner: React.FC<RoutePlannerProps> = ({
               <label className="text-[10px] font-label-caps text-on-surface-variant uppercase tracking-wider block mb-1">
                 {t.destination}
               </label>
-              <div className="bg-surface-container border border-primary/20 rounded-xl p-2.5 flex items-center">
-                <MapPin className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
+              <div className="bg-surface-container border border-primary/20 rounded-xl p-2.5 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
                 <select
                   value={destinationStation.id}
                   onChange={(e) => {
@@ -171,6 +203,18 @@ export const RoutePlanner: React.FC<RoutePlannerProps> = ({
                     </option>
                   ))}
                 </select>
+                <button
+                  type="button"
+                  onClick={destVoice.toggleListening}
+                  className={`p-1.5 rounded-lg text-xs transition flex-shrink-0 ${
+                    destVoice.isListening
+                      ? 'bg-rose-600 text-white animate-pulse'
+                      : 'text-primary hover:bg-primary/20'
+                  }`}
+                  title="Voice Select Destination (बोलें)"
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           </div>

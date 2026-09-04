@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { 
-  X, MapPin, ThumbsUp, Clock, AlertTriangle, Building, CheckCircle2, Share2, MessageSquareWarning
+  X, MapPin, ThumbsUp, Clock, AlertTriangle, Building, CheckCircle2, Share2, MessageSquareWarning,
+  Camera, Upload, Check, Loader2, ImagePlus
 } from 'lucide-react';
 import { CommunityReport } from '../../services/communityReportsService';
 
@@ -8,9 +9,44 @@ interface IncidentDetailsModalProps {
   report: CommunityReport;
   onClose: () => void;
   onUpvote: (id: string) => void;
+  onAttachPhoto?: (id: string, photoUrl: string) => void;
 }
 
-export const IncidentDetailsModal: React.FC<IncidentDetailsModalProps> = ({ report, onClose, onUpvote }) => {
+export const IncidentDetailsModal: React.FC<IncidentDetailsModalProps> = ({ report, onClose, onUpvote, onAttachPhoto }) => {
+  const [photoUrl, setPhotoUrl] = useState<string>(report.photoUrl || (report.evidenceUrls && report.evidenceUrls[0]) || '');
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsCompressing(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const scale = Math.min(1, MAX_WIDTH / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.75);
+          setPhotoUrl(compressed);
+          onAttachPhoto?.(report.id, compressed);
+          setUploadSuccess(true);
+          setTimeout(() => setUploadSuccess(false), 4000);
+        }
+        setIsCompressing(false);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
   return (
     <div className="fixed inset-0 z-[99999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 animate-in fade-in">
       <div className="bg-white dark:bg-[#161026] rounded-3xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800">
@@ -52,18 +88,80 @@ export const IncidentDetailsModal: React.FC<IncidentDetailsModalProps> = ({ repo
 
           {/* Evidence Gallery */}
           <div className="space-y-2">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Evidence Photo</h4>
-            <div className="min-h-36 max-h-64 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden relative group">
-              {(report.photoUrl || (report.evidenceUrls && report.evidenceUrls.length > 0)) ? (
-                <img 
-                  src={report.photoUrl || report.evidenceUrls![0]} 
-                  alt="Incident Evidence" 
-                  className="w-full h-full max-h-64 object-cover" 
-                />
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Evidence Photo</h4>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isCompressing}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900 text-xs font-bold transition"
+              >
+                {isCompressing ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus className="w-3.5 h-3.5" />
+                    <span>{photoUrl ? 'Replace Photo' : 'Attach Evidence Photo'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {uploadSuccess && (
+              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span>Evidence photo attached successfully! (+10 Civic Karma points awarded)</span>
+              </div>
+            )}
+
+            {/* Hidden file input */}
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            <div 
+              onClick={() => !photoUrl && fileInputRef.current?.click()}
+              className={`min-h-36 max-h-64 bg-slate-100 dark:bg-slate-800 rounded-2xl border ${
+                !photoUrl ? 'border-dashed border-slate-300 dark:border-slate-700 hover:border-purple-500 cursor-pointer' : 'border-slate-200 dark:border-slate-700'
+              } flex items-center justify-center overflow-hidden relative group transition-all`}
+            >
+              {photoUrl ? (
+                <div className="relative w-full h-full max-h-64 group">
+                  <img 
+                    src={photoUrl} 
+                    alt="Incident Evidence" 
+                    className="w-full h-full max-h-64 object-cover" 
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                      className="px-3 py-1.5 bg-white/90 text-slate-900 rounded-xl font-bold text-xs shadow hover:bg-white flex items-center gap-1.5"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>Change Photo</span>
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <div className="text-center text-slate-400 py-6">
-                  <CameraIcon />
-                  <p className="text-[10px] font-bold mt-1">No photos provided</p>
+                <div className="text-center text-slate-400 py-6 px-4">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 mx-auto flex items-center justify-center mb-2">
+                    <Camera className="w-6 h-6" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200">No photos provided yet</p>
+                  <p className="text-[11px] text-purple-600 dark:text-purple-400 font-bold mt-1 underline">
+                    Tap to upload photo evidence from camera or gallery
+                  </p>
                 </div>
               )}
             </div>

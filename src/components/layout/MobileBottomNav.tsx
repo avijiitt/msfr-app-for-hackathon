@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigation2, MapPin, Wallet, Menu, Sparkles, Mic } from 'lucide-react';
+import { Navigation2, MapPin, Wallet, Menu, Sparkles, Mic, Users } from 'lucide-react';
 import { MusafirSidebarTab } from './MusafirSidebar';
 import { TranslationDictionary } from '../../types/i18n';
 
@@ -24,30 +24,30 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 }) => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 py-1.5 px-3 flex items-center justify-around lg:hidden shadow-lg safe-area-bottom">
-      {/* 1. Plan Journey */}
+      {/* 1. Unified Live Map & Trip Plan */}
       <button
         onClick={() => onTabChange('plan')}
-        className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition ${
-          activeTab === 'plan'
+        className={`flex flex-col items-center gap-1 py-1 px-2 rounded-xl transition ${
+          activeTab === 'plan' || activeTab === 'tracking'
             ? 'text-blue-600 dark:text-blue-400 font-bold'
             : 'text-slate-500 dark:text-slate-400'
         }`}
       >
-        <Navigation2 className={`w-5 h-5 ${activeTab === 'plan' ? 'stroke-[2.5]' : ''}`} />
-        <span className="text-[10px]">{t?.navRoutes || 'Plan'}</span>
+        <MapPin className={`w-5 h-5 ${activeTab === 'plan' || activeTab === 'tracking' ? 'stroke-[2.5]' : ''}`} />
+        <span className="text-[10px]">Live Map & Plan</span>
       </button>
 
-      {/* 2. Live Map Tracking */}
+      {/* 2. Civic Community Hub */}
       <button
-        onClick={() => onTabChange('tracking')}
+        onClick={() => onTabChange('community')}
         className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition ${
-          activeTab === 'tracking'
-            ? 'text-blue-600 dark:text-blue-400 font-bold'
+          activeTab === 'community'
+            ? 'text-purple-600 dark:text-purple-400 font-bold'
             : 'text-slate-500 dark:text-slate-400'
         }`}
       >
-        <MapPin className={`w-5 h-5 ${activeTab === 'tracking' ? 'stroke-[2.5]' : ''}`} />
-        <span className="text-[10px]">{t?.navMap || 'Live Map'}</span>
+        <Users className={`w-5 h-5 ${activeTab === 'community' ? 'stroke-[2.5]' : ''}`} />
+        <span className="text-[10px]">Community</span>
       </button>
 
       {/* 3. Center AI Assistant Button (Elevated Circle) */}

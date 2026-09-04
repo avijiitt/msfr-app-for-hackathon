@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X, Bookmark, Sparkles, Bus, ExternalLink } from 'lucide-react';
+import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X, Bookmark, Sparkles, Bus, ExternalLink, Mic } from 'lucide-react';
 import { indiaGeocodingService, geocodeAddressIndia, IndiaLocationResult, POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
 import { getNearbyLocationsAlongCorridor, BHUBANESWAR_LOCALITIES, BhubaneswarLocality } from '../../data/cities/bhubaneswar';
 import { sosService } from '../../services/sosService';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { ThemeMode, SavedLocation } from '../../types/transit';
 import { TranslationDictionary } from '../../types/i18n';
 
@@ -124,6 +125,22 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
     setDestQuery(temp);
     onSearch(destQuery, temp);
   };
+
+  const originVoice = useVoiceInput({
+    onResult: (spokenText) => {
+      searchOrigin(spokenText);
+      handleFocusOrigin(true);
+    },
+    lang: 'en-IN',
+  });
+
+  const destVoice = useVoiceInput({
+    onResult: (spokenText) => {
+      searchDest(spokenText);
+      handleFocusDest(true);
+    },
+    lang: 'en-IN',
+  });
 
   const handleFocusOrigin = (focused: boolean) => {
     setIsOriginFocused(focused);
@@ -260,6 +277,23 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
                 autoComplete="off"
               />
             </div>
+
+            {/* Departure Voice Input Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                originVoice.toggleListening();
+              }}
+              className={`p-1.5 rounded-full transition mr-0.5 flex-shrink-0 ${
+                originVoice.isListening
+                  ? 'bg-rose-600 text-white animate-pulse shadow-md shadow-rose-600/50'
+                  : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title={originVoice.isListening ? 'Listening to Departure... Speak now' : 'Voice input for Departure (बोलें)'}
+            >
+              <Mic className="w-3.5 h-3.5" />
+            </button>
 
             {originQuery && (
               <button
@@ -430,6 +464,23 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
                 autoComplete="off"
               />
             </div>
+
+            {/* Destination Voice Input Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                destVoice.toggleListening();
+              }}
+              className={`p-1.5 rounded-full transition mr-0.5 flex-shrink-0 ${
+                destVoice.isListening
+                  ? 'bg-rose-600 text-white animate-pulse shadow-md shadow-rose-600/50'
+                  : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title={destVoice.isListening ? 'Listening to Destination... Speak now' : 'Voice input for Destination (बोलें)'}
+            >
+              <Mic className="w-3.5 h-3.5" />
+            </button>
 
             {destQuery && (
               <button

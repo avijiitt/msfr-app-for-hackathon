@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
   Package, Lock, Plus, Truck, CheckCircle2, Phone, AlertCircle, QrCode, X,
-  MapPin, Navigation, Home, Clock, Sparkles, Building2, Search, ArrowRight
+  MapPin, Navigation, Home, Clock, Sparkles, Building2, Search, ArrowRight,
+  AlertTriangle, Camera, ShieldAlert, Loader2, Send
 } from 'lucide-react';
 import { ParcelBooking } from '../../types/transit';
 import { BHUBANESWAR_STATIONS, BHUBANESWAR_LOCALITIES, getHumanReadableLocationName } from '../../data/cities/bhubaneswar';
@@ -60,6 +61,73 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
   const [bookedSuccess, setBookedSuccess] = useState<ParcelBooking | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+
+  // En-Route Mishap Reporting State
+  const [reportingParcel, setReportingParcel] = useState<ParcelBooking | null>(null);
+  const [mishapType, setMishapType] = useState<'traffic_accident' | 'weather_flood' | 'vehicle_breakdown' | 'cargo_damage'>('traffic_accident');
+  const [mishapLocation, setMishapLocation] = useState('Near Rasulgarh Junction, Bhubaneswar');
+  const [mishapDescription, setMishapDescription] = useState('');
+  const [mishapPhotoUrl, setMishapPhotoUrl] = useState('');
+  const [isPhotoCompressing, setIsPhotoCompressing] = useState(false);
+  const [mishapSuccessMessage, setMishapSuccessMessage] = useState<string | null>(null);
+
+  const handleMishapPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsPhotoCompressing(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const scale = Math.min(1, MAX_WIDTH / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const base64 = canvas.toDataURL('image/jpeg', 0.75);
+          setMishapPhotoUrl(base64);
+        }
+        setIsPhotoCompressing(false);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDispatchMishapAlert = () => {
+    if (!reportingParcel) return;
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const notification = `🚨 [MUSAFIR EN-ROUTE ALERT]\nDear ${reportingParcel.senderName},\nAn unexpected transit mishap occurred near ${mishapLocation} affecting parcel ${reportingParcel.trackingCode}.\nIncident: ${mishapType.replace('_', ' ').toUpperCase()}.\nPhoto proof attached: [Photo Evidence].\n100% Transit Assurance Claim Initiated (Full refund/replacement guarantee).`;
+
+    const updatedParcel: ParcelBooking = {
+      ...reportingParcel,
+      status: 'mishap_reported',
+      mishapReport: {
+        id: `mishap-${Date.now()}`,
+        incidentType: mishapType,
+        title: mishapType === 'traffic_accident' ? 'Road Traffic Accident' : mishapType === 'weather_flood' ? 'Waterlogging / Flood Damage' : mishapType === 'vehicle_breakdown' ? 'Vehicle Breakdown' : 'Cargo Box Damage',
+        description: mishapDescription || 'Mishap reported during transit. Photographic evidence recorded.',
+        location: mishapLocation,
+        photoProofUrl: mishapPhotoUrl || 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=400',
+        reportedAt: `${now} today`,
+        status: 'claim_processed',
+        senderNotified: true,
+        notificationMessage: notification,
+        insuranceClaimAmount: 2500,
+      }
+    };
+
+    supabaseService.updateParcelBooking(updatedParcel);
+    setBookings(supabaseService.getParcelBookings());
+    setMishapSuccessMessage(`✅ Emergency alert & photo proof dispatched to sender ${reportingParcel.senderName} (${reportingParcel.senderPhone})!`);
+    setTimeout(() => setMishapSuccessMessage(null), 5000);
+    setReportingParcel(null);
+    setMishapPhotoUrl('');
+    setMishapDescription('');
+  };
 
   if (!isOpen) return null;
 
@@ -236,6 +304,52 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
                       <span className="text-slate-700 dark:text-slate-300">{p.estimatedDelivery}</span>
                     </div>
                   </div>
+
+                  {/* Mishap Evidence Display or Report Trigger */}
+                  {p.mishapReport ? (
+                    <div className="mt-2.5 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-rose-600 dark:text-rose-400 flex items-center gap-1.5 text-xs">
+                          <AlertTriangle className="w-4 h-4" />
+                          <span>En-Route Incident: {p.mishapReport.title}</span>
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-500">{p.mishapReport.reportedAt}</span>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <img
+                          src={p.mishapReport.photoProofUrl}
+                          alt="Incident Photo Proof"
+                          className="w-16 h-16 rounded-xl object-cover border border-rose-300 flex-shrink-0"
+                        />
+                        <div className="space-y-1">
+                          <div className="text-[11px] text-slate-700 dark:text-slate-300">
+                            <strong>Location:</strong> {p.mishapReport.location}
+                          </div>
+                          <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                            ✓ Message & Photo Proof Dispatched to Sender (+91 {p.senderPhone})
+                          </div>
+                          <div className="text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                            🛡️ Musafir Transit Assurance: Full ₹{p.mishapReport.insuranceClaimAmount} Claim Approved
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="pt-2 flex justify-end border-t border-slate-200 dark:border-slate-700/60">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReportingParcel(p);
+                          setMishapLocation(`En-route near ${p.destStation}`);
+                        }}
+                        className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Report Transit Mishap (हादसा / डैमेज)</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -540,6 +654,16 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
           </div>
         )}
 
+        {/* Mishap Success Message Toast */}
+        {mishapSuccessMessage && (
+          <div className="p-3 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-between gap-2 shadow-md">
+            <span>{mishapSuccessMessage}</span>
+            <button onClick={() => setMishapSuccessMessage(null)} className="p-1 hover:bg-emerald-700 rounded-lg">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         <button
           onClick={onClose}
           className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition"
@@ -547,6 +671,137 @@ export const ParcelBookingModal: React.FC<ParcelBookingModalProps> = ({
           Close Hub
         </button>
       </div>
+
+      {/* ─── Mishap Reporting Modal Overlay ─── */}
+      {reportingParcel && (
+        <div className="fixed inset-0 z-[100000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 animate-in fade-in">
+          <div className="bg-white dark:bg-[#161026] rounded-3xl w-full max-w-lg overflow-hidden flex flex-col shadow-2xl border border-rose-200 dark:border-rose-900/60 p-5 space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 text-rose-600">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                  Report Transit Mishap & Damage (हादसा रिपोर्ट)
+                </h3>
+              </div>
+              <button
+                onClick={() => setReportingParcel(null)}
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1">
+              <div><strong>Parcel Tracking Code:</strong> <span className="font-mono font-bold text-blue-600">{reportingParcel.trackingCode}</span></div>
+              <div><strong>Sender to Notify:</strong> {reportingParcel.senderName} ({reportingParcel.senderPhone})</div>
+              <div><strong>Route:</strong> {reportingParcel.originStation} ➔ {reportingParcel.destStation}</div>
+            </div>
+
+            {/* Mishap Type Selector */}
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                Incident Category *
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'traffic_accident', label: '💥 Road Traffic Accident' },
+                  { id: 'weather_flood', label: '🌧️ Waterlogging / Flood' },
+                  { id: 'vehicle_breakdown', label: '🚚 Vehicle Breakdown' },
+                  { id: 'cargo_damage', label: '📦 Box Physical Damage' },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setMishapType(t.id as any)}
+                    className={`p-2 rounded-xl border text-xs font-bold text-left transition ${
+                      mishapType === t.id
+                        ? 'bg-rose-50 border-rose-500 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                Incident Location *
+              </label>
+              <input
+                type="text"
+                value={mishapLocation}
+                onChange={(e) => setMishapLocation(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-rose-500 text-slate-800 dark:text-slate-100"
+                placeholder="e.g. Near Rasulgarh Flyover, NH-16"
+              />
+            </div>
+
+            {/* Photo Evidence Capture / Upload */}
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                Photo Proof of Damage (फोटो प्रमाण) *
+              </label>
+              <label className="cursor-pointer block border-2 border-dashed border-rose-300 dark:border-rose-800 hover:border-rose-500 rounded-2xl p-3 text-center bg-rose-50/40 dark:bg-rose-950/20 transition">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleMishapPhoto}
+                  className="hidden"
+                />
+                {isPhotoCompressing ? (
+                  <div className="flex items-center justify-center gap-2 text-rose-600 text-xs font-bold py-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Processing Photo Evidence...</span>
+                  </div>
+                ) : mishapPhotoUrl ? (
+                  <div className="space-y-1.5">
+                    <img
+                      src={mishapPhotoUrl}
+                      alt="Mishap Proof"
+                      className="max-h-36 rounded-xl mx-auto object-cover border border-rose-400"
+                    />
+                    <span className="text-[11px] font-bold text-emerald-600 block">
+                      ✓ Evidence Attached. Tap to change.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="py-2 space-y-1">
+                    <Camera className="w-6 h-6 text-rose-500 mx-auto" />
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                      Take / Attach Photo Evidence
+                    </span>
+                    <span className="text-[10px] text-slate-400 block">
+                      Sender will receive this photo proof along with instant insurance claim
+                    </span>
+                  </div>
+                )}
+              </label>
+            </div>
+
+            {/* Actions */}
+            <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setReportingParcel(null)}
+                className="w-1/3 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDispatchMishapAlert}
+                className="w-2/3 py-2.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 transition"
+              >
+                <Send className="w-4 h-4" />
+                <span>Send Alert & Photo Proof to Sender</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Parcel Postage Payment Gateway */}
       <PaymentGatewayModal

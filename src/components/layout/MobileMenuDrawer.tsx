@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Navigation2, MapPin, Calendar, Package, Wallet, Clock, Bookmark, 
   Bell, Calculator, Award, RotateCcw, Settings, X, ShieldAlert, Share2, 
-  GraduationCap, Bus, ChevronRight, Sparkles, User, Sun, Moon, LogOut
+  GraduationCap, Bus, ChevronRight, Sparkles, User, Sun, Moon, LogOut, Users
 } from 'lucide-react';
 import { MusafirSidebarTab } from './MusafirSidebar';
 import { ThemeMode } from '../../types/transit';
@@ -64,8 +64,8 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
   };
 
   const navItems = [
-    { id: 'plan' as MusafirSidebarTab, label: t?.navRoutes || 'Plan', icon: Navigation2, color: 'text-blue-600' },
-    { id: 'tracking' as MusafirSidebarTab, label: t?.navMap || 'Live Map', icon: MapPin, color: 'text-emerald-600' },
+    { id: 'plan' as MusafirSidebarTab, label: 'Live Map & Trip Plan', icon: MapPin, color: 'text-blue-600' },
+    { id: 'community' as MusafirSidebarTab, label: 'Civic Community', icon: Users, color: 'text-purple-600' },
     { id: 'schedule' as MusafirSidebarTab, label: t?.navSchedule || 'Schedule', icon: Calendar, color: 'text-indigo-600', badge: 'New' },
     { id: 'parcel' as MusafirSidebarTab, label: t?.parcelDelivery || 'Parcel', icon: Package, color: 'text-amber-600' },
     { id: 'wallet' as MusafirSidebarTab, label: t?.navWallet || 'Wallet', icon: Wallet, color: 'text-blue-600', badge: `₹${walletBalance.toFixed(0)}` },

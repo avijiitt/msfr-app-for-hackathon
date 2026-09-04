@@ -348,6 +348,17 @@ class SupabaseService {
     try { return JSON.parse(localStorage.getItem('msfr_parcel_bookings') || '[]'); }
     catch { return []; }
   }
+
+  public updateParcelBooking(updated: ParcelBooking): void {
+    const list = this.getParcelBookings();
+    const idx = list.findIndex(p => p.id === updated.id);
+    if (idx >= 0) {
+      list[idx] = updated;
+    } else {
+      list.unshift(updated);
+    }
+    localStorage.setItem('msfr_parcel_bookings', JSON.stringify(list));
+  }
 }
 
 export const supabaseService = new SupabaseService();

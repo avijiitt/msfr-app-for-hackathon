@@ -218,6 +218,20 @@ export interface ScheduledRide {
   createdAt: string;
 }
 
+export interface ParcelMishapReport {
+  id: string;
+  incidentType: 'traffic_accident' | 'weather_flood' | 'vehicle_breakdown' | 'cargo_damage' | 'other';
+  title: string;
+  description: string;
+  location: string;
+  photoProofUrl: string;
+  reportedAt: string;
+  status: 'investigating' | 'claim_processed' | 'refund_issued';
+  senderNotified: boolean;
+  notificationMessage?: string;
+  insuranceClaimAmount: number;
+}
+
 export interface ParcelBooking {
   id: string;
   trackingCode: string;
@@ -232,9 +246,10 @@ export interface ParcelBooking {
   lockerPin: string;
   weightKg: number;
   fare: number;
-  status: 'booked' | 'in_transit' | 'ready_pickup' | 'delivered';
+  status: 'booked' | 'in_transit' | 'ready_pickup' | 'delivered' | 'mishap_reported' | 'claim_resolved';
   createdAt: string;
   estimatedDelivery: string;
+  mishapReport?: ParcelMishapReport;
 }
 
 export interface ParcelLockerItem {

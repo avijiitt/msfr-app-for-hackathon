@@ -318,6 +318,13 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
               hasUpvoted: !selectedReport.hasUpvoted
             });
           }}
+          onAttachPhoto={(id, photoUrl) => {
+            store.attachPhotoToReport(id, photoUrl);
+            setSelectedReport({
+              ...selectedReport,
+              photoUrl,
+            });
+          }}
         />
       )}
 

@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { getNearbyLocationsAlongCorridor, getHumanReadableLocationName } from '../../data/cities/bhubaneswar';
 import { findMoBusRoutesDynamic } from '../../data/busRoutesData';
 import { indiaGeocodingService, geocodeAddressIndia, IndiaLocationResult, POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { TranslationDictionary } from '../../types/i18n';
 
 interface MobileTripPlannerProps {
@@ -71,7 +72,7 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
         setOriginSuggestions(merged);
       }
       setIsOriginLoading(false);
-    }, 400);
+    }, 500);
   }, [onOriginChange]);
 
   const searchDest = useCallback((val: string) => {
@@ -92,8 +93,24 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
         setDestSuggestions(merged);
       }
       setIsDestLoading(false);
-    }, 400);
+    }, 500);
   }, [onDestChange]);
+
+  const originVoice = useVoiceInput({
+    onResult: (spoken) => {
+      searchOrigin(spoken);
+      setIsOriginFocused(true);
+    },
+    lang: 'en-IN',
+  });
+
+  const destVoice = useVoiceInput({
+    onResult: (spoken) => {
+      searchDest(spoken);
+      setIsDestFocused(true);
+    },
+    lang: 'en-IN',
+  });
 
   const handleSelectOrigin = (item: IndiaLocationResult) => {
     onOriginChange(item.name);
@@ -231,6 +248,18 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
               />
             </div>
             <button
+              type="button"
+              onClick={originVoice.toggleListening}
+              className={`p-1.5 rounded-xl text-xs flex items-center justify-center transition active:scale-95 ${
+                originVoice.isListening
+                  ? 'bg-rose-600 text-white animate-pulse'
+                  : 'text-slate-400 hover:text-blue-600 bg-slate-100 dark:bg-slate-800'
+              }`}
+              title="Voice Input Departure (बोलें)"
+            >
+              <span className="material-symbols-outlined text-[16px]">mic</span>
+            </button>
+            <button
               onClick={handleRequestLiveGPS}
               disabled={isLocatingGps}
               className={`px-2.5 py-1 rounded-xl text-[11px] font-extrabold flex items-center gap-1 transition-all active:scale-95 shadow-2xs ${
@@ -272,6 +301,18 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
                 className="bg-transparent border-0 p-0 text-sm font-bold text-slate-900 dark:text-white focus:ring-0 w-full placeholder:text-slate-400"
               />
             </div>
+            <button
+              type="button"
+              onClick={destVoice.toggleListening}
+              className={`p-1.5 rounded-xl text-xs flex items-center justify-center transition active:scale-95 mr-11 ${
+                destVoice.isListening
+                  ? 'bg-rose-600 text-white animate-pulse'
+                  : 'text-slate-400 hover:text-rose-600 bg-slate-100 dark:bg-slate-800'
+              }`}
+              title="Voice Input Destination (बोलें)"
+            >
+              <span className="material-symbols-outlined text-[16px]">mic</span>
+            </button>
           </div>
 
           <button

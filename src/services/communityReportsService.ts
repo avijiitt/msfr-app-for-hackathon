@@ -84,7 +84,7 @@ export const INITIAL_COMMUNITY_REPORTS: CommunityReport[] = [
   {
     id: 'cr-101',
     category: 'overcrowding',
-    title: 'Mo Bus Route 10 Jam-Packed at Jayadev Vihar Stand',
+    title: 'Ama Bus Route 10 Jam-Packed at Jayadev Vihar Stand',
     description: 'Doors cannot close due to heavy rush. 40+ commuters waiting at stop. Need an extra shuttle.',
     locationName: 'Jayadev Vihar Bus Bay #2, Bhubaneswar',
     lat: 20.3039,
@@ -95,6 +95,7 @@ export const INITIAL_COMMUNITY_REPORTS: CommunityReport[] = [
     upvotes: 28,
     status: 'verified_by_crut',
     severity: 'critical',
+    photoUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=600',
     timeline: [
       { status: 'reported', timestamp: '10 mins ago', description: 'Report submitted by Ananya Sahoo.' },
       { status: 'verified_by_crut', timestamp: '2 mins ago', description: 'CRUT dispatcher acknowledged the crowding.' }
@@ -119,6 +120,7 @@ export const INITIAL_COMMUNITY_REPORTS: CommunityReport[] = [
     upvotes: 42,
     status: 'investigating',
     severity: 'critical',
+    photoUrl: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&q=80&w=600',
     timeline: [
       { status: 'reported', timestamp: '35 mins ago', description: 'Report submitted.' },
       { status: 'investigating', timestamp: '30 mins ago', description: 'Forwarded to BMC Electrical Dept.' }
@@ -138,6 +140,7 @@ export const INITIAL_COMMUNITY_REPORTS: CommunityReport[] = [
     upvotes: 19,
     status: 'resolved',
     severity: 'moderate',
+    photoUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=600',
     timeline: [
       { status: 'reported', timestamp: '1 hour ago', description: 'Report submitted.' },
       { status: 'in_progress', timestamp: '45 mins ago', description: 'BMC team clearing drainage.' },
@@ -163,6 +166,7 @@ export const INITIAL_COMMUNITY_REPORTS: CommunityReport[] = [
     upvotes: 14,
     status: 'reported',
     severity: 'low',
+    photoUrl: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=600',
     timeline: [
       { status: 'reported', timestamp: '2 hours ago', description: 'Report submitted.' }
     ]
@@ -286,6 +290,21 @@ export function useCommunityStore() {
     }
   };
 
+  const attachPhotoToReport = (id: string, photoUrl: string) => {
+    const updated = reports.map(r => {
+      if (r.id === id) {
+        return {
+          ...r,
+          photoUrl,
+          evidenceUrls: [photoUrl, ...(r.evidenceUrls || [])],
+        };
+      }
+      return r;
+    });
+    saveReports(updated);
+    addKarma(10); // Award karma for providing verified photographic proof
+  };
+
   const voteOnPoll = (pollId: string, optionId: string) => {
     const updated = polls.map(p => {
       if (p.id === pollId && !p.hasVoted) {
@@ -323,6 +342,7 @@ export function useCommunityStore() {
     userKarma,
     addReport,
     upvoteReport,
+    attachPhotoToReport,
     voteOnPoll,
     checkDuplicateReport,
     leaderboard: CIVIC_LEADERBOARD

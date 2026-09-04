@@ -81,7 +81,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
         <span className="material-symbols-outlined text-[22px] mb-0.5" style={{ fontVariationSettings: activeTab === 'map' ? "'FILL' 1" : "'FILL' 0" }}>
           explore
         </span>
-        <span className="text-[10px] leading-tight font-bold">Live Map</span>
+        <span className="text-[10px] leading-tight font-bold">Live Map & Plan</span>
       </button>
     </nav>
   );
