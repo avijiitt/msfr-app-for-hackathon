@@ -34,6 +34,7 @@ interface MusafirHeaderProps {
   onOpenBusRoutes?: () => void;
   currentLang?: string;
   onOpenLanguageModal?: () => void;
+  onOpenAI?: () => void;
   t?: TranslationDictionary;
 }
 
@@ -63,6 +64,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   onOpenBusRoutes,
   currentLang = 'en',
   onOpenLanguageModal,
+  onOpenAI,
   t,
 }) => {
   const [originSuggestions, setOriginSuggestions] = useState<IndiaLocationResult[]>([]);
@@ -617,6 +619,18 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
 
         {/* Right Controls */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          {onOpenAI && (
+            <button
+              type="button"
+              onClick={onOpenAI}
+              title="Musafir AI Transit Assistant"
+              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-violet-500/25 hover:brightness-110 active:scale-95 transition"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+              <span className="hidden sm:inline">Musafir AI</span>
+            </button>
+          )}
+
           {onOpenBusRoutes && (
             <button
               type="button"

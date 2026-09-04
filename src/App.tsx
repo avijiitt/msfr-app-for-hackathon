@@ -113,6 +113,7 @@ export const App: React.FC = () => {
   const [isTripsOpen, setIsTripsOpen] = useState(false);
   const [isBusRoutesOpen, setIsBusRoutesOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const t = translations[currentLang] || translations.en;
@@ -369,9 +370,42 @@ export const App: React.FC = () => {
       case 'toggle_theme':
         handleToggleTheme();
         break;
+      case 'open_bus_routes':
+        setIsBusRoutesOpen(true);
+        break;
+      case 'open_community':
+        handleSidebarTabChange('community');
+        break;
+      case 'open_logistics':
+        handleSidebarTabChange('logistics');
+        break;
+      case 'open_transit_hub':
+        handleSidebarTabChange('transportation');
+        break;
+      case 'open_language':
+        setIsLangSelectOpen(true);
+        break;
+      case 'open_profile':
+        setIsProfileOpen(true);
+        break;
+      case 'toggle_offline':
+        setIsOffline(prev => !prev);
+        break;
+      case 'plan_trip':
       case 'open_planner':
+        handleSidebarTabChange('plan');
         if (payload) {
-          setDestQuery(payload);
+          try {
+            const parsed = JSON.parse(payload);
+            const orig = parsed.origin || originQuery || 'Jayadev Vihar';
+            const dest = parsed.destination || destQuery || payload;
+            setOriginQuery(orig);
+            setDestQuery(dest);
+            handleSearch(orig, dest);
+          } catch {
+            setDestQuery(payload);
+            handleSearch(originQuery || 'Jayadev Vihar', payload);
+          }
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
         break;
@@ -421,6 +455,7 @@ export const App: React.FC = () => {
           onOpenLanguage={() => setIsLangSelectOpen(true)}
           onOpenWallet={() => setIsWalletOpen(true)}
           onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
+          onOpenAI={() => setIsAIAssistantOpen(true)}
           onOpenFareCalc={() => setIsFareCalcOpen(true)}
           onOpenTripsHistory={() => setIsTripsOpen(true)}
           onTriggerSOS={() => setIsSosOpen(true)}
@@ -469,6 +504,7 @@ export const App: React.FC = () => {
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           onSearchFocusChange={setIsSearchFocused}
           onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
+          onOpenAI={() => setIsAIAssistantOpen(true)}
           currentLang={currentLang}
           onOpenLanguageModal={() => setIsLangSelectOpen(true)}
           t={t}
@@ -486,6 +522,7 @@ export const App: React.FC = () => {
               onOpenSOS={() => setIsSosOpen(true)}
               onOpenStudent={() => setIsStudentOpen(true)}
               onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
+              onOpenAI={() => setIsAIAssistantOpen(true)}
               onSelectSavedPlace={(place) => setDestQuery(place)}
               t={t}
             />
@@ -615,6 +652,9 @@ export const App: React.FC = () => {
 
       {/* 3. Floating Popup AI Assistant (Bottom Right) */}
       <PopupAIAssistant
+        isOpen={isAIAssistantOpen}
+        onOpen={() => setIsAIAssistantOpen(true)}
+        onClose={() => setIsAIAssistantOpen(false)}
         onExecuteAction={handleExecuteAIAction}
         t={t}
         currentLang={currentLang}
@@ -845,6 +885,7 @@ export const App: React.FC = () => {
         onOpenStudent={() => setIsStudentOpen(true)}
         onOpenWomenSafety={() => setIsWomenSafetyOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenAI={() => setIsAIAssistantOpen(true)}
         onLogout={handleLogout}
         themeMode={themeMode}
         onToggleTheme={handleToggleTheme}

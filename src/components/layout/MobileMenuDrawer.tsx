@@ -20,6 +20,7 @@ interface MobileMenuDrawerProps {
   onOpenStudent: () => void;
   onOpenWomenSafety: () => void;
   onOpenProfile: () => void;
+  onOpenAI?: () => void;
   onLogout?: () => void;
   themeMode: ThemeMode;
   onToggleTheme: () => void;
@@ -38,6 +39,7 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
   onOpenStudent,
   onOpenWomenSafety,
   onOpenProfile,
+  onOpenAI,
   onLogout,
   themeMode,
   onToggleTheme,
@@ -126,6 +128,27 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
             {themeMode === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
           </button>
         </div>
+
+        {/* Musafir AI Trigger Banner */}
+        {onOpenAI && (
+          <div className="px-3 pt-2.5 pb-1">
+            <button
+              onClick={() => { onOpenAI(); onClose(); }}
+              className="w-full p-3 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white flex items-center justify-between shadow-md shadow-violet-500/20 active:scale-95 transition"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-black tracking-wide">Musafir AI Assistant</div>
+                  <div className="text-[10px] text-violet-100 opacity-90">Auto-executes any app action</div>
+                </div>
+              </div>
+              <span className="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-bold">Ask AI</span>
+            </button>
+          </div>
+        )}
 
         {/* Quick Safety & Pass Buttons */}
         <div className="p-3 grid grid-cols-2 gap-2 border-b border-slate-100 dark:border-slate-800">

@@ -8,6 +8,7 @@ interface MobileHeaderProps {
   onOpenLanguage: () => void;
   onOpenWallet: () => void;
   onOpenBusRoutes: () => void;
+  onOpenAI?: () => void;
   onTriggerSOS: () => void;
   themeMode: 'light' | 'dark';
   onToggleTheme: () => void;
@@ -23,6 +24,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   onOpenLanguage,
   onOpenWallet,
   onOpenBusRoutes,
+  onOpenAI,
   onTriggerSOS,
   themeMode,
   onToggleTheme,
@@ -57,6 +59,17 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+        {/* Musafir AI Assistant button */}
+        {onOpenAI && (
+          <button
+            onClick={onOpenAI}
+            className="p-1.5 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 hover:bg-violet-500/20 active:scale-95 transition flex-shrink-0"
+            title="Musafir AI Assistant"
+          >
+            <span className="material-symbols-outlined text-[19px] animate-pulse">auto_awesome</span>
+          </button>
+        )}
+
         {/* SOS Emergency Button */}
         <button
           onClick={onTriggerSOS}

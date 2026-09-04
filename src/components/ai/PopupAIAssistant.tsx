@@ -11,21 +11,42 @@ interface PopupAIAssistantProps {
   onExecuteAction: (actionType: AIActionType, payload?: string) => void;
   t?: TranslationDictionary;
   currentLang?: string;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onOpen?: () => void;
 }
 
 export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
   onExecuteAction,
   t,
   currentLang = 'en',
+  isOpen: controlledIsOpen,
+  onClose: controlledOnClose,
+  onOpen: controlledOnOpen,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isDialogActive = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+
+  const handleOpen = () => {
+    setInternalIsOpen(true);
+    controlledOnOpen?.();
+  };
+
+  const handleClose = () => {
+    setInternalIsOpen(false);
+    controlledOnClose?.();
+  };
+
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+
   const [messages, setMessages] = useState<AIMessage[]>([
     {
       id: 'init-msg',
       sender: 'assistant',
       text: t?.aiTagline
         ? `Namaste! 🙏 ${t.aiAssistantName || 'Musafir AI'} — ${t.aiTagline}\n\n• "${t.aiSuggestedPrompt1}"\n• "${t.aiSuggestedPrompt2}"\n• "${t.aiSuggestedPrompt3}"`
-        : 'Namaste! 🙏 I\'m **Musafir AI** — your smart voice-enabled Indian transit operator.\n\nTalk to me or ask anything:\n• "Book a parcel at Jayadev Vihar"\n• "Open my wallet / recharge ₹500"\n• "Find fastest bus to KIIT Square"\n• "Check student 50% discount"\n• "Emergency SOS / Women Safety"',
+        : 'Namaste! 🙏 Main **Musafir AI** hoon — aapka voice & chat smart transit operator.\n\nBoliyen ya type kijiye, main app mein sab kaam kar dunga:\n• "Jayadev Vihar se KIIT Square jana hai"\n• "Mera wallet kholo / recharge karo"\n• "82 Ama Bus lines dikhao"\n• "Student 50% concession verify karo"\n• "Bus late ho gayi, refund claim karo"\n• "Emergency SOS / Women Safety"',
       timestamp: 'Just now',
     },
   ]);
@@ -175,6 +196,11 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
         return [...withoutStream, finalMsg];
       });
 
+      // AUTOMATICALLY EXECUTE IN-APP ACTION!
+      if (finalMsg.actionButton) {
+        onExecuteAction(finalMsg.actionButton.actionType, finalMsg.actionButton.payload);
+      }
+
       // Speak output aloud if voice is enabled or user spoke
       if (isVoiceOutputEnabled || wasSpoken) {
         speakText(finalMsg.text);
@@ -194,86 +220,116 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
   };
 
   const handleActionClick = (actionType: AIActionType, payload?: string) => {
-    setIsOpen(false);
     onExecuteAction(actionType, payload);
   };
 
   const quickPrompts = [
-    { label: '📦 Book Parcel', query: 'Book a transit parcel locker' },
+    { label: '🗺️ Jayadev Vihar to KIIT', query: 'Jayadev Vihar se KIIT Square jana hai' },
     { label: '💳 Open Wallet', query: 'Open Mo-Wallet and check balance' },
-    { label: '🗺️ Plan Route', query: 'Best route from Jayadev Vihar to KIIT Square' },
-    { label: '🎓 Student 50% Off', query: 'How to get student concession pass?' },
-    { label: '🛡️ Women Safety', query: 'Show women reserved pink buses and safety hub' },
-    { label: '🛡️ Claim Refund', query: 'My bus was delayed by 20 minutes, refund claim' },
+    { label: '🚌 82 Bus Lines', query: '82 Ama Bus lines dikhao' },
+    { label: '📦 Book Parcel', query: 'Book a transit parcel locker' },
+    { label: '🎓 Student 50% Off', query: 'Student concession 50% pass verify karo' },
+    { label: '🛡️ Claim Refund', query: 'Bus late ho gayi, refund claim karo' },
+    { label: '🛡️ Women Safety', query: 'Women Safety hub aur pink buses dikhao' },
+    { label: '📊 Fare Calculator', query: 'Fare calculator kholo' },
+    { label: '🚨 SOS Emergency', query: 'Emergency SOS alert' },
   ];
 
   return (
     <>
-      {/* Floating Launcher Bubble (Hidden on mobile to avoid overlapping CTAs, bottom-6 right-6 on desktop) */}
-      {!isOpen && (
+      {/* Floating Launcher Bubble (Mobile bottom-20 right-4, Desktop bottom-6 right-6) */}
+      {!isDialogActive && (
         <button
-          onClick={() => setIsOpen(true)}
-          className="fixed hidden md:flex bottom-6 right-6 z-40 px-4 py-3 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-sm shadow-xl shadow-blue-600/40 items-center gap-2 transition-all animate-bounce"
+          onClick={handleOpen}
+          className="fixed flex bottom-20 right-3.5 sm:bottom-6 sm:right-6 z-40 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-xl shadow-violet-600/40 items-center gap-2 transition-all animate-bounce"
           title="Open Musafir AI Voice & Chat Assistant"
         >
-          <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-base">
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/20 flex items-center justify-center text-sm sm:text-base">
             🤖
           </div>
           <span>Musafir AI</span>
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
         </button>
       )}
 
 
       {/* Popup Dialog Window */}
-      {isOpen && (
-        <div className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-[9999] w-[calc(100vw-24px)] sm:w-[410px] max-h-[85vh] h-[560px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
+      {isDialogActive && (
+        <div className="fixed bottom-16 right-2 sm:bottom-6 sm:right-6 z-[9999] w-[calc(100vw-16px)] sm:w-[420px] max-h-[85vh] h-[580px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
           {/* Top Header */}
-          <div className="p-3.5 sm:p-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white flex items-center justify-between shadow-sm">
+          <div className="p-3.5 sm:p-4 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-2xl bg-white/20 flex items-center justify-center text-xl shadow-sm">
                 🤖
               </div>
               <div>
                 <h4 className="font-bold text-sm leading-tight flex items-center gap-1.5">
-                  <span>Musafir AI Assistant</span>
+                  <span>Musafir AI Operator</span>
                   <span className="text-[10px] bg-emerald-400/30 text-emerald-200 border border-emerald-300/40 px-1.5 py-0.2 rounded-full font-mono font-bold">
-                    Voice + App Control
+                    Active
                   </span>
                 </h4>
-                <span className="text-[11px] text-blue-100 flex items-center gap-1">
-                  ● Ready to execute all in-app tasks
+                <span className="text-[11px] text-purple-100 flex items-center gap-1">
+                  ● Auto-executes any in-app task
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              {/* Voice Output Speaker Toggle */}
+            <div className="flex items-center gap-1">
               <button
-                onClick={() => {
-                  const next = !isVoiceOutputEnabled;
-                  setIsVoiceOutputEnabled(next);
-                  if (!next && window.speechSynthesis) window.speechSynthesis.cancel();
-                }}
-                className={`p-1.5 rounded-xl transition ${
-                  isVoiceOutputEnabled ? 'bg-white/20 text-white' : 'bg-black/20 text-white/60'
-                }`}
-                title={isVoiceOutputEnabled ? 'Mute AI Voice Output' : 'Enable AI Voice Output'}
+                onClick={() => setShowApiKeyModal(!showApiKeyModal)}
+                className="p-2 rounded-xl hover:bg-white/20 text-white transition text-xs font-bold flex items-center gap-1"
+                title="Custom Gemini API Key"
+              >
+                🔑
+              </button>
+              <button
+                onClick={() => setIsVoiceOutputEnabled(!isVoiceOutputEnabled)}
+                className="p-2 rounded-xl hover:bg-white/20 text-white transition"
+                title={isVoiceOutputEnabled ? 'Voice audio enabled' : 'Voice audio muted'}
               >
                 {isVoiceOutputEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </button>
-
               <button
-                onClick={() => {
-                  setIsOpen(false);
-                  if (window.speechSynthesis) window.speechSynthesis.cancel();
-                }}
-                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition"
+                onClick={handleClose}
+                className="p-2 rounded-xl hover:bg-white/20 text-white transition"
+                title="Close AI Assistant"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
+
+          {/* Optional Custom Gemini API Key Drawer */}
+          {showApiKeyModal && (
+            <div className="p-3 bg-violet-50 dark:bg-violet-950/70 border-b border-violet-200 dark:border-violet-800 text-xs flex flex-col gap-2 animate-in fade-in">
+              <div className="flex items-center justify-between font-bold text-violet-900 dark:text-violet-200">
+                <span>🔑 Custom Google Gemini API Key</span>
+                <button onClick={() => setShowApiKeyModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  placeholder="Paste AI Studio API Key..."
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  className="flex-1 px-3 py-1.5 rounded-xl border border-violet-300 dark:border-violet-700 bg-white dark:bg-slate-900 text-xs"
+                />
+                <button
+                  onClick={() => {
+                    aiAssistantService.setApiKey(apiKeyInput);
+                    setShowApiKeyModal(false);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-violet-600 text-white font-bold text-xs shadow-sm hover:bg-violet-700"
+                >
+                  Save
+                </button>
+              </div>
+              <span className="text-[10px] text-violet-600 dark:text-violet-400">
+                Offline intelligent action operator is active by default. Key enables live Google Gemini 2.0.
+              </span>
+            </div>
+          )}
 
           {/* Quick Action Suggestion Chips */}
           <div className="p-2.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto">
@@ -281,7 +337,7 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
               <button
                 key={idx}
                 onClick={() => handleSend(p.query)}
-                className="px-3 py-1 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 hover:border-blue-400 whitespace-nowrap transition shadow-2xs"
+                className="px-3 py-1 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:text-violet-600 hover:border-violet-400 whitespace-nowrap transition shadow-2xs"
               >
                 {p.label}
               </button>
@@ -306,17 +362,25 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
                 <div
                   className={`max-w-[88%] rounded-2xl p-3 text-xs sm:text-sm leading-relaxed ${
                     m.sender === 'user'
-                      ? 'bg-blue-600 text-white rounded-tr-sm shadow-sm'
+                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-tr-sm shadow-sm'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-tl-sm border border-slate-200 dark:border-slate-700 shadow-2xs'
                   }`}
                 >
                   <p className="whitespace-pre-line">{m.text}</p>
 
+                  {/* Auto-Executed Notification Banner */}
+                  {m.executedLabel && (
+                    <div className="mt-2 py-1 px-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-extrabold flex items-center gap-1.5 shadow-2xs">
+                      <span>⚡</span>
+                      <span>{m.executedLabel} (Auto-Executed)</span>
+                    </div>
+                  )}
+
                   {/* Dynamic Action Trigger Button */}
                   {m.actionButton && (
                     <button
                       onClick={() => handleActionClick(m.actionButton!.actionType, m.actionButton!.payload)}
-                      className="mt-2.5 w-full py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-98 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5"
+                      className="mt-2.5 w-full py-2 px-3.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 active:scale-98 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       <span>{m.actionButton.label}</span>
@@ -376,16 +440,16 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
 
             <input
               type="text"
-              placeholder="Ask anything or say 'open wallet'..."
+              placeholder="Boliyen ya type kijiye: 'KIIT jana hai', 'Wallet kholo'..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
 
             <button
               type="submit"
               disabled={!inputText.trim() || isThinking}
-              className="p-2.5 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white shadow-sm transition"
+              className="p-2.5 rounded-full bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white shadow-sm transition"
             >
               <Send className="w-4 h-4" />
             </button>

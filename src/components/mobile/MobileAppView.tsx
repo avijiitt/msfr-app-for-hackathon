@@ -28,6 +28,7 @@ interface MobileAppViewProps {
   onOpenLanguage: () => void;
   onOpenWallet: () => void;
   onOpenBusRoutes: () => void;
+  onOpenAI?: () => void;
   onOpenFareCalc: () => void;
   onOpenTripsHistory: () => void;
   onTriggerSOS: () => void;
@@ -60,6 +61,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   onOpenLanguage,
   onOpenWallet,
   onOpenBusRoutes,
+  onOpenAI,
   onOpenFareCalc,
   onOpenTripsHistory,
   onTriggerSOS,
@@ -102,6 +104,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
         onOpenLanguage={onOpenLanguage}
         onOpenWallet={onOpenWallet}
         onOpenBusRoutes={onOpenBusRoutes}
+        onOpenAI={onOpenAI}
         onTriggerSOS={onTriggerSOS}
         themeMode={themeMode}
         onToggleTheme={onToggleTheme}
