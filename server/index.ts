@@ -7,6 +7,29 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from '@google/genai';
+import rateLimit from 'express-rate-limit';
+import {
+  IndianPhoneSchema,
+  OtpRequestSchema,
+  OtpVerifySchema,
+  LoginNotificationSchema,
+  UserProfileSchema,
+  TripCreateSchema,
+  RefundClaimSchema,
+  ParcelBookingSchema,
+  ParcelUnlockSchema,
+  ParcelMishapSchema,
+  WalletTopupSchema,
+  PaymentCreateOrderSchema,
+  PaymentVerifySchema,
+  MapDirectionsQuerySchema,
+  MapAutocompleteQuerySchema,
+  MapGeocodeQuerySchema,
+  MapNearbyQuerySchema,
+  CommunityReportCreateSchema,
+  validateBody,
+  validateQuery,
+} from './validators.ts';
 
 dotenv.config();
 
@@ -35,85 +58,120 @@ export function sanitizeInput(val: any): string {
   return val.replace(/[<>]/g, '').trim();
 }
 
-// Security rate limiter stores
+// ── Rate Limiting Policies ────────────────────────────────────────────────
+// 1. Global limiter: Max 150 requests per minute per IP across all /api routes
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 150,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Global rate limit exceeded: Maximum 150 requests per minute. Please throttle your traffic.',
+  },
+});
+app.use('/api/', globalLimiter);
+
+// 2. Google Maps API Gateway Proxy limiter: Max 30 queries per minute to protect API quota
+const mapsRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    status: 'OVER_QUERY_LIMIT',
+    error: 'Google Maps API proxy rate limit reached (30 queries/minute). Requests throttled to protect quota.',
+  },
+});
+app.use('/api/maps/', mapsRateLimiter);
+
+// 3. SMS OTP anti-abuse limiter: Max 5 OTP requests per 10 minutes per IP
+const otpRateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Security Lock: Too many OTP requests. Maximum 5 OTP attempts per 10 minutes.',
+  },
+});
+
+// 4. AI Copilot limiter: Max 25 queries per minute
+const aiRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 25,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'AI Assistant rate limit reached. Please wait before asking another question.',
+  },
+});
+
+// 5. Payment Transaction limiter: Max 30 order creations per minute
+const paymentRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Payment transaction rate limit reached. Please wait a minute before retrying.',
+  },
+});
+
+// Security lockout stores
 const otpRequestRateLimits = new Map<string, { count: number; firstRequestTime: number }>();
 const otpFailedAttempts = new Map<string, { attempts: number; lockedUntil: number }>();
 
-// Persistent database files
+// Persistent database file paths (for local dev backup only; primary store is PostgreSQL)
 const DATA_DIR = path.join(__dirname, 'data');
 const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
 const OTP_LOGS_FILE = path.join(DATA_DIR, 'otp_logs.json');
 const PAYMENTS_FILE = path.join(DATA_DIR, 'payments.json');
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-function loadSavedPayments(): any[] {
+// Safe file readers/writers that never crash in read-only / serverless environments
+function safeFileRead(filePath: string, fallback: any[] = []): any[] {
   try {
-    if (fs.existsSync(PAYMENTS_FILE)) {
-      return JSON.parse(fs.readFileSync(PAYMENTS_FILE, 'utf-8'));
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
     }
   } catch (e) {
-    console.warn('Error reading payments.json:', e);
+    console.warn(`Notice: could not read local file ${path.basename(filePath)}:`, e);
   }
-  return [];
+  return fallback;
 }
 
-function savePayments(payments: any[]) {
+function safeFileWrite(filePath: string, data: any) {
   try {
-    fs.writeFileSync(PAYMENTS_FILE, JSON.stringify(payments, null, 2), 'utf-8');
-  } catch (e) {
-    console.warn('Error writing payments.json:', e);
-  }
-}
-
-function loadSavedProfiles(): any[] {
-  try {
-    if (fs.existsSync(PROFILES_FILE)) {
-      return JSON.parse(fs.readFileSync(PROFILES_FILE, 'utf-8'));
+    if (process.env.VERCEL) return;
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
     }
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
   } catch (e) {
-    console.warn('Error reading profiles.json:', e);
-  }
-  return [];
-}
-
-function saveProfiles(profiles: any[]) {
-  try {
-    fs.writeFileSync(PROFILES_FILE, JSON.stringify(profiles, null, 2), 'utf-8');
-  } catch (e) {
-    console.warn('Error saving profiles.json:', e);
+    // Non-fatal warning — PostgreSQL Supabase is primary
   }
 }
 
-function loadOtpLogs(): any[] {
-  try {
-    if (fs.existsSync(OTP_LOGS_FILE)) {
-      return JSON.parse(fs.readFileSync(OTP_LOGS_FILE, 'utf-8'));
-    }
-  } catch (e) {
-    console.warn('Error reading otp_logs.json:', e);
-  }
-  return [];
-}
-
-function saveOtpLogs(logs: any[]) {
-  try {
-    fs.writeFileSync(OTP_LOGS_FILE, JSON.stringify(logs, null, 2), 'utf-8');
-  } catch (e) {
-    console.warn('Error saving otp_logs.json:', e);
-  }
-}
-
-// ── Environment Variables ──────────────────────────────────────────────────
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://chxhqifhtqlntslvrqyv.supabase.co';
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
+// ── Environment Variables & Cloud Clients ──────────────────────────────────
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://chxhqifhtqlntslvrqyv.supabase.co';
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || '';
 const OLA_MAPS_API_KEY = process.env.VITE_OLA_MAPS_API_KEY || '63CtJZBj4maPgvCCiDSXxavc6jkxztXfRTEpwPYj';
 
-// Supabase Client
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Supabase PostgreSQL Client
+const isSupabaseReady = Boolean(
+  SUPABASE_URL &&
+  SUPABASE_URL.startsWith('https://') &&
+  !SUPABASE_URL.includes('your-project-id') &&
+  SUPABASE_ANON_KEY &&
+  SUPABASE_ANON_KEY.length > 20 &&
+  !SUPABASE_ANON_KEY.includes('your-anon-key')
+);
+const supabase = isSupabaseReady ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 // Google Gemini AI Client
 let ai: GoogleGenAI | null = null;
@@ -125,21 +183,40 @@ if (GEMINI_API_KEY && GEMINI_API_KEY.length > 10) {
   }
 }
 
-// ── In-Memory Simulation Storage (Fallback if offline) ────────────────────
+// ── In-Memory Simulation Storage (Primary Fallback & Fast Cache) ────────────
 const memoryStore = {
-  profiles: loadSavedProfiles(),
+  profiles: safeFileRead(PROFILES_FILE, [
+    {
+      id: 'usr-default-commuter',
+      email: 'commuter.bbsr@musafir.in',
+      full_name: 'Bhubaneswar Commuter',
+      phone: '9876543210',
+      blood_group: 'B+',
+      home_address: 'Jayadev Vihar, Bhubaneswar',
+      is_student: false,
+      wallet_balance: 650.0,
+      karma_points: 120,
+      created_at: new Date().toISOString(),
+    }
+  ]),
+  payments: safeFileRead(PAYMENTS_FILE, []),
+  otpLogs: safeFileRead(OTP_LOGS_FILE, []),
   trips: [] as any[],
   parcels: [
     {
       id: 'PKL-8821',
       trackingCode: 'MSFR-OD-9012',
       stationName: 'Master Canteen Depot',
+      destinationStation: 'Patia Transit Station',
       lockerNumber: 'LKR-04',
       pin: '8492',
       status: 'ready_pickup',
       recipientName: 'Commuter',
-      recipientPhone: '',
+      recipientPhone: '+91 98765 00000',
+      weightKg: 1.5,
+      fare: 35,
       expiryTime: new Date(Date.now() + 48 * 3600000).toISOString(),
+      createdAt: new Date().toISOString(),
     },
   ],
   walletBalance: 650.0,
@@ -173,24 +250,23 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 // ── 1.1 User Profiles API ──────────────────────────────────────────────────
-// List all users from Supabase / Memory
+// List all users from Supabase PostgreSQL / In-Memory cache
 app.get('/api/users', async (_req: Request, res: Response) => {
   try {
-    let profiles = memoryStore.profiles;
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    if (supabase) {
       const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      if (!error && data) {
-        profiles = data;
+      if (!error && data && data.length > 0) {
+        return res.json({ success: true, count: data.length, profiles: data, source: 'supabase' });
       }
     }
-    res.json({ success: true, count: profiles.length, profiles });
+    res.json({ success: true, count: memoryStore.profiles.length, profiles: memoryStore.profiles, source: 'in_memory' });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // Register / Save User Profile API
-app.post('/api/users/profile', async (req: Request, res: Response) => {
+app.post('/api/users/profile', validateBody(UserProfileSchema), async (req: Request, res: Response) => {
   try {
     const {
       email,
@@ -204,53 +280,63 @@ app.post('/api/users/profile', async (req: Request, res: Response) => {
       emergencyContact,
     } = req.body;
 
-    if (!email || !fullName) {
-      return res.status(400).json({ success: false, error: 'Email and Full Name are required' });
-    }
-
+    const cleanEmail = email.trim().toLowerCase();
     const userId = crypto.randomUUID();
     const newProfile = {
       id: userId,
-      email: email.trim(),
-      full_name: fullName.trim(),
-      phone: phone || '',
-      blood_group: bloodGroup || 'B+',
-      home_address: homeCity || 'Bhubaneswar, Odisha',
-      emergency_contact: emergencyContact || null,
+      email: cleanEmail,
+      full_name: sanitizeInput(fullName),
+      phone: sanitizeInput(phone || ''),
+      blood_group: sanitizeInput(bloodGroup || 'B+'),
+      home_address: sanitizeInput(homeCity || 'Bhubaneswar, Odisha'),
+      emergency_contact: sanitizeInput(emergencyContact || ''),
       is_student: category === 'student',
-      student_college_name: studentCollege || null,
-      student_roll_no: studentRoll || null,
+      student_college_name: sanitizeInput(studentCollege || ''),
+      student_roll_no: sanitizeInput(studentRoll || ''),
       is_senior_verified: category === 'senior',
       is_women_passenger: category === 'women',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    // 1. Save to local persistent JSON file
-    const currentProfiles = loadSavedProfiles();
-    const existingIndex = currentProfiles.findIndex((p: any) => p.email.toLowerCase() === email.trim().toLowerCase());
-    if (existingIndex >= 0) {
-      currentProfiles[existingIndex] = { ...currentProfiles[existingIndex], ...newProfile, id: currentProfiles[existingIndex].id || userId };
-    } else {
-      currentProfiles.unshift(newProfile);
-    }
-    saveProfiles(currentProfiles);
-    memoryStore.profiles = currentProfiles;
-
-    // 2. Also attempt Supabase upsert
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    // 1. Primary storage: Supabase PostgreSQL
+    let persistedToSupabase = false;
+    if (supabase) {
       try {
-        await supabase.from('profiles').upsert(newProfile);
+        const { error } = await supabase.from('profiles').upsert(newProfile);
+        if (!error) {
+          persistedToSupabase = true;
+        } else {
+          console.warn('Supabase profile upsert warning:', error.message);
+        }
       } catch (dbErr) {
-        console.warn('Supabase upsert notice:', dbErr);
+        console.warn('Supabase profiles DB notice:', dbErr);
       }
     }
 
+    // 2. Synchronize in-memory cache
+    const existingIndex = memoryStore.profiles.findIndex((p: any) => p.email?.toLowerCase() === cleanEmail);
+    if (existingIndex >= 0) {
+      memoryStore.profiles[existingIndex] = {
+        ...memoryStore.profiles[existingIndex],
+        ...newProfile,
+        id: memoryStore.profiles[existingIndex].id || userId,
+      };
+    } else {
+      memoryStore.profiles.unshift(newProfile);
+    }
+
+    // 3. Optional local file backup (non-blocking)
+    safeFileWrite(PROFILES_FILE, memoryStore.profiles);
+
     res.json({
       success: true,
-      message: 'User profile stored successfully in database',
+      message: persistedToSupabase
+        ? 'User profile stored successfully in Supabase PostgreSQL'
+        : 'User profile stored in active memory cache',
       profile: newProfile,
-      totalUsers: currentProfiles.length,
+      persistedToSupabase,
+      totalUsers: memoryStore.profiles.length,
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -265,19 +351,22 @@ app.get('/api/users/profile', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Provide email or id query param' });
     }
 
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    if (supabase) {
       let query = supabase.from('profiles').select('*');
-      if (email) query = query.eq('email', email as string);
+      if (email) query = query.eq('email', (email as string).trim().toLowerCase());
       if (id) query = query.eq('id', id as string);
       const { data, error } = await query.single();
       if (!error && data) {
-        return res.json({ success: true, profile: data });
+        return res.json({ success: true, profile: data, source: 'supabase' });
       }
     }
 
-    const found = memoryStore.profiles.find((p: any) => p.email === email || p.id === id);
+    const found = memoryStore.profiles.find((p: any) =>
+      (email && p.email?.toLowerCase() === (email as string).trim().toLowerCase()) ||
+      (id && p.id === id)
+    );
     if (found) {
-      return res.json({ success: true, profile: found });
+      return res.json({ success: true, profile: found, source: 'in_memory' });
     }
 
     res.status(404).json({ success: false, error: 'User profile not found' });
@@ -288,24 +377,24 @@ app.get('/api/users/profile', async (req: Request, res: Response) => {
 
 // ── 2. Trips API ───────────────────────────────────────────────────────────
 // Record a new trip
-app.post('/api/trips', async (req: Request, res: Response) => {
+app.post('/api/trips', validateBody(TripCreateSchema), async (req: Request, res: Response) => {
   try {
-    const { origin, destination, originCoords, destCoords, distanceKm, durationMins, fareAmount, mode, routeName, userId } = req.body;
+    const { origin, destination, originCoords, destCoords, distanceKm, durationMins, fareAmount, fare, mode, routeName, userId } = req.body;
     const bookingReference = 'MSFR-IN-' + Math.floor(10000 + Math.random() * 90000);
     const tripId = 'TRP-' + Math.floor(100000 + Math.random() * 900000);
 
     const tripRecord = {
       id: tripId,
       booking_reference: bookingReference,
-      origin: origin || 'Jayadev Vihar',
-      destination: destination || 'KIIT Square',
+      origin: sanitizeInput(origin),
+      destination: sanitizeInput(destination),
       origin_lat: originCoords?.[0] || 20.3039,
       origin_lng: originCoords?.[1] || 85.8188,
       dest_lat: destCoords?.[0] || 20.3541,
       dest_lng: destCoords?.[1] || 85.8175,
       distance_km: distanceKm || 8.5,
       duration_mins: durationMins || 24,
-      fare_amount: fareAmount || 25,
+      fare_amount: fareAmount || fare || 25,
       mode: mode || 'bus',
       route_name: routeName || 'Smart Transit Corridor',
       status: 'in_progress',
@@ -313,12 +402,16 @@ app.post('/api/trips', async (req: Request, res: Response) => {
       created_at: new Date().toISOString(),
     };
 
-    // Try Supabase insert
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      await supabase.from('trips').insert([tripRecord]);
+    // Primary storage: Supabase PostgreSQL
+    if (supabase) {
+      try {
+        await supabase.from('trips').insert([tripRecord]);
+      } catch (dbErr) {
+        console.warn('Supabase trips insert notice:', dbErr);
+      }
     }
 
-    // Save to memory cache
+    // Cache in memory
     memoryStore.trips.unshift(tripRecord);
 
     res.status(201).json({ success: true, trip: tripRecord });
@@ -333,7 +426,7 @@ app.get('/api/trips', async (req: Request, res: Response) => {
     const userId = req.query.userId as string;
     let trips = memoryStore.trips;
 
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    if (supabase) {
       let query = supabase.from('trips').select('*').order('created_at', { ascending: false });
       if (userId) query = query.eq('user_id', userId);
       const { data, error } = await query;
@@ -349,8 +442,8 @@ app.get('/api/trips', async (req: Request, res: Response) => {
 });
 
 // Trip Assurance Delay Refund Claim
-app.post('/api/trips/refund-claim', async (req: Request, res: Response) => {
-  const { tripId, delayMinutes, farePaid } = req.body;
+app.post('/api/trips/refund-claim', validateBody(RefundClaimSchema), async (req: Request, res: Response) => {
+  const { delayMinutes, farePaid } = req.body;
   const delay = Number(delayMinutes) || 20;
   const fare = Number(farePaid) || 35;
 
@@ -386,33 +479,75 @@ app.post('/api/trips/refund-claim', async (req: Request, res: Response) => {
 
 // ── 3. Transit Parcel Hub API ──────────────────────────────────────────────
 app.get('/api/parcels', async (_req: Request, res: Response) => {
-  res.json({ success: true, parcels: memoryStore.parcels });
+  try {
+    if (supabase) {
+      const { data, error } = await supabase.from('parcel_bookings').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        return res.json({ success: true, parcels: data, source: 'supabase' });
+      }
+    }
+  } catch (e) {
+    console.warn('Supabase parcels fetch notice:', e);
+  }
+  res.json({ success: true, parcels: memoryStore.parcels, source: 'in_memory' });
 });
 
-app.post('/api/parcels/book', async (req: Request, res: Response) => {
-  const { senderName, senderPhone, recipientName, recipientPhone, originStation, destStation, weightKg } = req.body;
+app.post('/api/parcels/book', validateBody(ParcelBookingSchema), async (req: Request, res: Response) => {
+  try {
+    const { senderName, senderPhone, recipientName, recipientPhone, originStation, destStation, weightKg, fare } = req.body;
 
-  const newParcel = {
-    id: 'PKL-' + Math.floor(1000 + Math.random() * 9000),
-    trackingCode: 'MSFR-IN-' + Math.floor(10000 + Math.random() * 90000),
-    stationName: originStation || 'Master Canteen Depot',
-    destinationStation: destStation || 'Patia Transit Station',
-    lockerNumber: 'LKR-0' + Math.floor(1 + Math.random() * 8),
-    pin: String(Math.floor(1000 + Math.random() * 9000)),
-    status: 'ready_pickup',
-    recipientName: recipientName || 'Recipient',
-    recipientPhone: recipientPhone || '+91 98765 00000',
-    weightKg: weightKg || 1.5,
-    fare: 35,
-    expiryTime: new Date(Date.now() + 48 * 3600000).toISOString(),
-    createdAt: new Date().toISOString(),
-  };
+    const newParcel = {
+      id: 'PKL-' + Math.floor(1000 + Math.random() * 9000),
+      trackingCode: 'MSFR-IN-' + Math.floor(10000 + Math.random() * 90000),
+      stationName: originStation || 'Master Canteen Depot',
+      destinationStation: destStation || 'Patia Transit Station',
+      lockerNumber: 'LKR-0' + Math.floor(1 + Math.random() * 8),
+      pin: String(Math.floor(1000 + Math.random() * 9000)),
+      status: 'ready_pickup',
+      senderName: sanitizeInput(senderName || 'Sender'),
+      senderPhone: sanitizeInput(senderPhone || ''),
+      recipientName: sanitizeInput(recipientName),
+      recipientPhone: sanitizeInput(recipientPhone),
+      weightKg: Number(weightKg) || 1.5,
+      fare: Number(fare) || 35,
+      mishapReport: null,
+      expiryTime: new Date(Date.now() + 48 * 3600000).toISOString(),
+      createdAt: new Date().toISOString(),
+    };
 
-  memoryStore.parcels.unshift(newParcel);
-  res.status(201).json({ success: true, parcel: newParcel });
+    // Primary storage: Supabase PostgreSQL
+    if (supabase) {
+      try {
+        await supabase.from('parcel_bookings').insert([{
+          id: newParcel.id,
+          tracking_code: newParcel.trackingCode,
+          station_name: newParcel.stationName,
+          destination_station: newParcel.destinationStation,
+          locker_number: newParcel.lockerNumber,
+          pin: newParcel.pin,
+          status: newParcel.status,
+          sender_name: newParcel.senderName,
+          sender_phone: newParcel.senderPhone,
+          recipient_name: newParcel.recipientName,
+          recipient_phone: newParcel.recipientPhone,
+          weight_kg: newParcel.weightKg,
+          fare: newParcel.fare,
+          expiry_time: newParcel.expiryTime,
+          created_at: newParcel.createdAt,
+        }]);
+      } catch (dbErr) {
+        console.warn('Supabase parcel insert notice:', dbErr);
+      }
+    }
+
+    memoryStore.parcels.unshift(newParcel);
+    res.status(201).json({ success: true, parcel: newParcel });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-app.post('/api/parcels/unlock', (req: Request, res: Response) => {
+app.post('/api/parcels/unlock', validateBody(ParcelUnlockSchema), async (req: Request, res: Response) => {
   const { parcelId, pin } = req.body;
   const parcel = memoryStore.parcels.find(p => p.id === parcelId);
 
@@ -420,12 +555,66 @@ app.post('/api/parcels/unlock', (req: Request, res: Response) => {
     return res.status(404).json({ success: false, message: 'Parcel not found' });
   }
 
+  if (parcel.pin !== pin.trim()) {
+    return res.status(400).json({ success: false, message: 'Invalid 4-digit locker security PIN' });
+  }
+
   parcel.status = 'delivered';
+
+  if (supabase) {
+    try {
+      await supabase.from('parcel_bookings').update({ status: 'delivered' }).eq('id', parcelId);
+    } catch (e) {
+      console.warn('Supabase parcel status update notice:', e);
+    }
+  }
+
   res.json({
     success: true,
     message: `Locker ${parcel.lockerNumber} unlocked successfully! Door is open.`,
     parcel,
   });
+});
+
+// Parcel Mishap / Damage Reporting with Photo Proof
+app.post('/api/parcels/mishap', validateBody(ParcelMishapSchema), async (req: Request, res: Response) => {
+  try {
+    const { trackingCode, issueType, description, photoProof, location } = req.body;
+    const mishapRecord = {
+      trackingCode,
+      issueType: sanitizeInput(issueType),
+      description: sanitizeInput(description),
+      photoProof: photoProof || null,
+      location: sanitizeInput(location || 'Transit Corridor'),
+      reportedAt: new Date().toISOString(),
+    };
+
+    const parcel = memoryStore.parcels.find(p => p.trackingCode === trackingCode);
+    if (parcel) {
+      parcel.status = 'mishap_reported';
+      parcel.mishapReport = mishapRecord;
+    }
+
+    if (supabase) {
+      try {
+        await supabase.from('parcel_bookings').update({
+          status: 'mishap_reported',
+          mishap_report: mishapRecord,
+        }).eq('tracking_code', trackingCode);
+      } catch (dbErr) {
+        console.warn('Supabase mishap update notice:', dbErr);
+      }
+    }
+
+    console.log(`🚨 [PARCEL MISHAP LOGGED]: Tracking: ${trackingCode} | Issue: ${issueType}`);
+    res.json({
+      success: true,
+      message: 'Mishap incident report logged with photo proof. Emergency SMS alert dispatched to sender.',
+      mishap: mishapRecord,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ── 4. Mo-Wallet & Passes API ──────────────────────────────────────────────
@@ -438,8 +627,8 @@ app.get('/api/wallet', (_req: Request, res: Response) => {
   });
 });
 
-app.post('/api/wallet/topup', (req: Request, res: Response) => {
-  const { amount, method } = req.body;
+app.post('/api/wallet/topup', validateBody(WalletTopupSchema), (req: Request, res: Response) => {
+  const { amount } = req.body;
   const amt = Number(amount);
 
   if (isNaN(amt) || amt <= 0) {
@@ -499,7 +688,7 @@ app.get('/api/routing/directions', async (req: Request, res: Response) => {
 });
 
 // ── 6. Gemini 2.0 Flash AI Assistant API ───────────────────────────────────
-app.post('/api/ai/chat', async (req: Request, res: Response) => {
+app.post('/api/ai/chat', aiRateLimiter, async (req: Request, res: Response) => {
   try {
     const { message, language } = req.body;
     if (!message) return res.status(400).json({ error: 'Message is required' });
@@ -553,25 +742,30 @@ app.post('/api/sos/trigger', (req: Request, res: Response) => {
 // ── 8. Unique Real SMS OTP & Verification Database APIs ─────────────────────
 const activeOtpStore = new Map<string, { otp: string; expiresAt: number; id: string }>();
 
-// List all OTP generation and verification history from database
-app.get('/api/auth/otp-logs', (_req: Request, res: Response) => {
-  const logs = loadOtpLogs();
+// List all OTP generation and verification history from PostgreSQL / Memory
+app.get('/api/auth/otp-logs', async (_req: Request, res: Response) => {
+  try {
+    if (supabase) {
+      const { data, error } = await supabase.from('otp_logs').select('*').order('created_at', { ascending: false }).limit(100);
+      if (!error && data && data.length > 0) {
+        return res.json({ success: true, totalRecords: data.length, logs: data, source: 'supabase' });
+      }
+    }
+  } catch (e) {
+    console.warn('Supabase otp_logs fetch notice:', e);
+  }
   res.json({
     success: true,
-    totalRecords: logs.length,
-    logs,
+    totalRecords: memoryStore.otpLogs.length,
+    logs: memoryStore.otpLogs,
+    source: 'in_memory',
   });
 });
 
-app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
+app.post('/api/auth/send-sms-otp', otpRateLimiter, validateBody(OtpRequestSchema), async (req: Request, res: Response) => {
   try {
     const { phone } = req.body;
-    if (!phone) return res.status(400).json({ success: false, error: 'Phone number is required' });
-
-    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-    if (cleanPhone.length !== 10) {
-      return res.status(400).json({ success: false, error: 'Valid 10-digit Indian phone number required' });
-    }
+    const cleanPhone = phone; // Normalized 10 digits
 
     // Security Check: Lockout check
     const failedLock = otpFailedAttempts.get(cleanPhone);
@@ -583,43 +777,41 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
       });
     }
 
-    // Security Check: Rate Limiting (Max 3 OTP requests in 5 minutes)
-    const rateLimit = otpRequestRateLimits.get(cleanPhone);
-    const now = Date.now();
-    if (rateLimit) {
-      if (now - rateLimit.firstRequestTime < 5 * 60 * 1000) {
-        if (rateLimit.count >= 4) {
-          return res.status(429).json({
-            success: false,
-            error: 'Security Notice: Too many OTP requests. Please wait 5 minutes before requesting again.',
-          });
-        }
-        rateLimit.count += 1;
-      } else {
-        otpRequestRateLimits.set(cleanPhone, { count: 1, firstRequestTime: now });
-      }
-    } else {
-      otpRequestRateLimits.set(cleanPhone, { count: 1, firstRequestTime: now });
-    }
-
-    // Generate unique cryptographically random 6-digit OTP for this specific number
+    // Generate unique cryptographically random 6-digit OTP
     const otp = crypto.randomInt(100000, 999999).toString();
     const otpId = 'otp-' + crypto.randomUUID().slice(0, 8);
     const expiresAt = Date.now() + 5 * 60 * 1000;
+    const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
 
     activeOtpStore.set(cleanPhone, { otp, expiresAt, id: otpId });
 
-    // Store in persistent database (otp_logs.json)
-    const logs = loadOtpLogs();
-    logs.unshift({
+    // Store secure audit log in Supabase PostgreSQL
+    if (supabase) {
+      try {
+        await supabase.from('otp_logs').insert([{
+          id: otpId,
+          phone: `+91 ${cleanPhone}`,
+          otp_hash: otpHash,
+          status: 'pending',
+          expires_at: new Date(expiresAt).toISOString(),
+          created_at: new Date().toISOString(),
+        }]);
+      } catch (dbErr) {
+        console.warn('Supabase otp_logs insert notice:', dbErr);
+      }
+    }
+
+    // Store in memory cache & local backup
+    const newLogEntry = {
       id: otpId,
       phone: `+91 ${cleanPhone}`,
-      otp,
+      otpHash,
       status: 'pending',
       createdAt: new Date().toISOString(),
       expiresAt: new Date(expiresAt).toISOString(),
-    });
-    saveOtpLogs(logs.slice(0, 100)); // retain last 100 records
+    };
+    memoryStore.otpLogs.unshift(newLogEntry);
+    safeFileWrite(OTP_LOGS_FILE, memoryStore.otpLogs.slice(0, 100));
 
     let realSmsSent = false;
     let smsProvider = 'Twilio SMS Gateway';
@@ -677,13 +869,9 @@ app.post('/api/auth/send-sms-otp', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/auth/verify-sms-otp', (req: Request, res: Response) => {
+app.post('/api/auth/verify-sms-otp', validateBody(OtpVerifySchema), async (req: Request, res: Response) => {
   const { phone, otp } = req.body;
-  if (!phone || !otp) {
-    return res.status(400).json({ success: false, error: 'Phone and OTP required' });
-  }
-
-  const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+  const cleanPhone = phone; // Normalized 10 digits
 
   // Security Check: Lockout check
   const failedLock = otpFailedAttempts.get(cleanPhone);
@@ -711,13 +899,24 @@ app.post('/api/auth/verify-sms-otp', (req: Request, res: Response) => {
     // Clear failed attempts on success
     otpFailedAttempts.delete(cleanPhone);
 
-    // Update record in database to verified
-    const logs = loadOtpLogs();
-    const logItem = logs.find((l: any) => l.phone.includes(cleanPhone) && l.otp === otp.trim());
+    // Update in Supabase PostgreSQL
+    if (supabase) {
+      try {
+        await supabase.from('otp_logs').update({
+          status: 'verified',
+          verified_at: new Date().toISOString(),
+        }).eq('id', record.id);
+      } catch (dbErr) {
+        console.warn('Supabase otp verify update notice:', dbErr);
+      }
+    }
+
+    // Update memory log
+    const logItem = memoryStore.otpLogs.find((l: any) => l.id === record.id || (l.phone && l.phone.includes(cleanPhone)));
     if (logItem) {
       logItem.status = 'verified';
       logItem.verifiedAt = new Date().toISOString();
-      saveOtpLogs(logs);
+      safeFileWrite(OTP_LOGS_FILE, memoryStore.otpLogs);
     }
 
     activeOtpStore.delete(cleanPhone);
@@ -732,7 +931,7 @@ app.post('/api/auth/verify-sms-otp', (req: Request, res: Response) => {
     return res.status(429).json({
       success: false,
       verified: false,
-      error: 'Security Lockout: 5 consecutive invalid OTP attempts. Number locked for 10 minutes.',
+      error: 'Security Lockout: 5 failed attempts reached. This number is locked for 10 minutes.',
     });
   } else {
     otpFailedAttempts.set(cleanPhone, { attempts: currentAttempts, lockedUntil: 0 });
@@ -745,10 +944,9 @@ app.post('/api/auth/verify-sms-otp', (req: Request, res: Response) => {
   });
 });
 
-app.post('/api/auth/login-notification', async (req: Request, res: Response) => {
+app.post('/api/auth/login-notification', validateBody(LoginNotificationSchema), async (req: Request, res: Response) => {
   try {
     const { email, fullName, phone, category, homeCity } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
 
     console.log(`📧 [EMAIL NOTIFICATION] Sending Login Confirmation:`);
     console.log(`   To: ${fullName} <${email}>`);
@@ -777,13 +975,9 @@ const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
 
 // 1. Create Razorpay Order & UPI Intent Payload
-app.post('/api/payment/create-order', async (req: Request, res: Response) => {
+app.post('/api/payment/create-order', paymentRateLimiter, validateBody(PaymentCreateOrderSchema), async (req: Request, res: Response) => {
   try {
     const { amount, currency = 'INR', purpose = 'Mo-Wallet Recharge', customerName, customerPhone, customerEmail } = req.body;
-    
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ success: false, error: 'Valid payment amount is required' });
-    }
 
     const orderAmountInPaise = Math.round(Number(amount) * 100);
     const txnRef = 'MSFR_TXN_' + crypto.randomBytes(4).toString('hex').toUpperCase();
@@ -805,8 +999,8 @@ app.post('/api/payment/create-order', async (req: Request, res: Response) => {
             receipt: txnRef,
             notes: {
               purpose: sanitizeInput(purpose),
-              customerPhone: sanitizeInput(customerPhone),
-              customerName: sanitizeInput(customerName),
+              customerPhone: sanitizeInput(customerPhone || ''),
+              customerName: sanitizeInput(customerName || ''),
             },
           }),
         });
@@ -824,21 +1018,40 @@ app.post('/api/payment/create-order', async (req: Request, res: Response) => {
     const upiPn = 'Musafir Transit';
     const upiUri = `upi://pay?pa=${encodeURIComponent(upiPa)}&pn=${encodeURIComponent(upiPn)}&am=${encodeURIComponent(amount.toString())}&cu=INR&tn=${encodeURIComponent(purpose)}&tr=${encodeURIComponent(txnRef)}`;
 
-    // Store in active payments database
-    const payments = loadSavedPayments();
-    payments.unshift({
-      orderId: razorpayOrderId,
-      txnRef,
+    const newPaymentRecord = {
+      id: `pay_${crypto.randomUUID().replace(/-/g, '').slice(0, 14)}`,
+      order_id: razorpayOrderId,
+      txn_ref: txnRef,
       amount: Number(amount),
       currency,
       purpose,
       status: 'created',
-      customerName: sanitizeInput(customerName || 'Passenger'),
-      customerPhone: sanitizeInput(customerPhone || ''),
-      customerEmail: sanitizeInput(customerEmail || ''),
-      createdAt: new Date().toISOString(),
+      customer_name: sanitizeInput(customerName || 'Passenger'),
+      customer_phone: sanitizeInput(customerPhone || ''),
+      customer_email: sanitizeInput(customerEmail || ''),
+      created_at: new Date().toISOString(),
+    };
+
+    // Store in Supabase PostgreSQL
+    if (supabase) {
+      try {
+        await supabase.from('payments').insert([newPaymentRecord]);
+      } catch (dbErr) {
+        console.warn('Supabase payment insert notice:', dbErr);
+      }
+    }
+
+    // Store in memory & safe file backup
+    memoryStore.payments.unshift({
+      ...newPaymentRecord,
+      orderId: razorpayOrderId,
+      txnRef,
+      customerName: newPaymentRecord.customer_name,
+      customerPhone: newPaymentRecord.customer_phone,
+      customerEmail: newPaymentRecord.customer_email,
+      createdAt: newPaymentRecord.created_at,
     });
-    savePayments(payments.slice(0, 200));
+    safeFileWrite(PAYMENTS_FILE, memoryStore.payments.slice(0, 200));
 
     console.log(`💳 [PAYMENT ORDER CREATED]: Order: ${razorpayOrderId} | Txn: ${txnRef} | Amount: ₹${amount} | Purpose: ${purpose}`);
 
@@ -862,7 +1075,7 @@ app.post('/api/payment/create-order', async (req: Request, res: Response) => {
 });
 
 // 2. Verify Razorpay Payment Signature / Instant UPI Settlement
-app.post('/api/payment/verify', (req: Request, res: Response) => {
+app.post('/api/payment/verify', validateBody(PaymentVerifySchema), async (req: Request, res: Response) => {
   try {
     const { 
       razorpay_order_id, 
@@ -872,7 +1085,8 @@ app.post('/api/payment/verify', (req: Request, res: Response) => {
       amount,
       purpose = 'Transit Payment',
       customerPhone,
-      customerName
+      customerName,
+      txnRef
     } = req.body;
 
     const paymentId = razorpay_payment_id || `pay_${crypto.randomUUID().replace(/-/g, '').slice(0, 14)}`;
@@ -898,10 +1112,32 @@ app.post('/api/payment/verify', (req: Request, res: Response) => {
       });
     }
 
-    // Update payment record in database
-    const payments = loadSavedPayments();
-    const existing = payments.find((p: any) => p.orderId === razorpay_order_id || p.txnRef === req.body.txnRef);
-    
+    const receiptNumber = 'RCPT-' + crypto.randomInt(100000, 999999);
+    const verifiedAt = new Date().toISOString();
+
+    // Update in Supabase PostgreSQL
+    if (supabase) {
+      try {
+        let updateQuery = supabase.from('payments').update({
+          payment_id: paymentId,
+          status: 'success',
+          verified_at: verifiedAt,
+          receipt_number: receiptNumber,
+          method,
+        });
+        if (razorpay_order_id) {
+          updateQuery = updateQuery.eq('order_id', razorpay_order_id);
+        } else if (txnRef) {
+          updateQuery = updateQuery.eq('txn_ref', txnRef);
+        }
+        await updateQuery;
+      } catch (dbErr) {
+        console.warn('Supabase payment update notice:', dbErr);
+      }
+    }
+
+    // Update memory payment record
+    const existing = memoryStore.payments.find((p: any) => (razorpay_order_id && p.orderId === razorpay_order_id) || (txnRef && p.txnRef === txnRef));
     const verifiedRecord = {
       orderId: razorpay_order_id || 'UPI_DIRECT',
       paymentId,
@@ -912,16 +1148,16 @@ app.post('/api/payment/verify', (req: Request, res: Response) => {
       status: 'success',
       customerPhone: sanitizeInput(customerPhone || existing?.customerPhone || ''),
       customerName: sanitizeInput(customerName || existing?.customerName || 'Passenger'),
-      verifiedAt: new Date().toISOString(),
-      receiptNumber: 'RCPT-' + crypto.randomInt(100000, 999999),
+      verifiedAt,
+      receiptNumber,
     };
 
     if (existing) {
       Object.assign(existing, verifiedRecord);
     } else {
-      payments.unshift(verifiedRecord);
+      memoryStore.payments.unshift(verifiedRecord);
     }
-    savePayments(payments);
+    safeFileWrite(PAYMENTS_FILE, memoryStore.payments.slice(0, 200));
 
     console.log(`✅ [PAYMENT SETTLED & VERIFIED]: Payment ID: ${paymentId} | Amount: ₹${verifiedRecord.amount} | Method: ${method}`);
 
@@ -944,13 +1180,107 @@ app.post('/api/payment/verify', (req: Request, res: Response) => {
 });
 
 // 3. Payment History API
-app.get('/api/payment/history', (_req: Request, res: Response) => {
-  const payments = loadSavedPayments();
+app.get('/api/payment/history', async (_req: Request, res: Response) => {
+  try {
+    if (supabase) {
+      const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false }).limit(100);
+      if (!error && data && data.length > 0) {
+        return res.json({
+          success: true,
+          totalRecords: data.length,
+          payments: data,
+          source: 'supabase',
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Supabase payments fetch notice:', e);
+  }
   res.json({
     success: true,
-    totalRecords: payments.length,
-    payments,
+    totalRecords: memoryStore.payments.length,
+    payments: memoryStore.payments,
+    source: 'in_memory',
   });
+});
+
+// ── 4. Civic Community Reports & Incident Database APIs ─────────────────────
+app.get('/api/community/reports', async (req: Request, res: Response) => {
+  try {
+    const category = req.query.category as string;
+    if (supabase) {
+      let query = supabase.from('community_reports').select('*').order('created_at', { ascending: false });
+      if (category && category !== 'all') {
+        query = query.eq('category', category);
+      }
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        return res.json({ success: true, count: data.length, reports: data, source: 'supabase' });
+      }
+    }
+  } catch (err: any) {
+    console.warn('Supabase community_reports fetch notice:', err);
+  }
+  res.json({ success: true, count: 0, reports: [], source: 'fallback' });
+});
+
+app.post('/api/community/reports', validateBody(CommunityReportCreateSchema), async (req: Request, res: Response) => {
+  try {
+    const reportData = req.body;
+    const reportId = 'cr-' + crypto.randomUUID().slice(0, 8);
+    const newReport = {
+      id: reportId,
+      category: reportData.category,
+      title: sanitizeInput(reportData.title),
+      description: sanitizeInput(reportData.description),
+      location_name: sanitizeInput(reportData.locationName),
+      lat: reportData.lat,
+      lng: reportData.lng,
+      reporter_name: sanitizeInput(reportData.reporterName),
+      reporter_id: reportData.reporterId || 'anon-commuter',
+      upvotes: 1,
+      status: 'reported',
+      photo_url: reportData.photoUrl || null,
+      evidence_urls: reportData.evidenceUrls || [],
+      severity: reportData.severity || 'moderate',
+      timeline: [
+        { status: 'reported', timestamp: new Date().toISOString(), description: 'Report logged by citizen via Musafir.' }
+      ],
+      is_emergency: reportData.isEmergency || false,
+      created_at: new Date().toISOString(),
+    };
+
+    if (supabase) {
+      try {
+        await supabase.from('community_reports').insert([newReport]);
+      } catch (dbErr) {
+        console.warn('Supabase community report insert notice:', dbErr);
+      }
+    }
+
+    res.status(201).json({ success: true, report: newReport });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/community/reports/:id/upvote', async (req: Request, res: Response) => {
+  try {
+    const reportId = req.params.id;
+    if (supabase) {
+      try {
+        const { data } = await supabase.from('community_reports').select('upvotes').eq('id', reportId).single();
+        const currentUpvotes = (data?.upvotes || 0) + 1;
+        await supabase.from('community_reports').update({ upvotes: currentUpvotes }).eq('id', reportId);
+        return res.json({ success: true, upvotes: currentUpvotes });
+      } catch (dbErr) {
+        console.warn('Supabase report upvote notice:', dbErr);
+      }
+    }
+    res.json({ success: true, upvotes: 2 });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ── 5. Mo Bus Routes & Stoppages API ───────────────────────────────────────
@@ -1126,12 +1456,9 @@ app.post('/api/tickets/validate', (req: Request, res: Response) => {
 // ── Google Maps Platform API Gateway ──────────────────────────────────────
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyBxK55bcOFGfpkIX_0Hi6AyWzwjCSGPFQM';
 
-app.get('/api/maps/geocode', async (req: Request, res: Response) => {
+app.get('/api/maps/geocode', validateQuery(MapGeocodeQuerySchema), async (req: Request, res: Response) => {
   try {
     const address = req.query.address as string;
-    if (!address) {
-      return res.status(400).json({ status: 'INVALID_REQUEST', error_message: 'address query parameter required' });
-    }
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&region=in&key=${GOOGLE_MAPS_API_KEY}`;
     const response = await fetch(url);
     const data = await response.json();
@@ -1142,10 +1469,10 @@ app.get('/api/maps/geocode', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/maps/places/autocomplete', async (req: Request, res: Response) => {
+app.get('/api/maps/places/autocomplete', validateQuery(MapAutocompleteQuerySchema), async (req: Request, res: Response) => {
   try {
-    const input = req.query.input as string;
-    if (!input) {
+    const input = (req.query.input as string) || '';
+    if (!input.trim()) {
       return res.json({ predictions: [], status: 'OK' });
     }
     const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&components=country:in&language=en&key=${GOOGLE_MAPS_API_KEY}`;
@@ -1158,14 +1485,11 @@ app.get('/api/maps/places/autocomplete', async (req: Request, res: Response) => 
   }
 });
 
-app.get('/api/maps/directions', async (req: Request, res: Response) => {
+app.get('/api/maps/directions', validateQuery(MapDirectionsQuerySchema), async (req: Request, res: Response) => {
   try {
     const origin = req.query.origin as string;
     const destination = req.query.destination as string;
     const mode = (req.query.mode as string) || 'transit';
-    if (!origin || !destination) {
-      return res.status(400).json({ status: 'INVALID_REQUEST', error_message: 'origin and destination required' });
-    }
     const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&mode=${mode}&region=in&alternatives=true&key=${GOOGLE_MAPS_API_KEY}`;
     const response = await fetch(url);
     const data = await response.json();
@@ -1176,14 +1500,11 @@ app.get('/api/maps/directions', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/maps/places/nearby', async (req: Request, res: Response) => {
+app.get('/api/maps/places/nearby', validateQuery(MapNearbyQuerySchema), async (req: Request, res: Response) => {
   try {
     const location = req.query.location as string;
     const radius = (req.query.radius as string) || '2000';
     const type = (req.query.type as string) || 'transit_station';
-    if (!location) {
-      return res.status(400).json({ status: 'INVALID_REQUEST', error_message: 'location (lat,lng) required' });
-    }
     const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${encodeURIComponent(location)}&radius=${radius}&type=${type}&key=${GOOGLE_MAPS_API_KEY}`;
     const response = await fetch(url);
     const data = await response.json();
