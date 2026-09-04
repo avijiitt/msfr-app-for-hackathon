@@ -182,3 +182,24 @@ body {
   background: transparent;
   border: none;
 }
+
+/* ─── Anti-Screenshot Watermark & ETM Laser Scanner ──────────── */
+@keyframes laser-scan {
+  0% { transform: translateY(0); opacity: 0.8; }
+  50% { transform: translateY(150px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0.8; }
+}
+
+.animate-laser-scan {
+  animation: laser-scan 2.2s ease-in-out infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: inline-flex;
+  animation: marquee 16s linear infinite;
+}

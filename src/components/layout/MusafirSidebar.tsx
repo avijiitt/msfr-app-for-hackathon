@@ -21,7 +21,9 @@ import {
   Wallet,
   Zap,
   Truck,
-  Users
+  Users,
+  Ticket,
+  Scan
 } from 'lucide-react';
 
 import { TranslationDictionary } from '../../types/i18n';
@@ -51,6 +53,8 @@ interface MusafirSidebarProps {
   onOpenSOS: () => void;
   onOpenStudent: () => void;
   onOpenBusRoutes?: () => void;
+  onOpenDynamicTicket?: () => void;
+  onOpenConductorScanner?: () => void;
   onSelectSavedPlace: (name: string) => void;
   t?: TranslationDictionary;
 }
@@ -63,6 +67,8 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   onOpenSOS,
   onOpenStudent,
   onOpenBusRoutes,
+  onOpenDynamicTicket,
+  onOpenConductorScanner,
   onSelectSavedPlace,
   t,
 }) => {
@@ -84,6 +90,8 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   ];
 
   const quickAccess = [
+    { label: 'Dynamic Pass (QR)', icon: Ticket, color: 'text-blue-600 font-bold', action: onOpenDynamicTicket || onOpenNearbyStops },
+    { label: 'Conductor ETM Scanner', icon: Scan, color: 'text-emerald-600 font-bold', action: onOpenConductorScanner || onOpenNearbyStops },
     { label: 'Ama Bus (82 Lines)', icon: Bus, color: 'text-blue-600 font-bold', action: onOpenBusRoutes || onOpenNearbyStops },
     { label: 'Nearby Stores', icon: MapPin, color: 'text-emerald-600', action: onOpenNearbyStops },
     { label: t?.studentPass || 'Student Pass', icon: GraduationCap, color: 'text-purple-600', action: onOpenStudent },
