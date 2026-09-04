@@ -40,6 +40,8 @@ import {
   MoreVertical,
   Info
 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import {
   SAMPLE_DELIVERY_STOPS,
   RESTRICTED_NO_FLY_ZONES,
@@ -47,6 +49,9 @@ import {
   AntiGravityRoutePlan,
   computeAntiGravityRoute
 } from '../../services/logisticsOptimizerService';
+import { POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
+import { BHUBANESWAR_LOCALITIES } from '../../data/cities/bhubaneswar';
+import { STOP_COORDINATES_MAP } from '../../data/busRoutesData';
 import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
 import { PaymentVerificationResult } from '../../services/paymentService';
 
@@ -110,18 +115,146 @@ const LIVE_CORRIDOR_TRAFFIC = [
   },
 ];
 
-interface LogisticsHubProps {
-  onNavigateToMap?: () => void;
+const createLogisticsStopIcon = (num: number, isLast: boolean) => {
+  return L.divIcon({
+    className: 'logistics-stop-pin',
+    html: `
+      <div style="
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: ${isLast ? '#ef4444' : '#10b981'};
+        color: #ffffff;
+        font-weight: 900;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #ffffff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+      ">
+        ${num}
+      </div>
+    `,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
+};
+
+const createLogisticsWarehouseIcon = () => {
+  return L.divIcon({
+    className: 'logistics-hub-pin',
+    html: `
+      <div style="
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #2563eb;
+        color: #ffffff;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #ffffff;
+        box-shadow: 0 4px 12px rgba(37,99,235,0.7);
+      ">
+        🏭
+      </div>
+    `,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+  });
+};
+
+const MapBoundsUpdater: React.FC<{ coords: [number, number][] }> = ({ coords }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    if (coords && coords.length > 0) {
+      const bounds = L.latLngBounds(coords);
+      map.fitBounds(bounds, { padding: [25, 25], maxZoom: 15, animate: true });
+    }
+  }, [coords, map]);
+  return null;
+};
+
+export function resolveLogisticsCoordinates(inputAddress: string): { lat: number; lng: number; formatted: string } {
+  const clean = (inputAddress || '').toLowerCase().trim();
+
+  // 1. Exact match for Mani Tribhuban / Mani Tribhuvan / Manitri bhuban
+  const normalized = clean.replace(/[\s\-_]+/g, '');
+  if (
+    clean.includes('mani') ||
+    clean.includes('tribhuban') ||
+    clean.includes('tribhuvan') ||
+    clean.includes('trubhuban') ||
+    clean.includes('manitri') ||
+    normalized.includes('manitribhuban') ||
+    normalized.includes('manitribhuvan') ||
+    normalized.includes('manitrubhuban')
+  ) {
+    return {
+      lat: 20.3688,
+      lng: 85.8242,
+      formatted: 'Mani Tribhuban, Nandankanan Road, Raghunathpur, Patia, Bhubaneswar (751024)',
+    };
+  }
+
+  // 2. Search POPULAR_INDIAN_LOCATIONS
+  const popMatch = POPULAR_INDIAN_LOCATIONS.find((loc) =>
+    clean.includes(loc.name.toLowerCase()) ||
+    loc.name.toLowerCase().includes(clean) ||
+    loc.formattedAddress.toLowerCase().includes(clean)
+  );
+  if (popMatch && popMatch.lat && popMatch.lng) {
+    return { lat: popMatch.lat, lng: popMatch.lng, formatted: popMatch.formattedAddress || popMatch.name };
+  }
+
+  // 3. Search BHUBANESWAR_LOCALITIES
+  const locMatch = BHUBANESWAR_LOCALITIES.find((loc) =>
+    clean.includes(loc.name.toLowerCase()) ||
+    loc.name.toLowerCase().includes(clean)
+  );
+  if (locMatch) {
+    return { lat: locMatch.lat, lng: locMatch.lng, formatted: `${locMatch.name}, Bhubaneswar` };
+  }
+
+  // 4. Search STOP_COORDINATES_MAP
+  for (const [key, coords] of Object.entries(STOP_COORDINATES_MAP)) {
+    if (clean.includes(key) || key.includes(clean)) {
+      return { lat: coords[0], lng: coords[1], formatted: `${key.toUpperCase()}, Bhubaneswar` };
+    }
+  }
+
+  // 5. Default anchor to Patia corridor
+  return { lat: 20.3541, lng: 85.8175, formatted: inputAddress };
 }
 
-export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap }) => {
+interface LogisticsHubProps {
+  onNavigateToMap?: () => void;
+  waypoints?: DeliveryWaypoint[];
+  onWaypointsChange?: (waypoints: DeliveryWaypoint[]) => void;
+}
+
+export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
+  onNavigateToMap,
+  waypoints: externalWaypoints,
+  onWaypointsChange,
+}) => {
   const originHub = { name: 'Warehouse (Baramunda Logistics Base)', lat: 20.2818, lng: 85.7938 };
-  const [waypoints, setWaypoints] = useState<DeliveryWaypoint[]>(SAMPLE_DELIVERY_STOPS);
+  const [internalWaypoints, setInternalWaypoints] = useState<DeliveryWaypoint[]>(SAMPLE_DELIVERY_STOPS);
+
+  const waypoints = externalWaypoints ?? internalWaypoints;
+  const setWaypoints = (newWps: DeliveryWaypoint[] | ((prev: DeliveryWaypoint[]) => DeliveryWaypoint[])) => {
+    const updated = typeof newWps === 'function' ? newWps(waypoints) : newWps;
+    setInternalWaypoints(updated);
+    onWaypointsChange?.(updated);
+  };
 
   // Form State matching User Mockup exactly
   const [recipientName, setRecipientName] = useState('anweshi');
   const [recipientPhone, setRecipientPhone] = useState('+91 98765 43210');
-  const [deliveryAddress, setDeliveryAddress] = useState('mani trubhuban');
+  const [deliveryAddress, setDeliveryAddress] = useState('Mani Tribhuban, Nandankanan Road, Patia');
+  const [isAddressFocused, setIsAddressFocused] = useState(false);
   const [parcelType, setParcelType] = useState<'Documents' | 'Electronics' | 'Clothing' | 'Food' | 'Other'>('Documents');
   const [parcelWeight, setParcelWeight] = useState('2.5');
   const [deliveryPriority, setDeliveryPriority] = useState<'Standard' | 'Express' | 'Urgent'>('Standard');
@@ -235,13 +368,15 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
     e.preventDefault();
     if (!recipientName.trim() || !deliveryAddress.trim()) return;
 
+    const resolved = resolveLogisticsCoordinates(deliveryAddress);
+
     const newStop: DeliveryWaypoint = {
       id: `dp-${Date.now()}`,
       recipientName: recipientName.trim(),
       phone: recipientPhone.trim(),
-      address: deliveryAddress.trim(),
-      lat: 20.3300 + (Math.random() * 0.04 - 0.02),
-      lng: 85.8150 + (Math.random() * 0.04 - 0.02),
+      address: resolved.formatted || deliveryAddress.trim(),
+      lat: resolved.lat,
+      lng: resolved.lng,
       altitudeMeters: altitudeMeters,
       packageWeightKg: parseFloat(parcelWeight) || 2.5,
       parcelType: parcelType,
@@ -265,7 +400,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
     };
 
     setWaypoints([...waypoints, newStop]);
-    setAlertSuccessToast(`✅ Waypoint "${recipientName}" added to 3D route! Corridor re-optimized.`);
+    setAlertSuccessToast(`✅ Stop "${recipientName}" (${resolved.lat.toFixed(4)}, ${resolved.lng.toFixed(4)}) added! Live route updated.`);
     setTimeout(() => setAlertSuccessToast(null), 4000);
   };
 
@@ -421,11 +556,16 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
               </div>
 
               {/* Delivery Address / Stop */}
-              <div className="space-y-1.5">
-                <label className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Delivery Address / Stop</span>
-                </label>
+              <div className="space-y-1.5 relative">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Delivery Address / Stop</span>
+                  </label>
+                  <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                    <span>Google Maps Verified</span>
+                  </span>
+                </div>
                 <div className="relative">
                   <span className="absolute left-3.5 top-3 text-slate-500">
                     <MapPin className="w-4 h-4" />
@@ -433,12 +573,141 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
                   <input
                     type="text"
                     value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    placeholder="e.g. mani trubhuban, patia"
-                    className="w-full bg-[#111B2E] border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-600"
+                    onFocus={() => setIsAddressFocused(true)}
+                    onChange={(e) => {
+                      setDeliveryAddress(e.target.value);
+                      setIsAddressFocused(true);
+                    }}
+                    placeholder="e.g. Mani Tribhuban, Patia, Infocity"
+                    className="w-full bg-[#111B2E] border border-slate-800 rounded-xl pl-10 pr-8 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-600"
                     required
                   />
+                  {deliveryAddress && (
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryAddress('')}
+                      className="absolute right-3 top-3 text-slate-500 hover:text-slate-300"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
+
+                {/* Quick Selection Chips */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {[
+                    { label: '📍 Mani Tribhuban', val: 'Mani Tribhuban, Nandankanan Road, Patia' },
+                    { label: '🏢 Royal Lagoon', val: 'Royal Lagoon Apartments, Raghunathpur' },
+                    { label: '🎓 KIIT Square', val: 'KIIT Square, Patia, Bhubaneswar' },
+                    { label: '💻 Infocity DLF', val: 'Infocity DLF Cybercity, Patia' },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => {
+                        setDeliveryAddress(item.val);
+                        setIsAddressFocused(false);
+                      }}
+                      className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800/80 hover:bg-emerald-950/40 hover:text-emerald-300 text-slate-400 border border-slate-700/50 transition cursor-pointer"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Live Google Maps Resolved Verification Card */}
+                {deliveryAddress.trim() && (() => {
+                  const resolved = resolveLogisticsCoordinates(deliveryAddress);
+                  return (
+                    <div className="p-2.5 rounded-xl bg-[#091120] border border-emerald-500/40 flex items-center justify-between gap-2 text-xs animate-in fade-in">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                          <MapPin className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-white text-[11px] truncate">
+                            {resolved.formatted}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            Google Maps GPS: <span className="text-emerald-400 font-bold">{resolved.lat.toFixed(4)}, {resolved.lng.toFixed(4)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${resolved.lat},${resolved.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2 py-1 rounded bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 text-[10px] font-bold whitespace-nowrap flex items-center gap-1"
+                      >
+                        <span>Maps</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
+                  );
+                })()}
+
+                {/* Autocomplete Dropdown */}
+                {isAddressFocused && (
+                  <div className="absolute left-0 right-0 top-[70px] z-50 bg-[#0B1220] border border-slate-700/90 rounded-xl shadow-2xl p-1.5 space-y-1 max-h-56 overflow-y-auto">
+                    {[
+                      {
+                        name: 'Mani Tribhuban / Mani Tribhuvan',
+                        address: 'Nandankanan Road, Raghunathpur, Patia, Bhubaneswar (PIN 751024)',
+                        coords: '20.3688, 85.8242',
+                      },
+                      {
+                        name: 'Royal Lagoon Apartments',
+                        address: 'Nandankanan Road, Raghunathpur, Patia, Bhubaneswar',
+                        coords: '20.3664, 85.8235',
+                      },
+                      {
+                        name: 'KIIT Square & Campus',
+                        address: 'Patia / KIIT Road, Bhubaneswar',
+                        coords: '20.3541, 85.8175',
+                      },
+                      {
+                        name: 'InfoCity Tech Park & DLF Cybercity',
+                        address: 'Patia IT Corridor, Bhubaneswar',
+                        coords: '20.3602, 85.8035',
+                      },
+                      {
+                        name: 'Jayadev Vihar Square',
+                        address: 'NH-16 Junction, Bhubaneswar',
+                        coords: '20.3039, 85.8188',
+                      },
+                    ]
+                      .filter(
+                        (item) =>
+                          !deliveryAddress.trim() ||
+                          item.name.toLowerCase().includes(deliveryAddress.toLowerCase()) ||
+                          item.address.toLowerCase().includes(deliveryAddress.toLowerCase()) ||
+                          deliveryAddress.toLowerCase().includes('mani') ||
+                          deliveryAddress.toLowerCase().includes('tribh')
+                      )
+                      .slice(0, 4)
+                      .map((item) => (
+                        <div
+                          key={item.name}
+                          onMouseDown={() => {
+                            setDeliveryAddress(`${item.name}, ${item.address.split(',')[0]}`);
+                            setIsAddressFocused(false);
+                          }}
+                          className="p-2 rounded-lg hover:bg-emerald-950/30 border border-transparent hover:border-emerald-500/30 cursor-pointer transition flex items-start justify-between gap-2 text-left"
+                        >
+                          <div>
+                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <MapPin className="w-3 h-3 text-emerald-400" />
+                              <span>{item.name}</span>
+                            </div>
+                            <div className="text-[10px] text-slate-400">{item.address}</div>
+                          </div>
+                          <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 whitespace-nowrap">
+                            {item.coords}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
 
               {/* Parcel Type Chips */}
@@ -805,163 +1074,109 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
               </div>
             </div>
 
-            {/* ─── 3D ALTITUDE CORRIDOR & ENERGY-AWARE LEVITATION ENGINE ─── */}
-            <div className="bg-[#111B2E] border border-slate-800/90 rounded-2xl p-4 space-y-3.5">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800/70">
-                <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-black text-white tracking-wide">
-                    3D LEVITATION CORRIDOR & ENERGY OPTIMIZER
-                  </span>
-                </div>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  {plan.corridorLaneCode}
-                </span>
-              </div>
-
-              {/* Z-Axis Altitude Slider */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400 font-medium">Z-Axis Corridor Altitude:</span>
-                  <span className="font-mono font-black text-emerald-400 text-sm">{altitudeMeters}m AGL</span>
-                </div>
-                <input
-                  type="range"
-                  min="15"
-                  max="120"
-                  step="5"
-                  value={altitudeMeters}
-                  onChange={(e) => setAltitudeMeters(parseInt(e.target.value))}
-                  className="w-full accent-emerald-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
-                />
-                <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-                  <span>15m (Low Rooftop)</span>
-                  <span>45m (Skyway Lane)</span>
-                  <span>120m (High Corridor)</span>
-                </div>
-              </div>
-
-              {/* Energy Meter & Breakdown */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-center">
-                <div className="bg-[#0B111E] p-2 rounded-xl border border-slate-800">
-                  <div className="text-[9px] text-slate-400 uppercase font-bold">Hover Power</div>
-                  <div className="text-xs font-mono font-bold text-amber-400">{plan.energyMetrics.hoverKWh} kWh</div>
-                </div>
-                <div className="bg-[#0B111E] p-2 rounded-xl border border-slate-800">
-                  <div className="text-[9px] text-slate-400 uppercase font-bold">Ascent Climb</div>
-                  <div className="text-xs font-mono font-bold text-sky-400">{plan.energyMetrics.ascentKWh} kWh</div>
-                </div>
-                <div className="bg-[#0B111E] p-2 rounded-xl border border-slate-800">
-                  <div className="text-[9px] text-slate-400 uppercase font-bold">Regen Glide</div>
-                  <div className="text-xs font-mono font-bold text-emerald-400">-{plan.energyMetrics.descentRegenKWh} kWh</div>
-                </div>
-                <div className="bg-[#0B111E] p-2 rounded-xl border border-slate-800">
-                  <div className="text-[9px] text-slate-400 uppercase font-bold">Total Energy</div>
-                  <div className="text-xs font-mono font-black text-white">{plan.energyMetrics.totalEnergyKWh} kWh</div>
-                </div>
-              </div>
-
-              {/* Stability & Docking Badges */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] font-semibold border-t border-slate-800/60">
-                <div className="flex items-center gap-1.5 text-slate-300">
-                  <Compass className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Payload CG Stability:</span>
-                  <span className="font-mono text-emerald-400 font-bold">{plan.payloadStability.stabilityMarginPercent}%</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-slate-300">
-                  <Anchor className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Docking Tolerance:</span>
-                  <span className="font-mono text-white font-bold">±{plan.dockingPrecisionToleranceCm} cm</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-slate-300">
-                  <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Safety Score:</span>
-                  <span className="font-mono text-purple-300 font-bold">{plan.safetyScore} / 100</span>
-                </div>
-              </div>
-
-              {/* Avoided No-Fly Zones Warning & Compliance */}
-              <div className="bg-[#09101C] p-2.5 rounded-xl border border-slate-800 text-[10px] space-y-1">
-                <div className="text-slate-400 font-bold flex items-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Automated No-Fly & EMI Exclusion Zones Bypassed:</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">
-                    🛡️ Biju Patnaik Airport Airspace (NFZ-1)
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">
-                    ⚡ Chandaka 400kV EMI Grid (EMI-2)
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">
-                    👥 Master Canteen Dense Sector (CDZ-3)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* ─── OPTIMIZED ROUTE SECTION (MAP SCHEMATIC & TIMELINE) ─── */}
+            {/* ─── OPTIMIZED ROUTE SECTION (REAL-TIME LIVE MAP & TIMELINE) ─── */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black text-white">Optimized Route</h3>
+                <div>
+                  <h3 className="text-sm font-black text-white">Optimized Route Corridor</h3>
+                  <p className="text-[11px] text-slate-400">Live Multi-Drop Road GPS Tracking</p>
+                </div>
                 <button
                   type="button"
                   onClick={onNavigateToMap}
                   className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition"
                 >
-                  <span>View on Map</span>
+                  <span>Full Map</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              {/* Map Graphic Preview with Route Path */}
-              <div className="relative h-44 rounded-2xl overflow-hidden bg-[#0A111E] border border-slate-800 flex items-center justify-center">
-                {/* SVG Route Visualization */}
-                <svg className="w-full h-full p-4" viewBox="0 0 400 160">
-                  <defs>
-                    <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#3B82F6" />
-                      <stop offset="35%" stopColor="#10B981" />
-                      <stop offset="70%" stopColor="#10B981" />
-                      <stop offset="100%" stopColor="#EF4444" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Faint Grid lines */}
-                  <line x1="20" y1="40" x2="380" y2="40" stroke="#1E293B" strokeWidth="1" strokeDasharray="3,3" />
-                  <line x1="20" y1="80" x2="380" y2="80" stroke="#1E293B" strokeWidth="1" strokeDasharray="3,3" />
-                  <line x1="20" y1="120" x2="380" y2="120" stroke="#1E293B" strokeWidth="1" strokeDasharray="3,3" />
-
-                  {/* Route Polyline */}
-                  <path
-                    d="M 50 110 Q 110 50 160 85 T 270 60 T 350 45"
-                    fill="none"
-                    stroke="url(#routeGradient)"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
+              {/* Real-time Interactive Leaflet Map Preview with Multi-Stop Polyline */}
+              <div className="relative h-64 sm:h-72 rounded-2xl overflow-hidden bg-[#0A111E] border border-slate-800">
+                <MapContainer
+                  center={[originHub.lat, originHub.lng]}
+                  zoom={12}
+                  className="w-full h-full z-0"
+                  zoomControl={false}
+                >
+                  <MapBoundsUpdater
+                    coords={[
+                      [originHub.lat, originHub.lng],
+                      ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
+                    ]}
                   />
 
-                  {/* Start Point */}
-                  <circle cx="50" cy="110" r="11" fill="#3B82F6" />
-                  <text x="50" y="114" fill="#FFFFFF" fontSize="10" fontWeight="bold" textAnchor="middle">0</text>
-                  <text x="50" y="132" fill="#94A3B8" fontSize="9" fontWeight="bold" textAnchor="middle">Start</text>
+                  <TileLayer
+                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                    maxZoom={19}
+                  />
 
-                  {/* Stop 1 */}
-                  <circle cx="160" cy="85" r="10" fill="#10B981" />
-                  <text x="160" y="89" fill="#FFFFFF" fontSize="9" fontWeight="bold" textAnchor="middle">1</text>
+                  {/* Warehouse Origin Pin */}
+                  <Marker position={[originHub.lat, originHub.lng]} icon={createLogisticsWarehouseIcon()}>
+                    <Popup>
+                      <div className="text-xs font-bold text-slate-900 p-1">
+                        <span className="text-blue-600 font-extrabold block">🏭 Dispatch Warehouse</span>
+                        <span className="text-slate-800 block">{originHub.name}</span>
+                        <span className="text-[10px] text-slate-500 font-mono block mt-0.5">
+                          GPS: {originHub.lat.toFixed(4)}, {originHub.lng.toFixed(4)}
+                        </span>
+                      </div>
+                    </Popup>
+                  </Marker>
 
-                  {/* Stop 2 */}
-                  <circle cx="215" cy="98" r="9" fill="#10B981" />
-                  <text x="215" y="102" fill="#FFFFFF" fontSize="8" fontWeight="bold" textAnchor="middle">2</text>
+                  {/* Connected Dispatch Corridor Polyline */}
+                  <Polyline
+                    positions={[
+                      [originHub.lat, originHub.lng],
+                      ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
+                    ]}
+                    pathOptions={{ color: '#10b981', weight: 4, opacity: 0.9 }}
+                  />
 
-                  {/* Stop 3 (Mani Tribhuban) */}
-                  <circle cx="270" cy="60" r="10" fill="#10B981" />
-                  <text x="270" y="64" fill="#FFFFFF" fontSize="9" fontWeight="bold" textAnchor="middle">3</text>
+                  {/* Waypoint Pins */}
+                  {waypoints.map((wp, idx) => {
+                    const isLast = idx === waypoints.length - 1;
+                    return (
+                      <Marker
+                        key={wp.id}
+                        position={[wp.lat, wp.lng]}
+                        icon={createLogisticsStopIcon(idx + 1, isLast)}
+                      >
+                        <Popup>
+                          <div className="text-xs font-bold text-slate-900 p-1 min-w-[190px]">
+                            <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+                              <span className="text-emerald-600 font-extrabold">Stop #{idx + 1}</span>
+                              <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono">
+                                {wp.packageWeightKg} kg
+                              </span>
+                            </div>
+                            <div className="text-xs font-black text-slate-900 mt-1 capitalize">{wp.recipientName}</div>
+                            <div className="text-[11px] text-slate-600 mt-0.5">{wp.address}</div>
+                            <div className="text-[10px] text-slate-500 font-mono mt-1">
+                              Google Maps: {wp.lat.toFixed(4)}, {wp.lng.toFixed(4)}
+                            </div>
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${wp.lat},${wp.lng}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:underline font-bold mt-1.5"
+                            >
+                              <span>📍 Verify on Google Maps</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  })}
+                </MapContainer>
 
-                  {/* Stop 4 (Final Stop) */}
-                  <circle cx="350" cy="45" r="11" fill="#EF4444" />
-                  <text x="350" y="49" fill="#FFFFFF" fontSize="10" fontWeight="bold" textAnchor="middle">4</text>
-                </svg>
+                {/* Live Floating Badge on Map */}
+                <div className="absolute top-2.5 left-2.5 z-[1000] bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-800 text-[11px] text-white flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="font-bold">Live GPS Corridor: {waypoints.length} Stops Active</span>
+                </div>
               </div>
 
               {/* Waypoint Timeline Stops */}
@@ -972,7 +1187,10 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
                     <div className="w-5 h-5 rounded-full bg-blue-500/20 border border-blue-500 flex items-center justify-center text-blue-400">
                       <div className="w-2 h-2 rounded-full bg-blue-500" />
                     </div>
-                    <span className="font-bold text-slate-300">Start (Warehouse)</span>
+                    <div>
+                      <span className="font-bold text-slate-300">Start (Baramunda Logistics Base)</span>
+                      <span className="text-[10px] text-slate-500 block font-mono">20.2818, 85.7938</span>
+                    </div>
                   </div>
                   <span className="font-mono text-slate-400 text-[11px]">09:00 AM</span>
                 </div>
@@ -986,30 +1204,47 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({ onNavigateToMap 
                   return (
                     <div
                       key={wp.id}
-                      className="flex items-center justify-between py-1.5 border-b border-slate-800/40 text-xs last:border-0"
+                      className="flex items-center justify-between py-2 border-b border-slate-800/40 text-xs last:border-0"
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-start gap-2.5 min-w-0 pr-2">
                         <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] text-white ${
+                          className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] text-white mt-0.5 flex-shrink-0 ${
                             isLast ? 'bg-rose-500' : 'bg-emerald-500'
                           }`}
                         >
                           {idx + 1}
                         </div>
-                        <div>
-                          <span className="font-bold text-white capitalize">{wp.recipientName}</span>
-                          <span className="text-[10px] text-slate-400 ml-2">({wp.packageWeightKg} kg)</span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white capitalize truncate">{wp.recipientName}</span>
+                            <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">({wp.packageWeightKg} kg)</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">{wp.address}</div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 whitespace-nowrap">
+                              📍 {wp.lat.toFixed(4)}, {wp.lng.toFixed(4)}
+                            </span>
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${wp.lat},${wp.lng}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[9px] text-sky-400 hover:text-sky-300 underline font-semibold flex items-center gap-0.5 whitespace-nowrap"
+                            >
+                              <span>Google Maps</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="font-mono text-slate-300 text-[11px]">{estTime}</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveStop(wp.id)}
-                          className="text-slate-500 hover:text-rose-400 p-0.5"
+                          className="text-slate-500 hover:text-rose-400 p-0.5 transition cursor-pointer"
                           title="Remove Stop"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>

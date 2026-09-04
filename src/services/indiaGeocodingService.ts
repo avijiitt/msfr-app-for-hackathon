@@ -21,7 +21,7 @@ export const POPULAR_INDIAN_LOCATIONS: IndiaLocationResult[] = [
   // Bhubaneswar & Odisha (Institutes, Colleges, Hospitals, Apartments & Transit Hubs)
   { id: 'bbs-royal-lagoon', name: 'Royal Lagoon Apartments, Bhubaneswar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3664, lng: 85.8235, type: 'landmark', formattedAddress: 'Nandankanan Road, Raghunathpur, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-trident-infocity', name: 'Trident Academy / Trident College (Infocity)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3548, lng: 85.8155, type: 'university', formattedAddress: 'Chandaka Industrial Estate, Near Infocity Square, Patia, Bhubaneswar, Odisha' },
-  { id: 'bbs-mani-tribhuvan', name: 'Mani Tribhuvan Apartments, Patia', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3640, lng: 85.8215, type: 'landmark', formattedAddress: 'Nandankanan Road, Patia, Bhubaneswar, Odisha' },
+  { id: 'bbs-mani-tribhuvan', name: 'Mani Tribhuban / Mani Tribhuvan (Raghunathpur, Patia)', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3688, lng: 85.8242, type: 'landmark', formattedAddress: 'Mani Tribhuban, Nandankanan Road, Raghunathpur, Patia, Bhubaneswar, Odisha (751024)' },
   { id: 'bbs-raghunathpur', name: 'Raghunathpur / Raghunathpur Village', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3720, lng: 85.8230, type: 'landmark', formattedAddress: 'Raghunathpur, Nandankanan Road, Bhubaneswar, Odisha' },
   { id: 'bbs-nandan-vihar', name: 'Nandan Vihar / Sishupal', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3620, lng: 85.8200, type: 'landmark', formattedAddress: 'Nandan Vihar, Patia, Bhubaneswar, Odisha' },
   { id: 'bbs-sikharchandi', name: 'Sikharchandi Temple & Vihar', city: 'Bhubaneswar', state: 'Odisha', lat: 20.3600, lng: 85.8150, type: 'landmark', formattedAddress: 'Sikharchandi Hills, Patia, Bhubaneswar, Odisha' },
@@ -284,6 +284,7 @@ class IndiaGeocodingService {
       { match: /\b(sailashree\s*vihar|sailashree)\b/i, id: 'bbs-sailashree' },
       { match: /\b(lingaraj|lingaraj\s*temple|old\s*town)\b/i, id: 'bbs-lingaraj' },
       { match: /\b(royal\s*lagoon)\b/i, id: 'bbs-royal-lagoon' },
+      { match: /\b(mani\s*tri\w*|manitri\w*|tribhuban|tribhuvan)\b/i, id: 'bbs-mani-tribhuvan' },
       { match: /\b(trident)\b/i, id: 'bbs-trident-infocity' },
       { match: /\b(outr|cet|ghatikia)\b/i, id: 'bbs-outr' },
       { match: /\b(cvrce|cv\s*raman)\b/i, id: 'bbs-cvrce' },

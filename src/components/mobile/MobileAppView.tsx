@@ -14,6 +14,7 @@ import { TransportationHubView } from '../transportation/TransportationHubView';
 import { LogisticsHubView } from '../logistics/LogisticsHubView';
 import { CommunityHubView } from '../community/CommunityHubView';
 import { translations } from '../../data/translations';
+import { DeliveryWaypoint } from '../../services/logisticsOptimizerService';
 
 interface MobileAppViewProps {
   originQuery: string;
@@ -46,6 +47,8 @@ interface MobileAppViewProps {
   onDestSelected?: (result: IndiaLocationResult) => void;
   onUseLiveGps?: () => void;
   isGpsActive?: boolean;
+  logisticsWaypoints?: DeliveryWaypoint[];
+  onLogisticsWaypointsChange?: (waypoints: DeliveryWaypoint[]) => void;
 }
 
 export const MobileAppView: React.FC<MobileAppViewProps> = ({
@@ -79,6 +82,8 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   onDestSelected,
   onUseLiveGps,
   isGpsActive = false,
+  logisticsWaypoints,
+  onLogisticsWaypointsChange,
 }) => {
 
   const [activeTab, setActiveTab] = useState<MobileTab>('home');
@@ -139,6 +144,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
             onSelectLocationOnMap={onSelectLocationOnMap}
             onBackToPlanner={() => setActiveTab('home')}
             onOpenRideDetails={() => setIsRideDetailsOpen(true)}
+            logisticsWaypoints={logisticsWaypoints}
           />
         ) : activeTab === 'transportation' ? (
           <TransportationHubView
@@ -152,6 +158,8 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
           />
         ) : activeTab === 'logistics' ? (
           <LogisticsHubView
+            waypoints={logisticsWaypoints}
+            onWaypointsChange={onLogisticsWaypointsChange}
             onNavigateToMap={() => setActiveTab('map')}
           />
         ) : activeTab === 'community' ? (

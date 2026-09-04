@@ -51,6 +51,7 @@ import { MobileAppView } from './components/mobile/MobileAppView';
 import { TransportationHubView } from './components/transportation/TransportationHubView';
 import { LogisticsHubView } from './components/logistics/LogisticsHubView';
 import { CommunityHubView } from './components/community/CommunityHubView';
+import { DeliveryWaypoint, SAMPLE_DELIVERY_STOPS } from './services/logisticsOptimizerService';
 
 
 export const App: React.FC = () => {
@@ -78,6 +79,9 @@ export const App: React.FC = () => {
   const [destCoords, setDestCoords] = useState<[number, number] | null>([20.3541, 85.8175]);
   const [selectedRouteId, setSelectedRouteId] = useState('route-rec');
   const [activeFilterMode, setActiveFilterMode] = useState<RouteMode>('fastest');
+
+  // Real-Time Logistics Waypoints (Synced between Logistics Hub and Live Map)
+  const [logisticsWaypoints, setLogisticsWaypoints] = useState<DeliveryWaypoint[]>(SAMPLE_DELIVERY_STOPS);
 
   // Offline Mode State
   const [isOffline, setIsOffline] = useState(false);
@@ -473,6 +477,8 @@ export const App: React.FC = () => {
           onDestSelected={handleDestSelected}
           onUseLiveGps={handleUseLiveGps}
           isGpsActive={isGpsActive}
+          logisticsWaypoints={logisticsWaypoints}
+          onLogisticsWaypointsChange={(newWps) => setLogisticsWaypoints(newWps)}
         />
 
       </div>
@@ -542,7 +548,16 @@ export const App: React.FC = () => {
           ) : activeTab === 'logistics' ? (
             <main className="flex-1 flex flex-col min-w-0">
               <LogisticsHubView
-                onNavigateToMap={() => setActiveTab('tracking')}
+                waypoints={logisticsWaypoints}
+                onWaypointsChange={(newWps) => setLogisticsWaypoints(newWps)}
+                onNavigateToMap={() => {
+                  const lastWp = logisticsWaypoints[logisticsWaypoints.length - 1] || { lat: 20.3688, lng: 85.8242, address: 'Mani Tribhuban, Nandankanan Road, Raghunathpur, Patia (751024)' };
+                  setOriginQuery('Baramunda Logistics Base');
+                  setDestQuery(lastWp.address);
+                  setOriginCoords([20.2818, 85.7938]);
+                  setDestCoords([lastWp.lat, lastWp.lng]);
+                  setActiveTab('plan');
+                }}
               />
             </main>
           ) : activeTab === 'community' ? (
@@ -604,6 +619,7 @@ export const App: React.FC = () => {
                   destinationName={destQuery}
                   isAnyModalOpen={isAnyModalOpen}
                   isGpsActive={isGpsActive}
+                  logisticsWaypoints={logisticsWaypoints}
                 />
 
                 <BestRoutesCarousel

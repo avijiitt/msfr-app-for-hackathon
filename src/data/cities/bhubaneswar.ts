@@ -492,6 +492,7 @@ export interface BhubaneswarLocality {
 }
 
 export const BHUBANESWAR_LOCALITIES: BhubaneswarLocality[] = [
+  { id: 'mani-tribhuban', name: 'Mani Tribhuban / Mani Tribhuvan (Raghunathpur)', category: 'neighborhood', lat: 20.3688, lng: 85.8242, popularLandmark: 'Nandankanan Road, Raghunathpur, Patia, Bhubaneswar (751024)', hubStationId: 'bbs-patia-kiit' },
   { id: 'patia', name: 'Patia / Big Bazaar Square', category: 'neighborhood', lat: 20.3541, lng: 85.8175, popularLandmark: 'Near KIIT Road & Big Bazaar', hubStationId: 'bbs-patia-kiit' },
   { id: 'kiit-univ', name: 'KIIT University (Campus 1 to 20)', category: 'education', lat: 20.3533, lng: 85.8164, popularLandmark: 'KIIT International School & KIMS Hospital', hubStationId: 'bbs-patia-kiit' },
   { id: 'infocity', name: 'InfoCity Tech Park / DLF Cybercity', category: 'tech_park', lat: 20.3602, lng: 85.8035, popularLandmark: 'TCS, Infosys, Mindtree, DLF', hubStationId: 'bbs-infocity' },

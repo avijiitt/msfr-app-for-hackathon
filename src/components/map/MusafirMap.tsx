@@ -12,6 +12,7 @@ import { GOOGLE_MAPS_API_KEY } from '../../services/googleMapsService';
 import { getHumanReadableLocationName, BHUBANESWAR_STATIONS } from '../../data/cities/bhubaneswar';
 import { findMoBusRoutesDynamic, STOP_COORDINATES_MAP, getExactStopCoordinates } from '../../data/busRoutesData';
 import { isBhubaneswarRegion } from '../../services/fareMatrixService';
+import { DeliveryWaypoint } from '../../services/logisticsOptimizerService';
 
 // Fix leaflet default marker paths
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
@@ -33,6 +34,7 @@ interface MusafirMapProps {
   originName?: string;
   isAnyModalOpen?: boolean;
   isGpsActive?: boolean;
+  logisticsWaypoints?: DeliveryWaypoint[];
 }
 
 const createLeafletPinIcon = (pinColor: string, symbol: string) => {
@@ -189,6 +191,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   destinationName,
   isAnyModalOpen = false,
   isGpsActive = false,
+  logisticsWaypoints,
 }) => {
   // Google Map Tile Layer Types
   const [mapLayerStyle, setMapLayerStyle] = useState<'google-traffic' | 'google-roadmap' | 'google-hybrid' | 'google-terrain' | 'osm'>('google-traffic');
@@ -531,6 +534,54 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
               radius={Math.max(30, userLocation.accuracy || 30)}
               pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.15 }}
             />
+          </>
+        )}
+
+        {/* ─── Real-Time Logistics Multi-Stop Delivery Corridor (when active) ─── */}
+        {logisticsWaypoints && logisticsWaypoints.length > 0 && (
+          <>
+            <Polyline
+              positions={[
+                [20.2818, 85.7938],
+                ...logisticsWaypoints.map((w) => [w.lat, w.lng] as [number, number]),
+              ]}
+              pathOptions={{ color: '#10b981', weight: 5, opacity: 0.85, dashArray: '6, 8' }}
+            />
+
+            <Marker position={[20.2818, 85.7938]} icon={createLeafletPinIcon('#2563eb', '🏭')}>
+              <Popup>
+                <div className="text-xs font-bold text-slate-900 p-1">
+                  <span className="text-blue-600 font-extrabold block">🏭 Baramunda Central Logistics Hub</span>
+                  <span className="text-[10px] text-slate-500 font-mono">20.2818, 85.7938</span>
+                </div>
+              </Popup>
+            </Marker>
+
+            {logisticsWaypoints.map((wp, idx) => (
+              <Marker
+                key={wp.id}
+                position={[wp.lat, wp.lng]}
+                icon={createLeafletPinIcon(idx === logisticsWaypoints.length - 1 ? '#e11d48' : '#10b981', `${idx + 1}`)}
+              >
+                <Popup>
+                  <div className="text-xs font-bold text-slate-900 p-1 min-w-[190px]">
+                    <span className="text-emerald-600 font-extrabold block">Stop #{idx + 1}: {wp.recipientName}</span>
+                    <span className="text-[11px] text-slate-700 block mt-0.5">{wp.address}</span>
+                    <span className="text-[10px] text-slate-500 font-mono block mt-0.5">
+                      GPS: {wp.lat.toFixed(4)}, {wp.lng.toFixed(4)}
+                    </span>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${wp.lat},${wp.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-1.5 text-[10px] text-blue-600 underline font-bold"
+                    >
+                      📍 Open on Google Maps
+                    </a>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
           </>
         )}
       </MapContainer>

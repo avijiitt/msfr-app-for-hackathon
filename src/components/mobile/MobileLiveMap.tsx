@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MusafirMap } from '../map/MusafirMap';
 import { Vehicle } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
+import { DeliveryWaypoint } from '../../services/logisticsOptimizerService';
 
 interface MobileLiveMapProps {
   vehicles: Vehicle[];
@@ -15,6 +16,7 @@ interface MobileLiveMapProps {
   onBackToPlanner?: () => void;
   onOpenRideDetails?: () => void;
   isAnyModalOpen?: boolean;
+  logisticsWaypoints?: DeliveryWaypoint[];
 }
 
 export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
@@ -29,6 +31,7 @@ export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
   onBackToPlanner,
   onOpenRideDetails,
   isAnyModalOpen = false,
+  logisticsWaypoints,
 }) => {
   const nearbyStops = [
     { id: '1', name: 'Jayadev Vihar Square', walkMins: 2, distanceM: 150, routes: ['Route 10', 'Route 11'] },
@@ -75,6 +78,7 @@ export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
           originName={originQuery}
           destinationName={destQuery}
           isAnyModalOpen={isAnyModalOpen}
+          logisticsWaypoints={logisticsWaypoints}
         />
       </div>
 
