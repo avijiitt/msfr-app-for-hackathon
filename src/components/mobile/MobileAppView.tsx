@@ -45,7 +45,6 @@ interface MobileAppViewProps {
   onDestSelected?: (result: IndiaLocationResult) => void;
   onUseLiveGps?: () => void;
   isGpsActive?: boolean;
-  onOpenDynamicTicket?: () => void;
 }
 
 export const MobileAppView: React.FC<MobileAppViewProps> = ({
@@ -78,7 +77,6 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   onDestSelected,
   onUseLiveGps,
   isGpsActive = false,
-  onOpenDynamicTicket,
 }) => {
 
   const [activeTab, setActiveTab] = useState<MobileTab>('home');
@@ -173,7 +171,6 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
             onOpenAlerts={onOpenAlerts}
             onUseLiveGps={onUseLiveGps}
             isGpsActive={isGpsActive}
-            onOpenDynamicTicket={onOpenDynamicTicket}
             t={t}
           />
         )}

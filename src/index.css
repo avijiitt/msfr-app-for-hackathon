@@ -183,16 +183,14 @@ body {
   border: none;
 }
 
-/* ─── Anti-Screenshot Watermark & ETM Laser Scanner ──────────── */
-@keyframes laser-scan {
-  0% { transform: translateY(0); opacity: 0.8; }
-  50% { transform: translateY(150px); opacity: 1; }
-  100% { transform: translateY(0); opacity: 0.8; }
+/* Route time/label floating bubbles on map (Apple/Google Maps style) */
+.route-label-bubble {
+  background: transparent !important;
+  border: none !important;
+  overflow: visible !important;
 }
 
-.animate-laser-scan {
-  animation: laser-scan 2.2s ease-in-out infinite;
-}
+/* ─── Marquee Animation ──────────── */
 
 @keyframes marquee {
   0% { transform: translateX(0%); }

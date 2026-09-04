@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X, Bookmark, Sparkles, Bus, ExternalLink, Mic, Ticket, QrCode, Scan } from 'lucide-react';
+import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X, Bookmark, Sparkles, Bus, ExternalLink, Mic, QrCode } from 'lucide-react';
 import { indiaGeocodingService, geocodeAddressIndia, IndiaLocationResult, POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
 import { getNearbyLocationsAlongCorridor, BHUBANESWAR_LOCALITIES, BhubaneswarLocality } from '../../data/cities/bhubaneswar';
 import { sosService } from '../../services/sosService';
@@ -34,8 +34,6 @@ interface MusafirHeaderProps {
   onOpenBusRoutes?: () => void;
   currentLang?: string;
   onOpenLanguageModal?: () => void;
-  onOpenDynamicTicket?: () => void;
-  onOpenConductorScanner?: () => void;
   t?: TranslationDictionary;
 }
 
@@ -65,8 +63,6 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   onOpenBusRoutes,
   currentLang = 'en',
   onOpenLanguageModal,
-  onOpenDynamicTicket,
-  onOpenConductorScanner,
   t,
 }) => {
   const [originSuggestions, setOriginSuggestions] = useState<IndiaLocationResult[]>([]);
@@ -630,30 +626,6 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
             >
               <Bus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span className="hidden sm:inline">Ama Bus (82)</span>
-            </button>
-          )}
-
-          {onOpenDynamicTicket && (
-            <button
-              type="button"
-              onClick={onOpenDynamicTicket}
-              title="View Offline Dynamic Transit Pass"
-              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold flex items-center gap-1.5 hover:from-blue-500 hover:to-indigo-500 shadow-sm shadow-blue-600/20 transition active:scale-95"
-            >
-              <Ticket className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Pass (QR)</span>
-            </button>
-          )}
-
-          {onOpenConductorScanner && (
-            <button
-              type="button"
-              onClick={onOpenConductorScanner}
-              title="Open Conductor ETM Terminal"
-              className="px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition active:scale-95"
-            >
-              <Scan className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="hidden lg:inline">Conductor ETM</span>
             </button>
           )}
 

@@ -2,8 +2,7 @@ import React from 'react';
 import { 
   Navigation2, MapPin, Calendar, Package, Wallet, Clock, Bookmark, 
   Bell, Calculator, Award, RotateCcw, Settings, X, ShieldAlert, Share2, 
-  GraduationCap, Bus, ChevronRight, Sparkles, User, Sun, Moon, LogOut, Users,
-  Ticket, Scan
+  GraduationCap, Bus, ChevronRight, Sparkles, User, Sun, Moon, LogOut, Users
 } from 'lucide-react';
 import { MusafirSidebarTab } from './MusafirSidebar';
 import { ThemeMode } from '../../types/transit';
@@ -21,8 +20,6 @@ interface MobileMenuDrawerProps {
   onOpenStudent: () => void;
   onOpenWomenSafety: () => void;
   onOpenProfile: () => void;
-  onOpenDynamicTicket?: () => void;
-  onOpenConductorScanner?: () => void;
   onLogout?: () => void;
   themeMode: ThemeMode;
   onToggleTheme: () => void;
@@ -41,8 +38,6 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
   onOpenStudent,
   onOpenWomenSafety,
   onOpenProfile,
-  onOpenDynamicTicket,
-  onOpenConductorScanner,
   onLogout,
   themeMode,
   onToggleTheme,
@@ -132,27 +127,8 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
           </button>
         </div>
 
-        {/* Quick Safety, Transit Pass & ETM Buttons */}
+        {/* Quick Safety & Pass Buttons */}
         <div className="p-3 grid grid-cols-2 gap-2 border-b border-slate-100 dark:border-slate-800">
-          {onOpenDynamicTicket && (
-            <button
-              onClick={() => { onOpenDynamicTicket(); onClose(); }}
-              className="p-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold flex items-center gap-2 shadow-sm"
-            >
-              <Ticket className="w-4 h-4" />
-              <span>Dynamic Pass</span>
-            </button>
-          )}
-
-          {onOpenConductorScanner && (
-            <button
-              onClick={() => { onOpenConductorScanner(); onClose(); }}
-              className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2"
-            >
-              <Scan className="w-4 h-4 text-emerald-600" />
-              <span>Conductor ETM</span>
-            </button>
-          )}
 
           <button
             onClick={() => { onOpenSOS(); onClose(); }}

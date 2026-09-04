@@ -93,32 +93,39 @@ const minDistanceToPolylineMeters = (point: [number, number], polyline: [number,
 };
 
 // Route Label Floating Bubble Icon (Apple / Google Maps style)
-const routeLabelIcon = (route: RouteOption, isSelected: boolean) =>
-  L.divIcon({
+const routeLabelIcon = (route: RouteOption, isSelected: boolean) => {
+  const width = 88;
+  const height = 40;
+  return L.divIcon({
     className: 'route-label-bubble',
     html: `
       <div style="
+        width: ${width}px;
+        height: ${height}px;
+        box-sizing: border-box;
         background: ${isSelected ? '#1d4ed8' : '#0f172a'};
-        color: #fff;
-        padding: 5px 11px;
-        border-radius: 12px;
-        font-family: system-ui, -apple-system, sans-serif;
-        text-align: center;
+        color: #ffffff;
+        padding: 4px 6px;
+        border-radius: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         box-shadow: 0 4px 14px rgba(0,0,0,0.5);
-        border: 1.5px solid ${isSelected ? 'rgba(147,197,253,0.9)' : 'rgba(255,255,255,0.2)'};
-        white-space: nowrap;
+        border: 2px solid ${isSelected ? '#93c5fd' : 'rgba(255,255,255,0.25)'};
         cursor: pointer;
         pointer-events: auto;
-        transform: translate(-50%, -50%);
-        transition: transform 0.15s ease, background 0.2s ease;
+        user-select: none;
       ">
-        <div style="font-weight: 800; font-size: 12px; line-height: 1.1;">${route.durationMinutes} min</div>
-        ${route.label ? `<div style="font-size: 9px; font-weight: 700; color: ${isSelected ? '#bfdbfe' : '#93c5fd'};">${route.label}</div>` : ''}
+        <div style="font-weight: 800; font-size: 13px; line-height: 1.1; color: #ffffff; white-space: nowrap;">${route.durationMinutes} min</div>
+        ${route.label ? `<div style="font-size: 9.5px; font-weight: 700; color: ${isSelected ? '#dbeafe' : '#93c5fd'}; line-height: 1.1; white-space: nowrap;">${route.label}</div>` : ''}
       </div>
     `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
+    iconSize: [width, height],
+    iconAnchor: [width / 2, height / 2],
   });
+};
 
 const getRouteBubblePosition = (route: RouteOption, idx: number): [number, number] => {
   if (!route.coordinates || route.coordinates.length === 0) return [20.2961, 85.8245];

@@ -11,7 +11,6 @@ interface TripsHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectTripRoute?: (origin: string, dest: string) => void;
-  onOpenDynamicTicket?: () => void;
   t?: TranslationDictionary;
 }
 
@@ -19,7 +18,6 @@ export const TripsHistoryModal: React.FC<TripsHistoryModalProps> = ({
   isOpen,
   onClose,
   onSelectTripRoute,
-  onOpenDynamicTicket,
   t,
 }) => {
   const [trips, setTrips] = useState<TripRecord[]>([]);
@@ -127,17 +125,6 @@ export const TripsHistoryModal: React.FC<TripsHistoryModalProps> = ({
                 <span className="font-black text-base">₹{selectedTicket.fare_amount}</span>
               </div>
               <div className="flex items-center gap-2">
-                {onOpenDynamicTicket && (
-                  <button
-                    onClick={() => {
-                      onClose();
-                      onOpenDynamicTicket();
-                    }}
-                    className="px-2.5 py-1 bg-white text-blue-700 font-bold rounded-lg text-xs shadow-sm hover:bg-blue-50 transition"
-                  >
-                    View Dynamic QR Pass 🎟️
-                  </button>
-                )}
                 <div className="flex items-center gap-1 text-emerald-200 font-bold text-[11px]">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Verified</span>

@@ -20,7 +20,6 @@ interface MobileTripPlannerProps {
   onOpenAlerts?: () => void;
   onUseLiveGps?: () => void;
   isGpsActive?: boolean;
-  onOpenDynamicTicket?: () => void;
   t?: TranslationDictionary;
 }
 
@@ -39,7 +38,6 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
   onOpenAlerts,
   onUseLiveGps,
   isGpsActive = false,
-  onOpenDynamicTicket,
   t,
 }) => {
   const [selectedCardId, setSelectedCardId] = useState<'fastest' | 'cheapest' | 'eco'>('fastest');
@@ -719,24 +717,14 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
         </div>
       </div>
 
-      <div className="pt-2 flex gap-2">
+      <div className="pt-2">
         <button
           onClick={() => onTrackTrip({ selectedCardId, primaryRoute, cleanFrom, cleanTo })}
-          className="flex-1 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-violet-600/30 flex justify-center items-center gap-2 active:scale-[0.98] transition-all"
+          className="w-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-violet-600/30 flex justify-center items-center gap-2 active:scale-[0.98] transition-all"
         >
           <span className="material-symbols-outlined text-[20px]">near_me</span>
           <span>Track & Sync Trip</span>
         </button>
-        {onOpenDynamicTicket && (
-          <button
-            onClick={onOpenDynamicTicket}
-            className="px-4 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all"
-            title="Open Dynamic QR Pass"
-          >
-            <span>🎟️</span>
-            <span className="hidden sm:inline">Pass</span>
-          </button>
-        )}
       </div>
     </div>
   );

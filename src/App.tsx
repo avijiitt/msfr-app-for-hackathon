@@ -50,8 +50,6 @@ import { TripsHistoryModal } from './components/trips/TripsHistoryModal';
 import { MobileAppView } from './components/mobile/MobileAppView';
 import { TransportationHubView } from './components/transportation/TransportationHubView';
 import { LogisticsHubView } from './components/logistics/LogisticsHubView';
-import { DynamicTicketModal } from './components/tickets/DynamicTicketModal';
-import { ConductorScannerModal } from './components/conductor/ConductorScannerModal';
 import { CommunityHubView } from './components/community/CommunityHubView';
 
 
@@ -114,8 +112,6 @@ export const App: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isTripsOpen, setIsTripsOpen] = useState(false);
   const [isBusRoutesOpen, setIsBusRoutesOpen] = useState(false);
-  const [isDynamicTicketOpen, setIsDynamicTicketOpen] = useState(false);
-  const [isConductorScannerOpen, setIsConductorScannerOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -128,8 +124,6 @@ export const App: React.FC = () => {
     isPermissionsOpen ||
     isMobileMenuOpen ||
     isBusRoutesOpen ||
-    isDynamicTicketOpen ||
-    isConductorScannerOpen ||
     isFareCalcOpen ||
     isRewardsOpen ||
     isTripAssuranceOpen ||
@@ -444,7 +438,6 @@ export const App: React.FC = () => {
           onDestSelected={handleDestSelected}
           onUseLiveGps={handleUseLiveGps}
           isGpsActive={isGpsActive}
-          onOpenDynamicTicket={() => setIsDynamicTicketOpen(true)}
         />
 
       </div>
@@ -476,8 +469,6 @@ export const App: React.FC = () => {
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           onSearchFocusChange={setIsSearchFocused}
           onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
-          onOpenDynamicTicket={() => setIsDynamicTicketOpen(true)}
-          onOpenConductorScanner={() => setIsConductorScannerOpen(true)}
           currentLang={currentLang}
           onOpenLanguageModal={() => setIsLangSelectOpen(true)}
           t={t}
@@ -495,8 +486,6 @@ export const App: React.FC = () => {
               onOpenSOS={() => setIsSosOpen(true)}
               onOpenStudent={() => setIsStudentOpen(true)}
               onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
-              onOpenDynamicTicket={() => setIsDynamicTicketOpen(true)}
-              onOpenConductorScanner={() => setIsConductorScannerOpen(true)}
               onSelectSavedPlace={(place) => setDestQuery(place)}
               t={t}
             />
@@ -748,7 +737,6 @@ export const App: React.FC = () => {
           setDestQuery(dest);
           handleSearch(orig, dest);
         }}
-        onOpenDynamicTicket={() => setIsDynamicTicketOpen(true)}
         t={t}
       />
 
@@ -844,27 +832,7 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* 5. Offline Dynamic QR Passenger Pass Modal */}
-      <DynamicTicketModal
-        isOpen={isDynamicTicketOpen}
-        onClose={() => setIsDynamicTicketOpen(false)}
-        onOpenConductorScanner={() => {
-          setIsDynamicTicketOpen(false);
-          setIsConductorScannerOpen(true);
-        }}
-      />
-
-      {/* 6. Offline Conductor ETM Handheld Terminal Modal */}
-      <ConductorScannerModal
-        isOpen={isConductorScannerOpen}
-        onClose={() => setIsConductorScannerOpen(false)}
-        onOpenPassengerTicket={() => {
-          setIsConductorScannerOpen(false);
-          setIsDynamicTicketOpen(true);
-        }}
-      />
-
-      {/* 7. Mobile Slide-Over Navigation Drawer */}
+      {/* 5. Mobile Slide-Over Navigation Drawer */}
       <MobileMenuDrawer
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
@@ -877,8 +845,6 @@ export const App: React.FC = () => {
         onOpenStudent={() => setIsStudentOpen(true)}
         onOpenWomenSafety={() => setIsWomenSafetyOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
-        onOpenDynamicTicket={() => setIsDynamicTicketOpen(true)}
-        onOpenConductorScanner={() => setIsConductorScannerOpen(true)}
         onLogout={handleLogout}
         themeMode={themeMode}
         onToggleTheme={handleToggleTheme}
