@@ -253,9 +253,9 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
   };
 
   // Form State matching User Mockup exactly
-  const [recipientName, setRecipientName] = useState('anweshi');
-  const [recipientPhone, setRecipientPhone] = useState('+91 98765 43210');
-  const [deliveryAddress, setDeliveryAddress] = useState('Mani Tribhuban, Nandankanan Road, Patia');
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientPhone, setRecipientPhone] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [isAddressFocused, setIsAddressFocused] = useState(false);
   const [parcelType, setParcelType] = useState<'Documents' | 'Electronics' | 'Clothing' | 'Food' | 'Other'>('Documents');
   const [parcelWeight, setParcelWeight] = useState('2.5');
@@ -408,6 +408,9 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
     setWaypoints([...waypoints, newStop]);
     setAlertSuccessToast(`✅ Stop "${recipientName}" (${resolved.lat.toFixed(4)}, ${resolved.lng.toFixed(4)}) added! Live route updated.`);
     setTimeout(() => setAlertSuccessToast(null), 4000);
+    setRecipientName('');
+    setRecipientPhone('');
+    setDeliveryAddress('');
   };
 
   const handleRemoveStop = (id: string) => {
@@ -534,7 +537,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                     type="text"
                     value={recipientName}
                     onChange={(e) => setRecipientName(e.target.value)}
-                    placeholder="Enter recipient name"
+                    placeholder="e.g. Anweshi Mohanty"
                     className="w-full bg-[#111B2E] border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-600"
                     required
                   />
@@ -555,7 +558,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                     type="tel"
                     value={recipientPhone}
                     onChange={(e) => setRecipientPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
+                    placeholder="e.g. +91 98765 43210"
                     className="w-full bg-[#111B2E] border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition font-mono placeholder:text-slate-600"
                   />
                 </div>

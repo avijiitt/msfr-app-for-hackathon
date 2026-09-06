@@ -21,8 +21,8 @@ interface JourneyDetailPanelProps {
 }
 
 export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
-  originName = 'Jayadev Vihar',
-  destinationName = 'KIIT Square, Patia',
+  originName = '',
+  destinationName = '',
   originCoords,
   destCoords,
   selectedRouteId = 'route-rec',
@@ -123,6 +123,26 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
     setIsNavigating(true);
     onStartNavigation();
   };
+
+  if (!originName && !destinationName) {
+    return (
+      <div className="w-full lg:w-96 flex-shrink-0 dashboard-card rounded-3xl p-6 flex flex-col items-center justify-center text-center gap-3 lg:self-start lg:sticky lg:top-24 shadow-sm border border-slate-200 dark:border-slate-800">
+        <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <Bus className="w-6 h-6" />
+        </div>
+        <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
+          No Route Selected
+        </h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+          Search your departure and destination in the search bar above to see turn-by-turn route details, stops, and 1-tap ticketing.
+        </p>
+        <div className="w-full pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-bold">
+          <span>⚡ Live Mo Bus GPS</span>
+          <span>₹5 Student Pass</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full lg:w-96 flex-shrink-0 dashboard-card rounded-3xl p-5 flex flex-col justify-start gap-4 lg:self-start lg:sticky lg:top-24 max-h-[calc(100vh-120px)] overflow-y-auto">

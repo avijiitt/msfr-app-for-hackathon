@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bus, ChevronRight, RotateCw, RefreshCw, Shield, Bell, Zap, Wallet, Star, Leaf, Accessibility, Moon, CloudRain, Coins, MapPin, Sparkles } from 'lucide-react';
+import { Bus, ChevronRight, RotateCw, RefreshCw, Shield, Bell, Zap, Wallet, Star, Leaf, Accessibility, Moon, CloudRain, Coins, MapPin, Sparkles, Compass } from 'lucide-react';
 import { RouteMode } from '../../types/transit';
 import { getNearbyLocationsAlongCorridor } from '../../data/cities/bhubaneswar';
 import { findMoBusRoutesDynamic } from '../../data/busRoutesData';
@@ -44,8 +44,8 @@ interface BestRoutesCarouselProps {
 }
 
 export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
-  originName = 'Jayadev Vihar',
-  destinationName = 'KIIT Square, Patia',
+  originName = '',
+  destinationName = '',
   originCoords,
   destCoords,
   onSelectRoute,
@@ -426,15 +426,51 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
         })}
       </div>
 
-      {/* Section Header with Route Corridor */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <h2 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
-            <span>Best Routes (3 Options)</span>
-            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full border border-blue-100 dark:border-blue-800">
-              {cleanFrom} ➔ {cleanTo} ({distanceKm} km)
-            </span>
-          </h2>
+      {!originName && !destinationName ? (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 text-center space-y-3 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+            <Compass className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+              Where would you like to travel today?
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+              Enter departure and destination in the search bar above, or choose a popular hub to see real-time Ama Bus routes and fares.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2 pt-2">
+            {[
+              'Master Canteen',
+              'Jayadev Vihar',
+              'KIIT Square, Patia',
+              'Biju Patnaik Airport',
+              'Baramunda ISBT',
+              'InfoCity DLF',
+              'Mani Tribhuban',
+            ].map((hub) => (
+              <button
+                key={hub}
+                type="button"
+                onClick={() => onSelectDestination?.(hub)}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition active:scale-95 cursor-pointer"
+              >
+                📍 {hub}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Section Header with Route Corridor */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
+                <span>Best Routes (3 Options)</span>
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full border border-blue-100 dark:border-blue-800">
+                  {cleanFrom} ➔ {cleanTo} ({distanceKm} km)
+                </span>
+              </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {isBbsr 
               ? 'Compare live CRUT Ama Bus fares and transit times to your destination' 
@@ -610,6 +646,8 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           </div>
         </div>
       </div>
+        </>
+      )}
 
       {/* 4 Bottom Highlight Cards matching Reference Image */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">

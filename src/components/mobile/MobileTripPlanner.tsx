@@ -480,12 +480,41 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
         )}
       </div>
 
-        {/* ─── Top Instant Ride Booking Action Bar ─── */}
-        <div className="bg-gradient-to-r from-violet-700 via-purple-700 to-indigo-700 rounded-2xl p-3 text-white shadow-lg shadow-violet-700/25 flex items-center justify-between gap-3 mt-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-base flex-shrink-0">
-              🎫
-            </div>
+      {!originQuery && !destQuery ? (
+        <div className="glass-panel rounded-2xl p-6 text-center space-y-3 mt-3 dark:bg-[#161026] dark:border-[#2B1D47]">
+          <div className="w-12 h-12 rounded-2xl bg-violet-500/10 text-violet-400 flex items-center justify-center mx-auto">
+            <span className="material-symbols-outlined text-[24px]">directions_bus</span>
+          </div>
+          <div>
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Where would you like to travel?</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">
+              Search your departure & destination stops above or tap a popular hub below to find live Mo Bus routes.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-1.5 pt-1">
+            {['Master Canteen', 'Jayadev Vihar', 'KIIT Square', 'Patia', 'Airport', 'Baramunda BSABT'].map((hub) => (
+              <button
+                key={hub}
+                type="button"
+                onClick={() => {
+                  onDestChange(hub);
+                  onSearch(originQuery || 'Current Location', hub);
+                }}
+                className="px-2.5 py-1 rounded-xl text-xs font-bold bg-violet-600/10 text-violet-600 dark:text-violet-300 border border-violet-500/20 hover:bg-violet-600/20 active:scale-95 transition cursor-pointer"
+              >
+                + {hub}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* ─── Top Instant Ride Booking Action Bar ─── */}
+          <div className="bg-gradient-to-r from-violet-700 via-purple-700 to-indigo-700 rounded-2xl p-3 text-white shadow-lg shadow-violet-700/25 flex items-center justify-between gap-3 mt-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-base flex-shrink-0">
+                🎫
+              </div>
             <div className="min-w-0">
               <div className="text-[10px] font-extrabold uppercase opacity-85 leading-none">Instant Route Booking</div>
               <div className="text-xs font-black truncate mt-0.5">
@@ -733,6 +762,8 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
           </div>
         </div>
       </div>
+        </>
+      )}
 
       <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-[#2B1D47] dark:bg-[#161026] space-y-3 shadow-xs">
         <div className="flex justify-between items-center">

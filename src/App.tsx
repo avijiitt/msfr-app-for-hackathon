@@ -71,13 +71,13 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<MusafirSidebarTab>('plan');
 
 
-  // Search Origin, Destination & 6 Optimization Modes
-  const [originQuery, setOriginQuery] = useState('Jayadev Vihar');
-  const [destQuery, setDestQuery] = useState('KIIT Square, Bhubaneswar');
+  // Search Origin, Destination & 6 Optimization Modes (No default route - user enters input)
+  const [originQuery, setOriginQuery] = useState('');
+  const [destQuery, setDestQuery] = useState('');
   // Real geocoded coordinates for map panning (null = not yet geocoded)
-  const [originCoords, setOriginCoords] = useState<[number, number] | null>([20.3039, 85.8188]);
-  const [destCoords, setDestCoords] = useState<[number, number] | null>([20.3541, 85.8175]);
-  const [selectedRouteId, setSelectedRouteId] = useState('route-rec');
+  const [originCoords, setOriginCoords] = useState<[number, number] | null>(null);
+  const [destCoords, setDestCoords] = useState<[number, number] | null>(null);
+  const [selectedRouteId, setSelectedRouteId] = useState('');
   const [activeFilterMode, setActiveFilterMode] = useState<RouteMode>('fastest');
 
   // Real-Time Logistics Waypoints (Synced between Logistics Hub and Live Map)

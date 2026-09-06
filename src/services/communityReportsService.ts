@@ -84,7 +84,7 @@ export const INITIAL_COMMUNITY_REPORTS: CommunityReport[] = [
   {
     id: 'cr-101',
     category: 'overcrowding',
-    title: 'Ama Bus Route 10 Jam-Packed at Jayadev Vihar Stand',
+    title: 'Mo Bus Route 10 Jam-Packed at Jayadev Vihar Stand',
     description: 'Doors cannot close due to heavy rush. 40+ commuters waiting at stop. Need an extra shuttle.',
     locationName: 'Jayadev Vihar Bus Bay #2, Bhubaneswar',
     lat: 20.3039,
@@ -110,65 +110,64 @@ export const INITIAL_COMMUNITY_REPORTS: CommunityReport[] = [
     id: 'cr-102',
     category: 'poor_lighting',
     title: 'Broken Streetlights along Patia Station Walkway',
-    description: 'Dark corridor behind KIIT Campus 6 walkway. Unsafe for night walking commuters.',
-    locationName: 'Patia Railway Station North Walkway',
+    description: 'Very dark area after 7 PM. Safety concern for students and working professionals.',
+    locationName: 'Patia Railway Station Walkway, Bhubaneswar',
     lat: 20.3567,
     lng: 85.8166,
-    reporterName: 'Subhasish Dash',
+    reporterName: 'Rakesh Nayak',
     reporterId: 'user-3',
-    reportedAt: '35 mins ago',
+    reportedAt: '25 mins ago',
     upvotes: 42,
     status: 'investigating',
     severity: 'critical',
     photoUrl: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&q=80&w=600',
     timeline: [
-      { status: 'reported', timestamp: '35 mins ago', description: 'Report submitted.' },
-      { status: 'investigating', timestamp: '30 mins ago', description: 'Forwarded to BMC Electrical Dept.' }
+      { status: 'reported', timestamp: '25 mins ago', description: 'Report submitted by Rakesh Nayak.' },
+      { status: 'investigating', timestamp: '15 mins ago', description: 'Forwarded to BMC Electrical Dept.' }
     ]
   },
   {
     id: 'cr-103',
     category: 'waterlogging',
-    title: 'Waterlogging & Deep Pothole near Acharya Vihar Underpass',
-    description: 'Buses slowing down to 5 km/h. Recommend taking flyover route.',
-    locationName: 'Acharya Vihar Underpass, Bhubaneswar',
-    lat: 20.3015,
-    lng: 85.8340,
-    reporterName: 'Priyanka Mohanty',
+    title: 'Waterlogging near Nandankanan Road',
+    description: 'Heavy waterlogging after rain. Vehicles moving slowly. Please take alternate route.',
+    locationName: 'Nandankanan Road, near Trisulia Square',
+    lat: 20.3700,
+    lng: 85.8250,
+    reporterName: 'Subhashree Das',
     reporterId: 'user-1',
-    reportedAt: '1 hour ago',
+    reportedAt: '40 mins ago',
     upvotes: 19,
-    status: 'resolved',
+    status: 'verified_by_crut',
     severity: 'moderate',
     photoUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=600',
     timeline: [
-      { status: 'reported', timestamp: '1 hour ago', description: 'Report submitted.' },
-      { status: 'in_progress', timestamp: '45 mins ago', description: 'BMC team clearing drainage.' },
-      { status: 'resolved', timestamp: '15 mins ago', description: 'Water cleared. Pothole barricaded for repair.' }
+      { status: 'reported', timestamp: '40 mins ago', description: 'Report submitted by Subhashree Das.' },
+      { status: 'in_progress', timestamp: '20 mins ago', description: 'BMC team clearing drainage.' }
     ],
     authorityResponse: {
       department: 'BMC Maintenance',
-      message: 'Drainage blockage cleared. Temporary barricades placed around the pothole.',
+      message: 'Drainage blockage clearing underway. Water dissipating.',
       resolutionProofUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=400'
     }
   },
   {
     id: 'cr-104',
-    category: 'damaged_shelter',
-    title: 'Damaged Roof & Missing Display at Niladri Vihar Bus Stop',
-    description: 'Digital ETA screen broken and shelter roof leaking.',
-    locationName: 'Niladri Vihar Stop #4, CSPUR',
-    lat: 20.3448,
-    lng: 85.8062,
-    reporterName: 'Rohan Jena',
+    category: 'bus_delayed_cancelled',
+    title: 'Route 11 Delayed by 25 Minutes at Khandagiri',
+    description: 'Traffic gridlock near Khandagiri square causing delay for connecting buses.',
+    locationName: 'Khandagiri Square, Bhubaneswar',
+    lat: 20.2588,
+    lng: 85.7865,
+    reporterName: 'Debabrata Das',
     reporterId: 'user-4',
-    reportedAt: '2 hours ago',
+    reportedAt: '55 mins ago',
     upvotes: 14,
     status: 'reported',
-    severity: 'low',
+    severity: 'moderate',
     photoUrl: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=600',
     timeline: [
-      { status: 'reported', timestamp: '2 hours ago', description: 'Report submitted.' }
+      { status: 'reported', timestamp: '55 mins ago', description: 'Report submitted.' }
     ]
   },
 ];
@@ -200,11 +199,11 @@ export const INITIAL_POLLS: CommunityPoll[] = [
 ];
 
 export const CIVIC_LEADERBOARD: CivicLeaderboardUser[] = [
-  { rank: 1, name: 'Priyanka Mohanty', avatar: '👩‍💼', badge: '🥇 City Guardian Champion', reportsSubmitted: 34, verifiedHelpfulCount: 142, karmaPoints: 1280, trustScore: 98 },
-  { rank: 2, name: 'Subhasish Dash', avatar: '👨‍💻', badge: '🥈 Top Transit Inspector', reportsSubmitted: 28, verifiedHelpfulCount: 115, karmaPoints: 960, trustScore: 95 },
-  { rank: 3, name: 'Ananya Sahoo', avatar: '👩‍🎓', badge: '🥉 Green Safety Hero', reportsSubmitted: 21, verifiedHelpfulCount: 88, karmaPoints: 750, trustScore: 92 },
-  { rank: 4, name: 'Rohan Jena', avatar: '👨‍🔧', badge: '⭐ Verified Scout', reportsSubmitted: 16, verifiedHelpfulCount: 54, karmaPoints: 520, trustScore: 88 },
-  { rank: 5, name: 'Avijeet Rout', avatar: '🚀', badge: '🌟 Active Commuter', reportsSubmitted: 12, verifiedHelpfulCount: 39, karmaPoints: 410, trustScore: 85 },
+  { rank: 1, name: 'Ananya Sahoo', avatar: '👩‍🎓', badge: '🥇 City Guardian Champion', reportsSubmitted: 34, verifiedHelpfulCount: 142, karmaPoints: 120, trustScore: 98 },
+  { rank: 2, name: 'Rakesh Nayak', avatar: '👨‍💻', badge: '🥈 Top Transit Inspector', reportsSubmitted: 28, verifiedHelpfulCount: 115, karmaPoints: 85, trustScore: 95 },
+  { rank: 3, name: 'Subhashree Das', avatar: '👩‍💼', badge: '🥉 Green Safety Hero', reportsSubmitted: 21, verifiedHelpfulCount: 88, karmaPoints: 60, trustScore: 92 },
+  { rank: 4, name: 'Rohan Jena', avatar: '👨‍🔧', badge: '⭐ Verified Scout', reportsSubmitted: 16, verifiedHelpfulCount: 54, karmaPoints: 52, trustScore: 88 },
+  { rank: 5, name: 'Avijeet Rout', avatar: '🚀', badge: '🌟 Active Commuter', reportsSubmitted: 12, verifiedHelpfulCount: 39, karmaPoints: 41, trustScore: 85 },
 ];
 
 /**
@@ -213,29 +212,32 @@ export const CIVIC_LEADERBOARD: CivicLeaderboardUser[] = [
 export function useCommunityStore() {
   const [reports, setReports] = useState<CommunityReport[]>([]);
   const [polls, setPolls] = useState<CommunityPoll[]>([]);
-  const [userKarma, setUserKarma] = useState<number>(120); // Default user karma
+  const [userKarma, setUserKarma] = useState<number>(320); // Default user karma: 320 Points matching mockup
 
   useEffect(() => {
     // Load from local storage or initialize
-    const savedReports = localStorage.getItem('musafir_community_reports');
+    const savedReports = localStorage.getItem('musafir_community_reports_v2');
     if (savedReports) {
       setReports(JSON.parse(savedReports));
     } else {
       setReports(INITIAL_COMMUNITY_REPORTS);
-      localStorage.setItem('musafir_community_reports', JSON.stringify(INITIAL_COMMUNITY_REPORTS));
+      localStorage.setItem('musafir_community_reports_v2', JSON.stringify(INITIAL_COMMUNITY_REPORTS));
     }
 
-    const savedPolls = localStorage.getItem('musafir_community_polls');
+    const savedPolls = localStorage.getItem('musafir_community_polls_v2');
     if (savedPolls) {
       setPolls(JSON.parse(savedPolls));
     } else {
       setPolls(INITIAL_POLLS);
-      localStorage.setItem('musafir_community_polls', JSON.stringify(INITIAL_POLLS));
+      localStorage.setItem('musafir_community_polls_v2', JSON.stringify(INITIAL_POLLS));
     }
 
-    const savedKarma = localStorage.getItem('musafir_user_karma');
+    const savedKarma = localStorage.getItem('musafir_user_karma_v2');
     if (savedKarma) {
       setUserKarma(Number(savedKarma));
+    } else {
+      setUserKarma(320);
+      localStorage.setItem('musafir_user_karma_v2', '320');
     }
   }, []);
 
