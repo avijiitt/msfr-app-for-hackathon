@@ -80,11 +80,11 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
       : Math.max(12, Math.round(distanceKm * 2.4)));
 
   const totalFareInr = !isBbsr
-    ? (isCheap ? Math.max(150, Math.round(distanceKm * 1.8)) : isEco ? Math.max(2800, Math.round(distanceKm * 4.5)) : Math.max(120, Math.round(distanceKm * 0.95)))
+    ? (isCheap ? Math.max(150, Math.round(distanceKm * 1.8)) : isEco ? Math.max(140, Math.round(distanceKm * 1.4)) : Math.max(120, Math.round(distanceKm * 0.95)))
     : (isEco ? nonAcFare + 10 : isCheap ? nonAcFare : acFare);
 
   const serviceName = !isBbsr
-    ? (isCheap ? 'State Transport Coach (OSRTC / Volvo)' : isEco ? 'Direct Domestic Air Flight' : 'Indian Railways Express (Superfast / Vande Bharat)')
+    ? (isCheap ? 'State Transport Coach (OSRTC / Volvo)' : isEco ? 'Indian Railways Intercity Express' : 'Indian Railways Express (Superfast / Vande Bharat)')
     : (isEco
       ? 'Ama E-Ride Electric Auto + Feeder'
       : isCheap
@@ -92,7 +92,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
       : `Ama Bus AC Electric Express (Route ${primaryBus.route})`);
 
   const serviceBadge = !isBbsr
-    ? (isCheap ? '🚌 Highway Intercity Express' : isEco ? '✈️ Direct Flight Transit' : '🚆 Indian Railways Superfast')
+    ? (isCheap ? '🚌 Highway Intercity Express' : isEco ? '🚆 Indian Railways Express' : '🚆 Indian Railways Superfast')
     : (isEco
       ? '🌿 100% Zero-Emission Feeder'
       : isCheap
@@ -308,7 +308,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-900 dark:text-white">
                   {!isBbsr
-                    ? (isCheap ? 'OSRTC Intercity AC Coach' : isEco ? 'Connecting Air Flight Transfer' : 'Indian Railways Express (Superfast / Vande Bharat)')
+                    ? (isCheap ? 'OSRTC Intercity AC Coach' : isEco ? 'Indian Railways Intercity Express' : 'Indian Railways Express (Superfast / Vande Bharat)')
                     : (isEco ? 'Ama E-Ride Electric Auto' : isCheap ? `Ama Bus Route ${altBus.route} (Non-AC)` : `Ama Bus Route ${primaryBus.route} (AC Electric)`)}
                 </span>
                 <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 font-semibold">{formatTime(2)}</span>

@@ -22,7 +22,8 @@ import {
   Zap,
   Truck,
   Users,
-  Sparkles
+  Sparkles,
+  Train
 } from 'lucide-react';
 
 import { TranslationDictionary } from '../../types/i18n';
@@ -52,6 +53,7 @@ interface MusafirSidebarProps {
   onOpenSOS: () => void;
   onOpenStudent: () => void;
   onOpenBusRoutes?: () => void;
+  onOpenTrainSchedule?: () => void;
   onOpenAI?: () => void;
   onSelectSavedPlace: (name: string) => void;
   t?: TranslationDictionary;
@@ -65,6 +67,7 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   onOpenSOS,
   onOpenStudent,
   onOpenBusRoutes,
+  onOpenTrainSchedule,
   onOpenAI,
   onSelectSavedPlace,
   t,
@@ -88,6 +91,7 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
 
   const quickAccess = [
     { label: 'Ama Bus (82 Lines)', icon: Bus, color: 'text-blue-600 font-bold', action: onOpenBusRoutes || onOpenNearbyStops },
+    ...(onOpenTrainSchedule ? [{ label: 'Indian Railways', icon: Train, color: 'text-amber-600 font-bold', action: onOpenTrainSchedule }] : []),
     { label: 'Nearby Stores', icon: MapPin, color: 'text-emerald-600', action: onOpenNearbyStops },
     { label: t?.studentPass || 'Student Pass', icon: GraduationCap, color: 'text-purple-600', action: onOpenStudent },
     { label: t?.shareLocationFamily || 'Share Trip', icon: Share2, color: 'text-indigo-600', action: onOpenShareLocation },

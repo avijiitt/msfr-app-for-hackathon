@@ -683,7 +683,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-ping" />
-                <h3 className="text-sm font-black text-white">Live Incident Map (Bhubaneswar Metro Radar)</h3>
+                <h3 className="text-sm font-black text-white">Live Incident Map (Bhubaneswar Transit Radar)</h3>
               </div>
               <button
                 type="button"

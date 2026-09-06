@@ -163,7 +163,7 @@ export const StudentHubModal: React.FC<StudentHubModalProps> = ({
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/60 p-4 rounded-2xl space-y-1 text-slate-800 dark:text-slate-200">
               <span className="font-bold block text-blue-600 dark:text-blue-400">Student Concession Benefits:</span>
               <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                • 50% off standard bus and metro ticket fares across all urban routes.
+                • 50% off standard bus and rail pass ticket fares across all urban routes.
                 <br />• Unlimited daily travel with free transfer within 90 minutes.
               </p>
             </div>

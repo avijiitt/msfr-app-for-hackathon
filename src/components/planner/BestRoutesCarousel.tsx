@@ -158,18 +158,18 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
         },
         {
           id: 'route-eco',
-          badge: '✈️ Direct Flight / Fast Air',
-          badgeColor: 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800',
+          badge: '🚆 Indian Railways Intercity Express',
+          badgeColor: 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
           modeType: 'eco',
-          serviceType: 'Direct Domestic Air Flight / Regional Transit',
-          routeNumber: 'Air Transit',
-          lineTitle: `Flight Transit: ${cleanFrom} ➔ ${cleanTo}`,
-          durationMins: Math.min(180, Math.round(distanceKm * 0.15) + 90),
+          serviceType: 'Indian Railways Connected Superfast / Vande Bharat Express',
+          routeNumber: 'IRCTC Express',
+          lineTitle: `Rail Transit: ${cleanFrom} ➔ ${cleanTo}`,
+          durationMins: Math.max(75, Math.round(distanceKm * 0.9)),
           transfersCount: 0,
-          fareInr: Math.max(2800, Math.round(distanceKm * 4.5)),
-          fareNote: 'Fastest Intercity Travel',
-          arrivalTime: getArrivalTime(Math.min(180, Math.round(distanceKm * 0.15) + 90)),
-          co2SavedGrams: Math.round(distanceKm * 15),
+          fareInr: Math.max(140, Math.round(distanceKm * 1.4)),
+          fareNote: 'Fast Direct Intercity Rail Transit',
+          arrivalTime: getArrivalTime(Math.max(75, Math.round(distanceKm * 0.9))),
+          co2SavedGrams: Math.round(distanceKm * 70),
           safetyScore: 99,
         },
       ];
@@ -638,10 +638,10 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           </div>
           <div className="p-2.5 rounded-xl bg-pink-50/60 dark:bg-pink-900/20 border border-pink-100 dark:border-pink-800">
             <span className="font-bold text-pink-700 dark:text-pink-300 block">
-              {isBbsr ? 'Ama E-Ride / Feeder EV' : 'Direct Air Transit / Flight'}
+              {isBbsr ? 'Ama E-Ride / Feeder EV' : 'Indian Railways Connected Express'}
             </span>
             <span className="text-slate-600 dark:text-slate-300 font-semibold">
-              {isBbsr ? `₹${nonAcFare + 10} • Zero-Emission Feeder` : `₹${Math.max(2800, Math.round(distanceKm * 4.5))} • Domestic Air`}
+              {isBbsr ? `₹${nonAcFare + 10} • Zero-Emission Feeder` : `₹${Math.max(140, Math.round(distanceKm * 1.4))} • Superfast Rail`}
             </span>
           </div>
         </div>

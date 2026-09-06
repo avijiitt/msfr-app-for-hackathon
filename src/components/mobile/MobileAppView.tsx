@@ -29,6 +29,7 @@ interface MobileAppViewProps {
   onOpenLanguage: () => void;
   onOpenWallet: () => void;
   onOpenBusRoutes: () => void;
+  onOpenTrainSchedule?: () => void;
   onOpenAI?: () => void;
   onOpenFareCalc: () => void;
   onOpenTripsHistory: () => void;
@@ -64,6 +65,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   onOpenLanguage,
   onOpenWallet,
   onOpenBusRoutes,
+  onOpenTrainSchedule,
   onOpenAI,
   onOpenFareCalc,
   onOpenTripsHistory,
@@ -178,6 +180,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
             onOriginSelected={onOriginSelected}
             onDestSelected={onDestSelected}
             onOpenBusRoutes={onOpenBusRoutes}
+            onOpenTrainSchedule={onOpenTrainSchedule}
             onOpenAlerts={onOpenAlerts}
             onUseLiveGps={onUseLiveGps}
             isGpsActive={isGpsActive}

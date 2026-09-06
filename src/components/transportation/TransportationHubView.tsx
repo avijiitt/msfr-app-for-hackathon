@@ -1342,7 +1342,7 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
                   Smart Load Balancing (Distribute Passengers Across Transit Modes)
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Instead of routing all passengers to the same crowded bus corridor, Musafir dynamically suggests parallel feeder routes and Metro lines.
+                  Instead of routing all passengers to the same crowded bus corridor, Musafir dynamically suggests parallel feeder routes and connected Train lines.
                 </p>
               </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Wallet, Wifi, WifiOff, Globe, MapPin, Sun, Moon, Clock, GraduationCap, User, Headphones, Navigation2, LocateFixed } from 'lucide-react';
+import { Shield, Wallet, Wifi, WifiOff, Globe, MapPin, Sun, Moon, Clock, GraduationCap, User, Headphones, Navigation2, LocateFixed, Train } from 'lucide-react';
 import { SUPPORTED_LANGUAGES } from '../../data/translations';
 import { LanguageCode, TranslationDictionary } from '../../types/i18n';
 import { ThemeMode } from '../../types/transit';
@@ -25,6 +25,7 @@ interface HeaderProps {
   onOpenStudent: () => void;
   onOpenSupport: () => void;
   onOpenProfile: () => void;
+  onOpenTrainSchedule?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -47,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenStudent,
   onOpenSupport,
   onOpenProfile,
+  onOpenTrainSchedule,
 }) => {
   const [currentDateTime, setCurrentDateTime] = useState('');
 
@@ -94,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </div>
               <p className="text-[10px] text-on-surface-variant hidden lg:block">
-                Unified Multi-Modal Transit System (Ama Bus • Metro • Ama E-Ride • EV Shuttle)
+                Unified Multi-Modal Transit System (Ama Bus • Indian Railways • Ama E-Ride • EV Shuttle)
               </p>
             </div>
           </div>
@@ -124,6 +126,18 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Indian Railways Live Train Schedule */}
+          {onOpenTrainSchedule && (
+            <button
+              onClick={onOpenTrainSchedule}
+              title="Indian Railways Live Train Schedule & Rail Connect"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold border border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 flex items-center gap-1.5 transition font-label-caps"
+            >
+              <Train className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Train Schedule</span>
+            </button>
+          )}
+
           {/* Live Real-Time GPS Tracking Toggle */}
           <button
             onClick={onToggleGps}

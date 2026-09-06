@@ -179,7 +179,7 @@ export const TripAssuranceModal: React.FC<TripAssuranceModalProps> = ({
               >
                 <option value="Severe Delay (>15 mins)">Severe Vehicle Delay (&gt;15 mins)</option>
                 <option value="Vehicle Breakdown">Vehicle Breakdown on Route</option>
-                <option value="Missed Connecting Transfer">Missed Connecting Metro/Bus Transfer</option>
+                <option value="Missed Connecting Transfer">Missed Connecting Train/Bus Transfer</option>
                 <option value="Cancelled Route">Cancelled Scheduled Trip</option>
               </select>
             </div>

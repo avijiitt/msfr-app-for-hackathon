@@ -110,7 +110,7 @@ export const FamilyShareModal: React.FC<FamilyShareModalProps> = ({
           </div>
 
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            Family members can view your live bus/metro vehicle location, arrival ETAs, and battery status without installing an app.
+            Family members can view your live bus/train vehicle location, arrival ETAs, and battery status without installing an app.
           </p>
         </div>
 

@@ -126,7 +126,7 @@ export const CustomerSupportModal: React.FC<CustomerSupportModalProps> = ({
               >
                 <option value="fare_dispute">Fare Dispute / Double Charge</option>
                 <option value="lost_found">Lost & Found Retrieval</option>
-                <option value="delay">Extreme Bus/Metro Delay</option>
+                <option value="delay">Extreme Bus/Train Delay</option>
                 <option value="staff_behavior">Staff / Driver Feedback</option>
                 <option value="accessibility">Wheelchair / Accessibility Support</option>
               </select>

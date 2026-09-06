@@ -58,7 +58,7 @@ export const ParcelSyncModal: React.FC<ParcelSyncModalProps> = ({
         <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-700/50 rounded-2xl p-3.5 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2">
           <Truck className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
           <span>
-            Drop parcels in smart station lockers for automated inter-city delivery via public buses & metro.
+            Drop parcels in smart station lockers for automated inter-city delivery via public buses & trains.
           </span>
         </div>
 

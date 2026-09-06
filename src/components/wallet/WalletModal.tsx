@@ -130,7 +130,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-white/15 text-[11px] text-blue-100 relative z-10">
-            <span>Instant Auto-Debit on Bus/Metro</span>
+            <span>Instant Auto-Debit on Bus/Train</span>
             <span className="font-mono">Limit: ₹10,000 / txn</span>
           </div>
         </div>

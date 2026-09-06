@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Navigation2, MapPin, Calendar, Package, Wallet, Clock, Bookmark, 
   Bell, Calculator, Award, RotateCcw, Settings, X, ShieldAlert, Share2, 
-  GraduationCap, Bus, ChevronRight, Sparkles, User, Sun, Moon, LogOut, Users
+  GraduationCap, Bus, ChevronRight, Sparkles, User, Sun, Moon, LogOut, Users, Train
 } from 'lucide-react';
 import { MusafirSidebarTab } from './MusafirSidebar';
 import { ThemeMode } from '../../types/transit';
@@ -21,6 +21,7 @@ interface MobileMenuDrawerProps {
   onOpenWomenSafety: () => void;
   onOpenProfile: () => void;
   onOpenAI?: () => void;
+  onOpenTrainSchedule?: () => void;
   onLogout?: () => void;
   themeMode: ThemeMode;
   onToggleTheme: () => void;
@@ -40,6 +41,7 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
   onOpenWomenSafety,
   onOpenProfile,
   onOpenAI,
+  onOpenTrainSchedule,
   onLogout,
   themeMode,
   onToggleTheme,
@@ -184,6 +186,16 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
             <MapPin className="w-4 h-4 text-emerald-600" />
             <span>Nearby Stores</span>
           </button>
+
+          {onOpenTrainSchedule && (
+            <button
+              onClick={() => { onOpenTrainSchedule(); onClose(); }}
+              className="p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2 col-span-2"
+            >
+              <Train className="w-4 h-4 text-amber-600" />
+              <span>🚆 Indian Railways Train Schedule & Rail Connect</span>
+            </button>
+          )}
         </div>
 
         {/* All Main Navigation Links (With visible scrollbar) */}
