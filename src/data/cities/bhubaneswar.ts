@@ -53,7 +53,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     mode: 'bus',
     lat: 20.3039,
     lng: 85.8188,
-    lines: ['MOBUS-16', 'MOBUS-24', 'PINK-EV', 'MOBUS-NIGHT'],
+    lines: ['MOBUS-10', 'MOBUS-16', 'MOBUS-24', 'PINK-EV', 'MOBUS-NIGHT'],
     isElevatorAccessible: true,
     hasCCTV: true,
     isWellLit: true,
@@ -63,6 +63,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     hasParcelLocker: true,
     isCoveredWalkway: true,
     departures: [
+      { routeId: 'MOBUS-10', lineName: 'Mo Bus 10 (Airport ➔ CDA Cuttack)', destination: 'Biju Patnaik Park CDA', mode: 'bus', etaMinutes: 3, delayMinutes: 0, platform: 'Bay 10', occupancy: 'moderate' },
       { routeId: 'MOBUS-16', lineName: 'Mo Bus 16', destination: 'InfoCity Tech Park', mode: 'bus', etaMinutes: 2, delayMinutes: 0, platform: 'Bay 1', occupancy: 'moderate' },
       { routeId: 'MOBUS-NIGHT', lineName: 'Night Safe Owl Express', destination: 'Airport Terminal', mode: 'bus', etaMinutes: 12, delayMinutes: 0, platform: 'Bay N', occupancy: 'low' },
     ],
@@ -74,7 +75,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     mode: 'bus',
     lat: 20.3541,
     lng: 85.8175,
-    lines: ['MOBUS-16', 'PINK-EV', 'MOBUS-NIGHT'],
+    lines: ['MOBUS-10', 'MOBUS-16', 'PINK-EV', 'MOBUS-NIGHT'],
     isElevatorAccessible: true,
     hasCCTV: true,
     isWellLit: true,
@@ -84,6 +85,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     hasParcelLocker: true,
     isCoveredWalkway: true,
     departures: [
+      { routeId: 'MOBUS-10', lineName: 'Mo Bus 10 (Direct Cuttack CDA)', destination: 'Biju Patnaik Park CDA', mode: 'bus', etaMinutes: 4, delayMinutes: 0, platform: 'Bay 10', occupancy: 'low' },
       { routeId: 'MOBUS-16', lineName: 'Mo Bus 16 (AC Electric)', destination: 'Master Canteen', mode: 'bus', etaMinutes: 3, delayMinutes: 0, platform: 'Bay 1', occupancy: 'low' },
       { routeId: 'PINK-EV', lineName: 'Women Pink Mo Bus', destination: 'Master Canteen', mode: 'bus', etaMinutes: 7, delayMinutes: 0, platform: 'Bay Pink', occupancy: 'low' },
     ],
@@ -135,7 +137,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     mode: 'bus',
     lat: 20.2524,
     lng: 85.8178,
-    lines: ['MOBUS-16', 'MOBUS-NIGHT'],
+    lines: ['MOBUS-10', 'MOBUS-16', 'MOBUS-NIGHT'],
     isElevatorAccessible: true,
     hasCCTV: true,
     isWellLit: true,
@@ -145,6 +147,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     hasParcelLocker: true,
     isCoveredWalkway: true,
     departures: [
+      { routeId: 'MOBUS-10', lineName: 'Mo Bus 10 (Airport ➔ CDA Cuttack)', destination: 'Biju Patnaik Park CDA', mode: 'bus', etaMinutes: 4, delayMinutes: 0, platform: 'Bay 10', occupancy: 'low' },
       { routeId: 'MOBUS-NIGHT', lineName: 'Night Safe Owl Express', destination: 'Patia / KIIT', mode: 'bus', etaMinutes: 8, delayMinutes: 0, platform: 'Arrival Bay', occupancy: 'low' },
     ],
   },
@@ -249,9 +252,71 @@ export const BHUBANESWAR_STATIONS: Station[] = [
       { routeId: 'MOBUS-50', lineName: 'Mo Bus 50 (Puri Express)', destination: 'Bhubaneswar Railway Station', mode: 'bus', etaMinutes: 5, delayMinutes: 0, platform: 'Bay P1', occupancy: 'low' },
     ],
   },
+  {
+    id: 'bbs-cda-biju-patnaik-park',
+    name: 'Biju Patnaik Park Terminal (CDA Cuttack)',
+    localNames: { or: 'ବିଜୁ ପଟ୍ଟନାୟକ ପାର୍କ (ସିଡିଏ)', hi: 'बीजू पटनायक पार्क (सीडीए कटक)' },
+    mode: 'bus',
+    lat: 20.4650,
+    lng: 85.8350,
+    lines: ['MOBUS-10'],
+    isElevatorAccessible: true,
+    hasCCTV: true,
+    isWellLit: true,
+    hasRestroom: true,
+    hasPharmacyNearby: true,
+    hasPolicePostNearby: true,
+    hasParcelLocker: false,
+    isCoveredWalkway: true,
+    departures: [
+      { routeId: 'MOBUS-10', lineName: 'Mo Bus 10 (Direct Airport Express)', destination: 'Biju Patnaik Airport BBI', mode: 'bus', etaMinutes: 6, delayMinutes: 0, platform: 'Bay 1', occupancy: 'low' },
+    ],
+  },
 ];
 
 export const BHUBANESWAR_ROUTES: TransitRoute[] = [
+  {
+    id: 'MOBUS-10',
+    name: 'Mo Bus Route 10 (Biju Patnaik Airport ➔ Jayadev Vihar ➔ Nandankanan ➔ CDA Biju Patnaik Park Cuttack)',
+    lineCode: 'MB-10',
+    mode: 'bus',
+    color: '#3B82F6',
+    path: [
+      [20.2524, 85.8178], // Biju Patnaik Airport
+      [20.2580, 85.8230], // Capital Hospital
+      [20.2650, 85.8280], // AG Square
+      [20.2780, 85.8220], // Power House Square
+      [20.3039, 85.8188], // Jayadev Vihar
+      [20.3150, 85.8190], // Xavier Square
+      [20.3270, 85.8210], // Rail Sadan
+      [20.3390, 85.8160], // Damana Square
+      [20.3567, 85.8166], // Patia Square
+      [20.3602, 85.8035], // Infocity Square
+      [20.3541, 85.8175], // KIIT Square
+      [20.3720, 85.8230], // Raghunathpur
+      [20.3950, 85.8280], // Nandankanan
+      [20.4050, 85.8300], // Barang
+      [20.4200, 85.8450], // Trisulia Square
+      [20.4400, 85.8550], // Judicial Academy
+      [20.4500, 85.8600], // Sati Choura Square
+      [20.4550, 85.8450], // CDA 6 Park
+      [20.4600, 85.8400], // CDA 9 Market Square
+      [20.4650, 85.8350], // Biju Patnaik Park Cuttack
+    ],
+    stationIds: [
+      'bbs-airport',
+      'bbs-jaydev-vihar',
+      'bbs-patia-kiit',
+      'bbs-infocity',
+      'bbs-cda-biju-patnaik-park',
+    ],
+    frequencyMins: 8,
+    baseFare: 10,
+    isNightSafe: true,
+    isWeatherCovered: true,
+    isEcoElectric: true,
+    operationalStatus: 'operational',
+  },
   {
     id: 'MOBUS-16',
     name: 'Mo Bus Route 16 (Baramunda ISBT ➔ Nandankanan / KIIT)',
@@ -395,6 +460,27 @@ export const BHUBANESWAR_ROUTES: TransitRoute[] = [
 ];
 
 export const INITIAL_BHUBANESWAR_VEHICLES: Vehicle[] = [
+  {
+    id: 'V-BUS-10-A',
+    name: 'Mo Bus Electric #105',
+    mode: 'bus',
+    routeId: 'MOBUS-10',
+    lineName: 'Mo Bus Route 10 (Airport ➔ CDA Cuttack)',
+    color: '#3B82F6',
+    lat: 20.3039,
+    lng: 85.8188,
+    speedKmH: 38,
+    heading: 30,
+    nextStopId: 'bbs-patia-kiit',
+    nextStopName: 'Patia / KIIT Square',
+    etaSeconds: 180,
+    delaySeconds: 0,
+    occupancy: 'moderate',
+    isWomenOnlyCoachAvailable: true,
+    isLowFloorAccessible: true,
+    isAc: true,
+    evVehicle: true,
+  },
   {
     id: 'V-BUS-16-A',
     name: 'Mo Bus Electric #402',
