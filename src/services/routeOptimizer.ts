@@ -11,7 +11,7 @@ export function calculateJourneyOptions(
     // 1. FASTEST ROUTE (Mo Bus AC Electric Express)
     {
       id: 'opt-fastest',
-      title: 'Mo Bus AC Electric Express (Route 10)',
+      title: 'Mo Bus AC Electric Express (Route 16)',
       modeType: 'fastest',
       totalDurationMins: Math.max(16, Math.round(distEst * 2.4)),
       totalFare: 20,
@@ -26,8 +26,8 @@ export function calculateJourneyOptions(
         {
           id: 'leg-f1',
           mode: 'bus',
-          lineName: 'Mo Bus 10 (AC Electric Trunk Line)',
-          lineCode: 'MB-10',
+          lineName: 'Mo Bus 16 (AC Electric Trunk Line)',
+          lineCode: 'MB-16',
           color: '#06B6D4',
           fromStation: originStation.name,
           toStation: intermediateStations.length > 0 ? intermediateStations[0].name : destinationStation.name,
@@ -42,7 +42,7 @@ export function calculateJourneyOptions(
           isStepFree: true,
           safetyScore: 95,
           instructions: [
-            `Board Mo Bus 10 (AC Electric) at ${originStation.name} (Bay 1).`,
+            `Board Mo Bus 16 (AC Electric) at ${originStation.name} (Bay 1).`,
             `Direct express transit along NH16 corridor with CCTV surveillance.`,
             `Alight safely at ${destinationStation.name}.`,
           ],
@@ -231,8 +231,8 @@ export function calculateJourneyOptions(
         {
           id: 'leg-w1',
           mode: 'bus',
-          lineName: 'Mo Bus 10 (Elevated Flyover Reroute)',
-          lineCode: 'MB-10',
+          lineName: 'Mo Bus 16 (Elevated Flyover Reroute)',
+          lineCode: 'MB-16',
           color: '#06B6D4',
           fromStation: originStation.name,
           toStation: destinationStation.name,

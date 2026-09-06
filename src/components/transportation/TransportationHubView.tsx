@@ -121,11 +121,13 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
   );
   const [liveCorridors, setLiveCorridors] = useState<LiveCorridorTelemetry[]>([]);
 
-  // Workable Modals State
   const [bookingEventModal, setBookingEventModal] = useState<EventTransportPlan | null>(null);
   const [bookingEmptyTripModal, setBookingEmptyTripModal] = useState<EmptyTripMatch | null>(null);
   const [isPostEmptyTripOpen, setIsPostEmptyTripOpen] = useState(false);
   const [reservingParkingModal, setReservingParkingModal] = useState<Tier2SmartParkingHub | null>(null);
+  const [parkRidePassModal, setParkRidePassModal] = useState<typeof PARK_AND_RIDE_HUBS[0] | null>(null);
+  const [claimedGreenBonus, setClaimedGreenBonus] = useState(false);
+  const [bookedLastMileOption, setBookedLastMileOption] = useState<LastMileOption | null>(null);
   const [dispatchedBusInfo, setDispatchedBusInfo] = useState<{ routeId: string; depot: string; time: string; crowdBefore: number; crowdAfter: number } | null>(null);
   const [greenCorridorActive, setGreenCorridorActive] = useState(false);
   const [wasteOptimized, setWasteOptimized] = useState(false);
@@ -223,6 +225,17 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
     setIsReportHazardOpen(false);
     setNewHazardTitle('');
     setNewHazardDesc('');
+  };
+
+  const handleCategorySelect = (catId: 'all' | 'transit' | 'events_logistics' | 'traffic') => {
+    setActiveCategory(catId);
+    if (catId === 'transit') {
+      setActiveTab('smart_stops');
+    } else if (catId === 'events_logistics') {
+      setActiveTab('event_planner');
+    } else if (catId === 'traffic') {
+      setActiveTab('traffic_predict');
+    }
   };
 
   const handlePostEmptyVehicle = (e: React.FormEvent) => {
@@ -353,7 +366,7 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
           ].map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setActiveCategory(cat.id as any)}
+              onClick={() => handleCategorySelect(cat.id as any)}
               className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition ${
                 activeCategory === cat.id
                   ? 'bg-amber-400 text-slate-950 shadow-sm'
@@ -1375,6 +1388,449 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
           </div>
         )}
 
+        {/* ─── TAB: CROWD PREDICTION ─── */}
+        {activeTab === 'crowd_predict' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-blue-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <Users className="w-4 h-4 text-blue-600" />
+                    <span>Corridor Crowd Density & Crush Prediction</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Live transit crush forecasts across key Bhubaneswar arterial corridors.
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-xs font-black rounded-xl border border-blue-200 dark:border-blue-800 self-start sm:self-auto">
+                  Live Stream Active
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {CRUCIAL_CORRIDOR_CROWDS.map((corridor) => (
+                  <div
+                    key={corridor.routeId}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3"
+                  >
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white font-black text-[10px]">
+                            {corridor.routeId}
+                          </span>
+                          <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                            {corridor.routeName}
+                          </span>
+                        </div>
+                      </div>
+                      <span
+                        className={`text-xs font-black px-2 py-0.5 rounded-full flex-shrink-0 ${
+                          corridor.crowdLevel === 'high'
+                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+                            : corridor.crowdLevel === 'moderate'
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                        }`}
+                      >
+                        {corridor.currentOccupancyPercent}% {corridor.crowdLevel.toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px] bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Seats Available:</span>
+                        <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{corridor.availableSeats} Seats Left</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Standing Buffer:</span>
+                        <strong className="text-slate-700 dark:text-slate-300 font-bold">~{corridor.standingCapacity} Commuters</strong>
+                      </div>
+                    </div>
+
+                    {/* Hourly timeline */}
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Today's Peak Crush Forecast:</div>
+                      <div className="grid grid-cols-5 gap-1 text-center">
+                        {corridor.peakHourForecast.map((hour, idx) => (
+                          <div key={idx} className="bg-white dark:bg-slate-900/80 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                            <div className="text-[9px] text-slate-400">{hour.hour.split(' ')[0]}</div>
+                            <div className={`text-[10px] font-black ${hour.occupancyPercent > 80 ? 'text-rose-600' : hour.occupancyPercent > 50 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                              {hour.occupancyPercent}%
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {corridor.suggestedAlternative && (
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                        <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium truncate">
+                          💡 Better Alternative: {corridor.suggestedAlternative.routeId}
+                        </span>
+                        <button
+                          onClick={onNavigateToMap}
+                          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] rounded-lg shadow-xs flex-shrink-0"
+                        >
+                          Reroute ➔
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: GREEN ROUTE SCORE ─── */}
+        {activeTab === 'green_score' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-emerald-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <Leaf className="w-4 h-4 text-emerald-600" />
+                    <span>Green Route Score & Carbon Reduction Index</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Calculated for {originName} ➔ {destinationName} (8.5 km corridor).
+                  </p>
+                </div>
+                <button
+                  onClick={() => setClaimedGreenBonus(true)}
+                  disabled={claimedGreenBonus}
+                  className={`px-3 py-1.5 text-xs font-black rounded-xl transition ${
+                    claimedGreenBonus
+                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                  }`}
+                >
+                  {claimedGreenBonus ? '✓ 40 Eco-Credits Claimed' : '🎁 Claim 40 Eco-Credits'}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {greenScores.map((score, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-2xl border transition space-y-2.5 ${
+                      score.isRecommended
+                        ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-500 shadow-xs ring-1 ring-emerald-500'
+                        : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs font-black text-slate-900 dark:text-white">{score.mode}</span>
+                      {score.isRecommended && (
+                        <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-2 py-0.5 rounded-full">
+                          Best Eco Choice
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between text-slate-500">
+                        <span>CO₂ Intensity:</span>
+                        <strong className="text-slate-800 dark:text-slate-200">{score.co2GramsPerKm} g/km</strong>
+                      </div>
+                      <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                        <span>CO₂ Saved vs Car:</span>
+                        <strong>-{score.co2SavedGramsVsCar}g</strong>
+                      </div>
+                      <div className="flex justify-between text-blue-600 dark:text-blue-400 font-bold">
+                        <span>Reward Earned:</span>
+                        <strong>+{score.greenCreditsEarned} Credits</strong>
+                      </div>
+                    </div>
+                    <div className="text-[11px] text-amber-500 font-bold pt-1 border-t border-slate-200/60 dark:border-slate-700">
+                      {'⭐'.repeat(score.ecoRatingStars)} Eco Rating
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-xs flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl">🌳</span>
+                  <div>
+                    <div className="font-extrabold">Clean Air Impact in Bhubaneswar</div>
+                    <div className="text-[11px] opacity-90">Switching from personal car to Ama Bus saves ~1.2 kg CO₂ daily per commuter.</div>
+                  </div>
+                </div>
+                <button
+                  onClick={onNavigateToMap}
+                  className="px-3 py-1.5 bg-white text-emerald-800 font-bold text-xs rounded-xl shadow-xs hover:bg-emerald-50"
+                >
+                  Take Green Route
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: SMART LAST-MILE ─── */}
+        {activeTab === 'last_mile' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <Footprints className="w-4 h-4 text-purple-600" />
+                    <span>Smart Last-Mile Doorstep Mobility</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Connecting bus stops directly to homes, colleges, and offices in Bhubaneswar.
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-1 rounded-xl border border-purple-200 dark:border-purple-800">
+                  Mo E-Ride Integrated
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {lastMileOptions.map((opt, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-col justify-between gap-3 hover:border-purple-500 transition shadow-2xs"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl">
+                          {opt.type === 'mo_e_ride' ? '🛺' : opt.type === 'mo_cycle' ? '🚲' : opt.type === 'feeder_auto' ? '🚐' : '🚶'}
+                        </span>
+                        <span className="text-xs font-black text-slate-900 dark:text-white">₹{opt.cost}</span>
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold text-slate-900 dark:text-white">{opt.title}</div>
+                        <div className="text-[11px] text-slate-500">{opt.badgeText}</div>
+                      </div>
+                      <div className="text-[11px] space-y-1 text-slate-600 dark:text-slate-300">
+                        <div className="flex justify-between">
+                          <span>Travel Time:</span>
+                          <strong>~{opt.durationMins} mins</strong>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Corridor Info:</span>
+                          <strong className="text-emerald-600">{opt.isLitStreet ? 'Well-Lit Walkway' : 'Active Service'}</strong>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Safety Score:</span>
+                          <strong className="text-blue-600">{opt.safetyScoreOutOf10 * 10}/100</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setBookedLastMileOption(opt)}
+                      className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
+                    >
+                      Book / Unlock ➔
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: PARK & RIDE HUBS ─── */}
+        {activeTab === 'park_ride' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <ParkingCircle className="w-4 h-4 text-blue-600" />
+                    <span>City Park & Ride Intermodal Hubs</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Park at peripheral hubs and avoid congested central corridors. Includes free express shuttle.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {PARK_AND_RIDE_HUBS.map((hub) => (
+                  <div
+                    key={hub.id}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-xs font-black text-slate-900 dark:text-white">{hub.name}</div>
+                        <div className="text-[11px] text-slate-500">{hub.location}</div>
+                      </div>
+                      <span className="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                        {hub.availableSpots} Spots Free
+                      </span>
+                    </div>
+
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-blue-600 h-full rounded-full transition-all"
+                        style={{ width: `${Math.round(((hub.totalSpots - hub.availableSpots) / hub.totalSpots) * 100)}%` }}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">Total Spots:</span>
+                        <strong>{hub.totalSpots}</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">EV Chargers:</span>
+                        <strong className="text-emerald-600 font-bold">⚡ {hub.evChargingSpots} Fast DC</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block">Fee:</span>
+                        <strong>₹{hub.hourlyRate}/hr</strong>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 text-xs font-semibold flex items-center justify-between">
+                      <span>Connecting: <strong>{hub.connectingTransit.join(', ')}</strong></span>
+                      <button
+                        onClick={() => setParkRidePassModal(hub)}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs"
+                      >
+                        Reserve Slot ➔
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: DISRUPTION MANAGER ─── */}
+        {activeTab === 'disruptions' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-rose-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600" />
+                    <span>Live Disruption Manager & Dynamic Reroutes</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Real-time road closures, waterlogging bypasses, and security corridors in Bhubaneswar.
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 bg-rose-50 dark:bg-rose-950 text-rose-600 font-black text-xs rounded-xl border border-rose-200 dark:border-rose-800 self-start sm:self-auto">
+                  {ACTIVE_DISRUPTION_ALERTS.length} Active Disruption Alerts
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {ACTIVE_DISRUPTION_ALERTS.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2.5"
+                  >
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <div className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
+                            alert.severity === 'critical' ? 'bg-rose-600 text-white' : 'bg-amber-500 text-white'
+                          }`}>
+                            {alert.type.replace('_', ' ')}
+                          </span>
+                          <span>{alert.title}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-1">
+                          Corridor: <strong>{alert.affectedCorridor}</strong> • Reported: {alert.reportedAt}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 flex-wrap justify-end">
+                        {alert.impactedRoutes.map((r) => (
+                          <span key={r} className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded font-bold">
+                            {r}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-emerald-800 dark:text-emerald-300 font-bold block">
+                          ⚡ Suggested Bypass: {alert.recommendedBypass}
+                        </span>
+                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                          Saves ~{alert.bypassTimeSavedMins} mins vs jammed corridor
+                        </span>
+                      </div>
+                      <button
+                        onClick={onNavigateToMap}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs flex-shrink-0"
+                      >
+                        Navigate Bypass ➔
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: MOBILITY HEATMAP ─── */}
+        {activeTab === 'heatmap' && (
+          <div className="space-y-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-amber-500" />
+                    <span>Urban Mobility & Traffic Congestion Heatmap</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Live commuter density & transit corridor velocities across Bhubaneswar.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {CITY_MOBILITY_HEATMAP_ZONES.map((zone) => (
+                  <div
+                    key={zone.id}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2.5"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-xs font-black text-slate-900 dark:text-white">{zone.name}</div>
+                        <div className="text-[10px] text-slate-400">Peak: 08:30 - 11:30 AM & 05:00 - 08:30 PM</div>
+                      </div>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                        zone.intensity > 0.7
+                          ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+                          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                      }`}>
+                        {zone.intensity > 0.7 ? 'Heavy' : 'Moderate'} Density
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between text-slate-500">
+                        <span>Active Commuters:</span>
+                        <strong className="text-slate-800 dark:text-slate-200">~{zone.commuterVolumePerHour}/hr</strong>
+                      </div>
+                      <div className="flex justify-between text-slate-500">
+                        <span>Average Delay:</span>
+                        <strong className="text-blue-600 dark:text-blue-400">+{zone.averageDelayMins} mins</strong>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-400">
+                      💡 {zone.type === 'congestion' ? 'Traffic Signal Green-Wave extension active' : 'Additional Mo Bus feeder shuttles deployed'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* ─── MODAL: EVENT PARK & RIDE BOOKING PASS ─── */}
@@ -1743,6 +2199,101 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL: CITY PARK & RIDE PASS ─── */}
+      {parkRidePassModal && (
+        <div className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-800 rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-2 bg-blue-100 dark:bg-blue-950 text-blue-600 rounded-xl text-lg">🅿️</span>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900 dark:text-white">Park & Ride Pass Confirmed</h3>
+                  <p className="text-[11px] text-slate-500">{parkRidePassModal.name}</p>
+                </div>
+              </div>
+              <button onClick={() => setParkRidePassModal(null)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">✕</button>
+            </div>
+
+            <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-200 dark:border-blue-800 text-center space-y-3">
+              <div className="w-28 h-28 bg-white dark:bg-slate-800 border border-blue-300 rounded-2xl mx-auto flex items-center justify-center shadow-inner">
+                <QrCode className="w-20 h-20 text-blue-700 dark:text-blue-300" />
+              </div>
+              <div>
+                <div className="font-mono text-xs font-black text-blue-700 dark:text-blue-300">
+                  PNR-HUB-{Math.floor(100000 + Math.random() * 900000)}
+                </div>
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1">
+                  Reserved Slot: <strong>Bay #P-{Math.floor(10 + Math.random() * 80)}</strong>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  Fee: ₹{parkRidePassModal.hourlyRate}/hr • Connecting: {parkRidePassModal.connectingTransit.join(', ')}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>Includes Free Connecting Ama Bus Shuttle Ride!</span>
+            </div>
+
+            <button
+              onClick={() => {
+                setParkRidePassModal(null);
+                if (onNavigateToMap) onNavigateToMap();
+              }}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition"
+            >
+              Open Live Navigation ➔
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL: LAST MILE RIDE BOOKED ─── */}
+      {bookedLastMileOption && (
+        <div className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-2 bg-purple-100 dark:bg-purple-950 text-purple-600 rounded-xl text-lg">🛺</span>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900 dark:text-white">Last-Mile Connection Reserved</h3>
+                  <p className="text-[11px] text-slate-500">{bookedLastMileOption.title}</p>
+                </div>
+              </div>
+              <button onClick={() => setBookedLastMileOption(null)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">✕</button>
+            </div>
+
+            <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-2xl border border-purple-200 dark:border-purple-800 text-center space-y-2">
+              <div className="text-3xl">
+                {bookedLastMileOption.type === 'mo_e_ride' ? '🛺' : bookedLastMileOption.type === 'mo_cycle' ? '🚲' : bookedLastMileOption.type === 'feeder_auto' ? '🚐' : '🚶'}
+              </div>
+              <div className="text-xs font-black text-purple-900 dark:text-purple-200">
+                OTP: <span className="font-mono text-base text-purple-700 dark:text-purple-300">{Math.floor(1000 + Math.random() * 9000)}</span>
+              </div>
+              <div className="text-[11px] text-slate-600 dark:text-slate-400">
+                Fare: <strong>₹{bookedLastMileOption.cost}</strong> • Estimated Time: <strong>~{bookedLastMileOption.durationMins} mins</strong>
+              </div>
+            </div>
+
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>Driver/Vehicle assigned near your drop-off station!</span>
+            </div>
+
+            <button
+              onClick={() => {
+                setBookedLastMileOption(null);
+                if (onNavigateToMap) onNavigateToMap();
+              }}
+              className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-md transition"
+            >
+              Track on Map ➔
+            </button>
           </div>
         </div>
       )}

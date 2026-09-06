@@ -84,7 +84,7 @@ export const INITIAL_COMMUNITY_REPORTS: CommunityReport[] = [
   {
     id: 'cr-101',
     category: 'overcrowding',
-    title: 'Mo Bus Route 10 Jam-Packed at Jayadev Vihar Stand',
+    title: 'Mo Bus Route 16 Jam-Packed at Jayadev Vihar Stand',
     description: 'Doors cannot close due to heavy rush. 40+ commuters waiting at stop. Need an extra shuttle.',
     locationName: 'Jayadev Vihar Bus Bay #2, Bhubaneswar',
     lat: 20.3039,
@@ -175,7 +175,7 @@ export const INITIAL_COMMUNITY_REPORTS: CommunityReport[] = [
 export const INITIAL_POLLS: CommunityPoll[] = [
   {
     id: 'poll-1',
-    question: 'Should Mo Bus Route 10 operate 24/7 during weekends?',
+    question: 'Should Mo Bus Route 16 operate 24/7 during weekends?',
     locationContext: 'City-wide',
     totalVotes: 1245,
     expiresInDays: 3,

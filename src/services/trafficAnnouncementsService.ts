@@ -1,4 +1,4 @@
-﻿export interface TrafficAnnouncement {
+export interface TrafficAnnouncement {
   id: string;
   type: 'traffic' | 'strike' | 'flood' | 'construction' | 'festival';
   title: string;
@@ -20,7 +20,7 @@ export const LIVE_TRAFFIC_ANNOUNCEMENTS: TrafficAnnouncement[] = [
     impactDescription: 'Vehicle speeds reduced to 18 km/h due to flyover maintenance.',
     suggestedAction: 'Take Metro Line or Pink Express bus bypassing service lanes.',
     timestamp: '5 mins ago',
-    affectedLines: ['Bus 24A', 'Mo Bus 10', 'DTC-E502'],
+    affectedLines: ['Bus 24A', 'Mo Bus 16', 'DTC-E502'],
   },
   {
     id: 'ANN-02',

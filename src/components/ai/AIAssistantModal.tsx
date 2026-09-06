@@ -79,7 +79,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
 
   const samplePrompts = [
     'Fastest bus to KIIT Square?',
-    'Any bus delays on Route 10?',
+    'Any bus delays on Route 11?',
     'Emergency SOS & Blood info',
     'Nearby grocery stores?',
   ];

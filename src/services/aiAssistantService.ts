@@ -231,8 +231,8 @@ class AIAssistantService {
       const payload = JSON.stringify({ origin, destination });
 
       const replyText = isHinglish
-        ? `🗺️ **Maine Route Plan kar diya hai:**\n📍 **${origin}** ➔ **${destination}**\n\n• ⚡ Fastest Transit: **Ama Bus AC Corridor / Route 10**\n• ⏱️ Estimated Time: **~24 mins** | 🎫 Fare: **₹15–₹20**\n• 🔄 Interactive map aur live route plan open ho gaya hai!`
-        : `🗺️ **Route Planned Successfully:**\n📍 **${origin}** ➔ **${destination}**\n\n• ⚡ Fastest Transit: **Ama Bus AC Corridor / Line 10**\n• ⏱️ Duration: **~24 mins** | 🎫 Official CRUT Fare: **₹15–₹20**\n• 🔄 Switched directly to the live interactive map & route plan.`;
+        ? `🗺️ **Maine Route Plan kar diya hai:**\n📍 **${origin}** ➔ **${destination}**\n\n• ⚡ Fastest Transit: **Ama Bus AC Corridor / Route 11**\n• ⏱️ Estimated Time: **~24 mins** | 🎫 Fare: **₹15–₹20**\n• 🔄 Interactive map aur live route plan open ho gaya hai!`
+        : `🗺️ **Route Planned Successfully:**\n📍 **${origin}** ➔ **${destination}**\n\n• ⚡ Fastest Transit: **Ama Bus AC Corridor / Line 11**\n• ⏱️ Duration: **~24 mins** | 🎫 Official CRUT Fare: **₹15–₹20**\n• 🔄 Switched directly to the live interactive map & route plan.`;
 
       return {
         id,

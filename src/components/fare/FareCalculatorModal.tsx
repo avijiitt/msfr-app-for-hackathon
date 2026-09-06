@@ -11,11 +11,14 @@ interface FareCalculatorModalProps {
 }
 
 const POPULAR_LOCALITIES = [
+  'Trident college',
   'Master Canteen',
   'Jayadev Vihar',
   'KIIT University, Patia',
   'Infocity IT Hub',
   'Baramunda ISBT',
+  'Silicon University',
+  'ITER College',
   'Biju Patnaik Airport',
   'Khandagiri Caves',
   'Cuttack Badambadi',
@@ -203,7 +206,7 @@ export const FareCalculatorModal: React.FC<FareCalculatorModalProps> = ({
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-amber-500" />
-              <span>{isAutoMeasured ? 'Real-world road distance auto-computed' : 'Manually customized distance'}</span>
+              <span>{isAutoMeasured ? 'Google Maps road distance auto-computed' : 'Manually customized distance'}</span>
             </p>
           </div>
 

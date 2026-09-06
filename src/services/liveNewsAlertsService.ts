@@ -19,12 +19,12 @@ const FALLBACK_BBSR_NEWS: LiveTransitNewsItem[] = [
   {
     id: 'bbsr-news-1',
     title: 'Mo Bus Fleet Deploys Extra AC Electric Buses on Jayadev Vihar – Patia Corridor',
-    description: 'CRUT has augmented peak-hour frequency on Route 10, 11, and 24 to handle passenger rush with 3-minute intervals.',
+    description: 'CRUT has augmented peak-hour frequency on Route 16, 11, and 24 to handle passenger rush with 3-minute intervals.',
     source: 'Google News / Odisha TV',
     timestamp: '15 mins ago',
     severity: 'info',
     category: 'mobus',
-    affectedRoutes: ['Route 10', 'Route 11', 'Route 24'],
+    affectedRoutes: ['Route 16', 'Route 11', 'Route 24'],
   },
   {
     id: 'bbsr-news-2',
@@ -34,7 +34,7 @@ const FALLBACK_BBSR_NEWS: LiveTransitNewsItem[] = [
     timestamp: '42 mins ago',
     severity: 'warning',
     category: 'metro',
-    affectedRoutes: ['Route 10', 'Route 12', 'Patia Corridor'],
+    affectedRoutes: ['Route 16', 'Route 12', 'Patia Corridor'],
   },
   {
     id: 'bbsr-news-3',

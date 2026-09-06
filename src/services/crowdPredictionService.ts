@@ -76,7 +76,7 @@ export interface GreenScoreComparison {
 // ── 1. Real-Time & Forecasted Crowd Prediction ──────────────────────────────
 export const CRUCIAL_CORRIDOR_CROWDS: RouteCrowdStatus[] = [
   {
-    routeId: 'Route 10',
+    routeId: 'Route 16',
     routeName: 'Bhubaneswar Railway Station ➔ Nandankanan (Via Jayadev Vihar & Patia)',
     mode: 'bus',
     currentOccupancyPercent: 88,
@@ -313,7 +313,7 @@ export const ACTIVE_DISRUPTION_ALERTS: DisruptionAlert[] = [
     type: 'waterlogging',
     severity: 'medium',
     affectedCorridor: 'Rasulgarh to Vani Vihar Slow Lane',
-    impactedRoutes: ['Route 10', 'Route 18', 'Route 42'],
+    impactedRoutes: ['Route 16', 'Route 18', 'Route 42'],
     recommendedBypass: 'Take Saheed Nagar Inner Ring Road ➔ Vani Vihar North Gate',
     bypassTimeSavedMins: 14,
     lat: 20.2982,
@@ -339,7 +339,7 @@ export const ACTIVE_DISRUPTION_ALERTS: DisruptionAlert[] = [
     type: 'road_closure',
     severity: 'low',
     affectedCorridor: 'Damana Chhak Northbound Lane',
-    impactedRoutes: ['Route 10', 'Route 12', 'Route 26'],
+    impactedRoutes: ['Route 16', 'Route 12', 'Route 26'],
     recommendedBypass: 'Use Niladri Vihar Service Road to connect Infocity',
     bypassTimeSavedMins: 8,
     lat: 20.3341,

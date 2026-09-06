@@ -99,7 +99,7 @@ export const TripAssuranceModal: React.FC<TripAssuranceModalProps> = ({
             <button
               type="button"
               onClick={() => {
-                const res = refundService.fileInstantRefund('Ama Bus Route 10 / 24 (Punctuality Guarantee)', 5, 'Severe Delay (>15 mins)');
+                const res = refundService.fileInstantRefund('Ama Bus Route 16 / 24 (Punctuality Guarantee)', 5, 'Severe Delay (>15 mins)');
                 setClaims(refundService.getClaims());
                 setClaimSuccessMsg(`🎉 ₹5 Punctuality Guarantee micro-refund credited to your Wallet (Claim: ${res.claim.id})!`);
                 if (onRefundClaimed) onRefundClaimed(res.newBalance);

@@ -362,7 +362,7 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
             </>
           )}
 
-          {/* Trident College Transfer Leg (Bus 10 drops at Infocity Sq ➔ 200m Walk or Auto) */}
+          {/* Trident College Transfer Leg (Ama Bus drops at Infocity Sq ➔ 200m Walk or Auto) */}
           {(cleanTo.toLowerCase().includes('trident') || destinationName.toLowerCase().includes('trident')) && (
             <>
               <div className="pl-1.5 ml-2.5 border-l-2 border-dashed border-amber-400 dark:border-amber-600 py-1 space-y-1">

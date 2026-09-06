@@ -10,7 +10,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     mode: 'bus',
     lat: 20.2668,
     lng: 85.8436,
-    lines: ['MOBUS-10', 'MOBUS-11', 'PINK-EV', 'MOBUS-NIGHT'],
+    lines: ['MOBUS-16', 'MOBUS-11', 'PINK-EV', 'MOBUS-NIGHT'],
     isElevatorAccessible: true,
     hasCCTV: true,
     isWellLit: true,
@@ -20,7 +20,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     hasParcelLocker: true,
     isCoveredWalkway: true,
     departures: [
-      { routeId: 'MOBUS-10', lineName: 'Ama Bus 10 (AC Electric Trunk)', destination: 'Patia / KIIT / InfoCity', mode: 'bus', etaMinutes: 3, delayMinutes: 0, platform: 'Bay 1', occupancy: 'moderate' },
+      { routeId: 'MOBUS-16', lineName: 'Ama Bus 16 (AC Electric Trunk)', destination: 'Patia / KIIT / InfoCity', mode: 'bus', etaMinutes: 3, delayMinutes: 0, platform: 'Bay 1', occupancy: 'moderate' },
       { routeId: 'MOBUS-11', lineName: 'Ama Bus 11 (Affordable Non-AC)', destination: 'Cuttack Badambadi', mode: 'bus', etaMinutes: 6, delayMinutes: 1, platform: 'Bay 2', occupancy: 'low' },
       { routeId: 'PINK-EV', lineName: 'Women Pink Ama Bus', destination: 'Patia IT Corridor', mode: 'bus', etaMinutes: 8, delayMinutes: 0, platform: 'Bay W (Pink)', occupancy: 'low' },
     ],
@@ -32,7 +32,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     mode: 'bus',
     lat: 20.3015,
     lng: 85.8365,
-    lines: ['MOBUS-10', 'MOBUS-11', 'MOBUS-24'],
+    lines: ['MOBUS-16', 'MOBUS-11', 'MOBUS-24'],
     isElevatorAccessible: true,
     hasCCTV: true,
     isWellLit: true,
@@ -42,7 +42,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     hasParcelLocker: true,
     isCoveredWalkway: true,
     departures: [
-      { routeId: 'MOBUS-10', lineName: 'Mo Bus 10 (AC Electric)', destination: 'Patia / KIIT', mode: 'bus', etaMinutes: 4, delayMinutes: 0, platform: 'Shelter A', occupancy: 'moderate' },
+      { routeId: 'MOBUS-16', lineName: 'Mo Bus 16 (AC Electric)', destination: 'Patia / KIIT', mode: 'bus', etaMinutes: 4, delayMinutes: 0, platform: 'Shelter A', occupancy: 'moderate' },
       { routeId: 'MOBUS-11', lineName: 'Mo Bus 11 (Ordinary Bus)', destination: 'Master Canteen', mode: 'bus', etaMinutes: 5, delayMinutes: 2, platform: 'Shelter B', occupancy: 'full' },
     ],
   },
@@ -53,7 +53,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     mode: 'bus',
     lat: 20.3039,
     lng: 85.8188,
-    lines: ['MOBUS-10', 'MOBUS-24', 'PINK-EV', 'MOBUS-NIGHT'],
+    lines: ['MOBUS-16', 'MOBUS-24', 'PINK-EV', 'MOBUS-NIGHT'],
     isElevatorAccessible: true,
     hasCCTV: true,
     isWellLit: true,
@@ -63,7 +63,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     hasParcelLocker: true,
     isCoveredWalkway: true,
     departures: [
-      { routeId: 'MOBUS-10', lineName: 'Mo Bus 10', destination: 'InfoCity Tech Park', mode: 'bus', etaMinutes: 2, delayMinutes: 0, platform: 'Bay 1', occupancy: 'moderate' },
+      { routeId: 'MOBUS-16', lineName: 'Mo Bus 16', destination: 'InfoCity Tech Park', mode: 'bus', etaMinutes: 2, delayMinutes: 0, platform: 'Bay 1', occupancy: 'moderate' },
       { routeId: 'MOBUS-NIGHT', lineName: 'Night Safe Owl Express', destination: 'Airport Terminal', mode: 'bus', etaMinutes: 12, delayMinutes: 0, platform: 'Bay N', occupancy: 'low' },
     ],
   },
@@ -74,7 +74,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     mode: 'bus',
     lat: 20.3541,
     lng: 85.8175,
-    lines: ['MOBUS-10', 'PINK-EV', 'MOBUS-NIGHT'],
+    lines: ['MOBUS-16', 'PINK-EV', 'MOBUS-NIGHT'],
     isElevatorAccessible: true,
     hasCCTV: true,
     isWellLit: true,
@@ -84,7 +84,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     hasParcelLocker: true,
     isCoveredWalkway: true,
     departures: [
-      { routeId: 'MOBUS-10', lineName: 'Mo Bus 10 (AC Electric)', destination: 'Master Canteen', mode: 'bus', etaMinutes: 3, delayMinutes: 0, platform: 'Bay 1', occupancy: 'low' },
+      { routeId: 'MOBUS-16', lineName: 'Mo Bus 16 (AC Electric)', destination: 'Master Canteen', mode: 'bus', etaMinutes: 3, delayMinutes: 0, platform: 'Bay 1', occupancy: 'low' },
       { routeId: 'PINK-EV', lineName: 'Women Pink Mo Bus', destination: 'Master Canteen', mode: 'bus', etaMinutes: 7, delayMinutes: 0, platform: 'Bay Pink', occupancy: 'low' },
     ],
   },
@@ -95,7 +95,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     mode: 'bus',
     lat: 20.3602,
     lng: 85.8035,
-    lines: ['MOBUS-10', 'PINK-EV'],
+    lines: ['MOBUS-16', 'PINK-EV'],
     isElevatorAccessible: false,
     hasCCTV: true,
     isWellLit: true,
@@ -105,7 +105,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     hasParcelLocker: true,
     isCoveredWalkway: false,
     departures: [
-      { routeId: 'MOBUS-10', lineName: 'Mo Bus 10', destination: 'Master Canteen / Central', mode: 'bus', etaMinutes: 6, delayMinutes: 1, platform: 'Main Gate Bay', occupancy: 'moderate' },
+      { routeId: 'MOBUS-16', lineName: 'Mo Bus 16', destination: 'Master Canteen / Central', mode: 'bus', etaMinutes: 6, delayMinutes: 1, platform: 'Main Gate Bay', occupancy: 'moderate' },
     ],
   },
   {
@@ -115,7 +115,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     mode: 'bus',
     lat: 20.2312,
     lng: 85.7761,
-    lines: ['MOBUS-10', 'MOBUS-24'],
+    lines: ['MOBUS-16', 'MOBUS-24'],
     isElevatorAccessible: true,
     hasCCTV: true,
     isWellLit: true,
@@ -135,7 +135,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     mode: 'bus',
     lat: 20.2524,
     lng: 85.8178,
-    lines: ['MOBUS-10', 'MOBUS-NIGHT'],
+    lines: ['MOBUS-16', 'MOBUS-NIGHT'],
     isElevatorAccessible: true,
     hasCCTV: true,
     isWellLit: true,
@@ -155,7 +155,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     mode: 'bus',
     lat: 20.2798,
     lng: 85.7958,
-    lines: ['MOBUS-10', 'MOBUS-17', 'MOBUS-20', 'MOBUS-30', 'MOBUS-41'],
+    lines: ['MOBUS-16', 'MOBUS-17', 'MOBUS-20', 'MOBUS-30', 'MOBUS-41'],
     isElevatorAccessible: true,
     hasCCTV: true,
     isWellLit: true,
@@ -165,7 +165,7 @@ export const BHUBANESWAR_STATIONS: Station[] = [
     hasParcelLocker: true,
     isCoveredWalkway: true,
     departures: [
-      { routeId: 'MOBUS-10', lineName: 'Mo Bus 10 (AC Electric)', destination: 'Nandankanan / KIIT', mode: 'bus', etaMinutes: 2, delayMinutes: 0, platform: 'Bay 1', occupancy: 'low' },
+      { routeId: 'MOBUS-16', lineName: 'Mo Bus 16 (AC Electric)', destination: 'Nandankanan / KIIT', mode: 'bus', etaMinutes: 2, delayMinutes: 0, platform: 'Bay 1', occupancy: 'low' },
       { routeId: 'MOBUS-20', lineName: 'Mo Bus 20 (Non-AC)', destination: 'Khordha New Bus Stand', mode: 'bus', etaMinutes: 5, delayMinutes: 1, platform: 'Bay 4', occupancy: 'moderate' },
     ],
   },
@@ -253,9 +253,9 @@ export const BHUBANESWAR_STATIONS: Station[] = [
 
 export const BHUBANESWAR_ROUTES: TransitRoute[] = [
   {
-    id: 'MOBUS-10',
-    name: 'Mo Bus Route 10 (Baramunda ISBT ➔ Nandankanan / KIIT)',
-    lineCode: 'MB-10',
+    id: 'MOBUS-16',
+    name: 'Mo Bus Route 16 (Baramunda ISBT ➔ Nandankanan / KIIT)',
+    lineCode: 'MB-16',
     mode: 'bus',
     color: '#06B6D4',
     path: [
@@ -396,11 +396,11 @@ export const BHUBANESWAR_ROUTES: TransitRoute[] = [
 
 export const INITIAL_BHUBANESWAR_VEHICLES: Vehicle[] = [
   {
-    id: 'V-BUS-10-A',
+    id: 'V-BUS-16-A',
     name: 'Mo Bus Electric #402',
     mode: 'bus',
-    routeId: 'MOBUS-10',
-    lineName: 'Mo Bus Route 10 (AC Electric)',
+    routeId: 'MOBUS-16',
+    lineName: 'Mo Bus Route 16 (AC Electric)',
     color: '#06B6D4',
     lat: 20.2850,
     lng: 85.8410,

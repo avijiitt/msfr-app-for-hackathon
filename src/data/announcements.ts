@@ -1,4 +1,4 @@
-﻿import { Incident } from '../types/transit';
+import { Incident } from '../types/transit';
 
 export const MOCK_ANNOUNCEMENTS: Incident[] = [
   {
@@ -6,7 +6,7 @@ export const MOCK_ANNOUNCEMENTS: Incident[] = [
     type: 'strike',
     title: 'Auto-Rickshaw Union Partial Strike',
     description: 'Auto-rickshaw strike reported near Master Canteen & Railway Station. Mo Bus feeders and Metro Orange line have deployed 4 additional feeder shuttles.',
-    affectedLines: ['AUTO-LASTMILE', 'MOBUS-10'],
+    affectedLines: ['AUTO-LASTMILE', 'MOBUS-16'],
     severity: 'medium',
     timestamp: '10 mins ago',
     locationName: 'Master Canteen Zone',
@@ -15,8 +15,8 @@ export const MOCK_ANNOUNCEMENTS: Incident[] = [
     id: 'INC-02',
     type: 'weather_flood',
     title: 'Monsoon Waterlogging Alert: Jaydev Vihar Underpass',
-    description: 'Moderate waterlogging at Jaydev Vihar underpass. Mo Bus 10 rerouted via Flyover bypass (+4 min buffer added). TransitSync has auto-updated transfer calculations.',
-    affectedLines: ['MOBUS-10', 'MOBUS-11'],
+    description: 'Moderate waterlogging at Jaydev Vihar underpass. Mo Bus 16 rerouted via Flyover bypass (+4 min buffer added). TransitSync has auto-updated transfer calculations.',
+    affectedLines: ['MOBUS-16', 'MOBUS-11'],
     severity: 'high',
     timestamp: '25 mins ago',
     locationName: 'Jaydev Vihar Underpass',

@@ -1,4 +1,4 @@
-﻿import { walletService } from './walletService';
+import { walletService } from './walletService';
 
 export interface RefundClaim {
   id: string;
@@ -17,7 +17,7 @@ const INITIAL_REFUNDS: RefundClaim[] = [
   {
     id: 'REF-8012',
     tripId: 'TRIP-9921',
-    routeTitle: 'Mo Bus 10 (Master Canteen ➔ Patia)',
+    routeTitle: 'Mo Bus 16 (Master Canteen ➔ Patia)',
     amountRefunded: 25,
     reason: 'Severe Delay (>15 mins)',
     status: 'Approved & Credited',

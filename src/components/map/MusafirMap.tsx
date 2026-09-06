@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, CircleMarker,
 import L from 'leaflet';
 import {
   Clock, WifiOff, Layers, X, Navigation, MapPin, CheckCircle2, ArrowRight,
-  Activity, Compass, Radio, RotateCcw, AlertTriangle, Eye, EyeOff
+  Activity, Compass, Radio, RotateCcw, AlertTriangle, Eye, EyeOff, Download
 } from 'lucide-react';
 import { Vehicle } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
@@ -11,6 +11,234 @@ import { getAlternativeRoutes, RouteOption } from '../../services/olaRoutingServ
 import { getHumanReadableLocationName, BHUBANESWAR_STATIONS } from '../../data/cities/bhubaneswar';
 import { findMoBusRoutesDynamic, STOP_COORDINATES_MAP, getExactStopCoordinates } from '../../data/busRoutesData';
 import { isBhubaneswarRegion } from '../../services/fareMatrixService';
+
+// Offline Primary Road Corridors in Bhubaneswar (Always visible when internet disconnected)
+const BHUBANESWAR_OFFLINE_ROADS: { name: string; type: 'highway' | 'arterial'; coords: [number, number][] }[] = [
+  {
+    name: 'NH-16 Corridor',
+    type: 'highway',
+    coords: [
+      [20.2580, 85.7865],
+      [20.2782, 85.7972],
+      [20.2910, 85.8080],
+      [20.3012, 85.8245],
+      [20.2950, 85.8300],
+      [20.3015, 85.8425],
+      [20.2974, 85.8643],
+      [20.3340, 85.8820],
+      [20.4578, 85.8755],
+    ],
+  },
+  {
+    name: 'Nandankanan Road',
+    type: 'highway',
+    coords: [
+      [20.3012, 85.8245],
+      [20.3220, 85.8200],
+      [20.3280, 85.8190],
+      [20.3542, 85.8175],
+      [20.3688, 85.8242],
+      [20.3995, 85.8256],
+    ],
+  },
+  {
+    name: 'Janpath Corridor',
+    type: 'arterial',
+    coords: [
+      [20.2646, 85.8398],
+      [20.2650, 85.8330],
+      [20.2750, 85.8380],
+      [20.2875, 85.8422],
+      [20.3015, 85.8425],
+    ],
+  },
+  {
+    name: 'Cuttack-Puri Arterial',
+    type: 'arterial',
+    coords: [
+      [20.2974, 85.8643],
+      [20.2700, 85.8500],
+      [20.2522, 85.8415],
+      [20.2450, 85.8380],
+    ],
+  },
+  {
+    name: 'Infocity Tech Link',
+    type: 'arterial',
+    coords: [
+      [20.3542, 85.8175],
+      [20.3585, 85.8142],
+      [20.3560, 85.8100],
+      [20.3542, 85.8078],
+      [20.3644, 85.8080],
+    ],
+  },
+];
+
+const BHUBANESWAR_OFFLINE_HUBS: { name: string; coords: [number, number] }[] = [
+  { name: 'Master Canteen', coords: [20.2646, 85.8398] },
+  { name: 'Jayadev Vihar', coords: [20.3012, 85.8245] },
+  { name: 'KIIT / Patia', coords: [20.3533, 85.8175] },
+  { name: 'Baramunda ISBT', coords: [20.2782, 85.7972] },
+  { name: 'Rasulgarh Square', coords: [20.2974, 85.8643] },
+  { name: 'Infocity IT Hub', coords: [20.3585, 85.8142] },
+  { name: 'Biju Patnaik Airport', coords: [20.2525, 85.8178] },
+  { name: 'Cuttack Badambadi', coords: [20.4578, 85.8755] },
+];
+
+const createOfflineHubIcon = (name: string) => {
+  return L.divIcon({
+    className: 'custom-offline-hub-icon',
+    html: `
+      <div style="
+        background: #1e293b;
+        color: #e2e8f0;
+        border: 1px solid #475569;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 700;
+        white-space: nowrap;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      ">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; display: inline-block;"></span>
+        ${name}
+      </div>
+    `,
+    iconSize: [80, 20],
+    iconAnchor: [40, 10],
+  });
+};
+
+const generateOfflineRoutePack = (
+  originName: string,
+  destName: string,
+  distanceKm: number,
+  durationMins: number,
+  stops: { name: string; idx: number }[]
+) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1000;
+  canvas.height = 700;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Background
+  const grad = ctx.createLinearGradient(0, 0, 1000, 700);
+  grad.addColorStop(0, '#0f172a');
+  grad.addColorStop(1, '#1e1b4b');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1000, 700);
+
+  // Top header bar
+  ctx.fillStyle = '#2563eb';
+  ctx.fillRect(0, 0, 1000, 80);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 26px system-ui, sans-serif';
+  ctx.fillText('MUSAFIR BHUBANESWAR - OFFLINE ROUTE MAP', 40, 50);
+
+  // Subheader badge
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 16px system-ui, sans-serif';
+  ctx.fillText(`TRANSIT CORRIDOR: ${originName || 'Origin'} ➔ ${destName || 'Destination'}`, 40, 120);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '14px system-ui, sans-serif';
+  ctx.fillText(`Road Distance: ~${distanceKm} km  |  Travel Time: ~${durationMins} mins  |  Verified Ama Bus Corridor`, 40, 145);
+
+  // Card background for corridor schematic
+  ctx.fillStyle = '#1e293b';
+  if (ctx.roundRect) {
+    ctx.roundRect(40, 170, 920, 200, 16);
+  } else {
+    ctx.fillRect(40, 170, 920, 200);
+  }
+  ctx.fill();
+
+  // Schematic line
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(100, 270);
+  ctx.lineTo(860, 270);
+  ctx.stroke();
+
+  // Start circle
+  ctx.fillStyle = '#2563eb';
+  ctx.beginPath();
+  ctx.arc(100, 270, 16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 12px system-ui, sans-serif';
+  ctx.fillText('START', 80, 240);
+
+  // End circle
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.arc(860, 270, 16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('DEST', 845, 240);
+
+  // Intermediate stops on line
+  const displayedStops = stops.slice(0, 5);
+  displayedStops.forEach((stop, idx) => {
+    const x = 100 + ((idx + 1) / (displayedStops.length + 1)) * 760;
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(x, 270, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.fillText(stop.name.slice(0, 16), x - 35, 305 + (idx % 2) * 16);
+  });
+
+  // Turn by turn / stops list container
+  ctx.fillStyle = '#1e293b';
+  if (ctx.roundRect) {
+    ctx.roundRect(40, 390, 920, 220, 16);
+  } else {
+    ctx.fillRect(40, 390, 920, 220);
+  }
+  ctx.fill();
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 16px system-ui, sans-serif';
+  ctx.fillText('Stoppage Waypoints & Key Landmarks Along Route:', 60, 425);
+
+  const stopsToRender = stops.length > 0 ? stops.slice(0, 8) : [{ name: 'Direct Express Transit Corridor', idx: 1 }];
+  stopsToRender.forEach((stop, i) => {
+    const col = i < 4 ? 60 : 500;
+    const row = 460 + (i % 4) * 35;
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.fillText(`${stop.idx}.`, col, row);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '13px system-ui, sans-serif';
+    ctx.fillText(stop.name, col + 25, row);
+  });
+
+  // Footer / Emergency Helpline
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 640, 1000, 60);
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.fillText('CRUT Mo Bus Helpline: 1800 345 1106  |  Emergency Police: 112  |  Ambulance: 108', 40, 675);
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.fillText(`Saved for Offline Use • ${new Date().toLocaleDateString()}`, 750, 675);
+
+  // Trigger download
+  const link = document.createElement('a');
+  link.download = `Musafir_Route_${(originName || 'Origin').replace(/\s+/g, '_')}_to_${(destName || 'Dest').replace(/\s+/g, '_')}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+};
 
 // Fix leaflet default marker paths
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
@@ -202,6 +430,29 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
 
   const [showStops, setShowStops] = useState(true);
   const [routeStops, setRouteStops] = useState<{ name: string; coords: [number, number]; idx: number }[]>([]);
+  const [isDownloadingMap, setIsDownloadingMap] = useState(false);
+  const [downloadSuccessToast, setDownloadSuccessToast] = useState<string | null>(null);
+
+  // Download offline route map package
+  const handleDownloadOfflineRoute = () => {
+    if (!selectedRoute) return;
+    setIsDownloadingMap(true);
+    try {
+      generateOfflineRoutePack(
+        originName || 'Bhubaneswar Departure',
+        destinationName || 'Destination Terminal',
+        selectedRoute.distanceKm,
+        selectedRoute.durationMinutes,
+        routeStops
+      );
+      setDownloadSuccessToast('Offline Route Map Downloaded Successfully! Saved as high-res PNG.');
+      setTimeout(() => setDownloadSuccessToast(null), 4000);
+    } catch (err) {
+      console.error('Download error:', err);
+    } finally {
+      setIsDownloadingMap(false);
+    }
+  };
 
   // Fetch Route Corridor Polylines (with all alternatives from Google Maps / OSRM)
   useEffect(() => {
@@ -399,6 +650,41 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           />
         )}
 
+        {/* ─── OFFLINE MODE: Never Blank - Render Cacheable Base Tiles + Arterial Vector Roads & Hubs ─── */}
+        {isOffline && (
+          <>
+            <TileLayer
+              attribution='Offline Cached Map Tiles &bull; Musafir'
+              url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+              maxZoom={18}
+              opacity={0.8}
+            />
+            {BHUBANESWAR_OFFLINE_ROADS.map((road) => (
+              <Polyline
+                key={road.name}
+                positions={road.coords}
+                pathOptions={{
+                  color: road.type === 'highway' ? '#3b82f6' : '#64748b',
+                  weight: road.type === 'highway' ? 4.5 : 3,
+                  opacity: 0.85,
+                  dashArray: road.type === 'arterial' ? '4, 4' : undefined,
+                }}
+              >
+                <Tooltip direction="center" permanent={false} opacity={0.85}>
+                  <span className="text-[10px] font-bold text-slate-900">{road.name}</span>
+                </Tooltip>
+              </Polyline>
+            ))}
+            {BHUBANESWAR_OFFLINE_HUBS.map((hub) => (
+              <Marker
+                key={hub.name}
+                position={hub.coords}
+                icon={createOfflineHubIcon(hub.name)}
+              />
+            ))}
+          </>
+        )}
+
         {/* ─── Non-selected alternate routes (drawn first, dim + clickable) ─── */}
         {routeOptions
           .filter((r) => r.id !== selectedRouteId)
@@ -566,6 +852,19 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           </div>
 
           <div className="pointer-events-auto flex items-center gap-1 bg-slate-900/90 dark:bg-slate-950/90 backdrop-blur-xl p-1 rounded-2xl border border-slate-700/70 shadow-2xl">
+            {/* Download Offline Map Button */}
+            {selectedRoute && (
+              <button
+                onClick={handleDownloadOfflineRoute}
+                disabled={isDownloadingMap}
+                className="px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-orange-500/25 active:scale-95 transition-all"
+                title="Download complete route map and stops for offline travel"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>{isDownloadingMap ? 'Saving...' : 'Offline Map'}</span>
+              </button>
+            )}
+
             {routeStops.length > 0 && (
               <button
                 onClick={() => setShowStops(!showStops)}
@@ -627,6 +926,26 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
             >
               Terrain
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Offline Mode Active Notice Bar ─── */}
+      {isOffline && (
+        <div className="absolute top-16 left-3.5 right-3.5 z-10 pointer-events-none flex justify-center">
+          <div className="pointer-events-auto bg-amber-500/95 text-slate-950 font-black text-xs px-4 py-1.5 rounded-full shadow-xl flex items-center gap-2 border border-amber-300 animate-bounce">
+            <span>📡 Offline Mode Active:</span>
+            <span className="font-semibold text-[11px]">Displaying cached road grid &amp; transit corridors. No black screen.</span>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Download Success Toast Notification ─── */}
+      {downloadSuccessToast && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+          <div className="pointer-events-auto bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-2 border border-emerald-400 animate-in fade-in slide-in-from-top-2">
+            <span>✅</span>
+            <span>{downloadSuccessToast}</span>
           </div>
         </div>
       )}

@@ -32,9 +32,9 @@ export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
   isAnyModalOpen = false,
 }) => {
   const nearbyStops = [
-    { id: '1', name: 'Jayadev Vihar Square', walkMins: 2, distanceM: 150, routes: ['Route 10', 'Route 11'] },
+    { id: '1', name: 'Jayadev Vihar Square', walkMins: 2, distanceM: 150, routes: ['Route 16', 'Route 11'] },
     { id: '2', name: 'Kalinga Hospital Square', walkMins: 5, distanceM: 400, routes: ['Route 09', 'Route 24'] },
-    { id: '3', name: 'Damana Chhak / CSPUR', walkMins: 8, distanceM: 550, routes: ['Route 10', 'Route 12'] },
+    { id: '3', name: 'Damana Chhak / CSPUR', walkMins: 8, distanceM: 550, routes: ['Route 16', 'Route 12'] },
   ];
 
   return (

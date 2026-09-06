@@ -51,7 +51,7 @@ const BASELINE_CORRIDORS: LiveCorridorTelemetry[] = [
     congestionStatus: 'Moderate',
     delayMins: 8,
     googleLiveTrafficScore: 68,
-    aiRecommendation: 'High bus density. Recommend switching to Mo Bus Route 10 or Feeder EV from Platform 1 to save 12 mins.',
+    aiRecommendation: 'High bus density. Recommend switching to Mo Bus Route 16 or Feeder EV from Platform 1 to save 12 mins.',
     alternateCorridor: 'Via Bidyut Marg & Shastri Nagar Link Road',
     lastUpdated: 'Just now (Google Maps Stream)',
   },
