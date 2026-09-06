@@ -6,6 +6,7 @@ import { LiveLocationData } from '../../services/geolocationService';
 import { MOCK_AMENITIES } from '../../data/amenities';
 import { TranslationDictionary } from '../../types/i18n';
 import { Shield, CloudRain, WifiOff, MapPin, Store, LocateFixed, Plus, Navigation } from 'lucide-react';
+import { isValidLatLng, sanitizeLatLng } from '../../utils/latLngValidator';
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -155,7 +156,13 @@ const createAmenityIcon = (category: string) => {
 function MapCenterController({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, zoom);
+    if (isValidLatLng(center)) {
+      try {
+        map.setView(center, zoom);
+      } catch (err) {
+        console.warn('MapCenterController setView error:', err);
+      }
+    }
   }, [center, zoom, map]);
   return null;
 }
@@ -164,7 +171,9 @@ function MapCenterController({ center, zoom }: { center: [number, number]; zoom:
 function MapLocationPicker({ onLocationPicked }: { onLocationPicked: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
-      onLocationPicked(e.latlng.lat, e.latlng.lng);
+      if (e?.latlng && Number.isFinite(e.latlng.lat) && Number.isFinite(e.latlng.lng)) {
+        onLocationPicked(e.latlng.lat, e.latlng.lng);
+      }
     },
   });
   return null;
@@ -319,12 +328,12 @@ export const TransitMap: React.FC<TransitMapProps> = ({
 
       {/* Main Leaflet Map */}
       <MapContainer
-        center={cityCenter}
+        center={sanitizeLatLng(cityCenter)}
         zoom={cityZoom}
         className="w-full h-full dark-tiles"
         zoomControl={false}
       >
-        <MapCenterController center={cityCenter} zoom={cityZoom} />
+        <MapCenterController center={sanitizeLatLng(cityCenter)} zoom={cityZoom} />
         <MapLocationPicker onLocationPicked={handleMapClick} />
 
         <TileLayer
@@ -334,7 +343,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
         />
 
         {/* Real-Time User GPS Live Pin & Accuracy Circle */}
-        {userLocation && (
+        {userLocation && isValidLatLng([userLocation.lat, userLocation.lng]) && (
           <Marker position={[userLocation.lat, userLocation.lng]} icon={createUserPinIcon(isGpsTracking)}>
             <Popup>
               <div className="p-1 min-w-[190px] text-slate-900">
@@ -358,10 +367,10 @@ export const TransitMap: React.FC<TransitMapProps> = ({
           </Marker>
         )}
 
-        {isGpsTracking && userLocation && userLocation.accuracy && (
+        {isGpsTracking && userLocation && isValidLatLng([userLocation.lat, userLocation.lng]) && (
           <Circle
             center={[userLocation.lat, userLocation.lng]}
-            radius={Math.max(50, userLocation.accuracy)}
+            radius={Math.max(30, Number.isFinite(userLocation.accuracy) ? userLocation.accuracy : 50)}
             pathOptions={{
               color: '#85f6e5',
               fillColor: '#85f6e5',
@@ -372,7 +381,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
         )}
 
         {/* Custom Pinned Location (If user clicked on map) */}
-        {customPinnedLocation && (
+        {customPinnedLocation && isValidLatLng(customPinnedLocation) && (
           <Marker position={[customPinnedLocation.lat, customPinnedLocation.lng]} icon={createCustomPinnedIcon()}>
             <Popup>
               <div className="p-1 min-w-[180px] text-slate-900">
@@ -452,7 +461,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
         ))}
 
         {/* Station Markers */}
-        {stations.map((st) => (
+        {stations.filter((st) => isValidLatLng([st.lat, st.lng])).map((st) => (
           <Marker
             key={st.id}
             position={[st.lat, st.lng]}
@@ -534,7 +543,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
         {/* Live Moving Fleet Vehicles */}
         {!isOffline &&
           showVehicles &&
-          vehicles.map((v) => (
+          vehicles.filter((v) => isValidLatLng([v.lat, v.lng])).map((v) => (
             <Marker
               key={v.id}
               position={[v.lat, v.lng]}
@@ -571,7 +580,7 @@ export const TransitMap: React.FC<TransitMapProps> = ({
 
         {/* Google Maps POIs */}
         {showAmenities &&
-          MOCK_AMENITIES.map((am) => (
+          MOCK_AMENITIES.filter((am) => isValidLatLng([am.lat, am.lng])).map((am) => (
             <Marker
               key={am.id}
               position={[am.lat, am.lng]}

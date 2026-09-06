@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MusafirMap } from '../map/MusafirMap';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 import { Vehicle } from '../../types/transit';
 import { LiveLocationData } from '../../services/geolocationService';
 import { DeliveryWaypoint } from '../../services/logisticsOptimizerService';
@@ -66,17 +67,19 @@ export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
 
       {/* 2. Full-screen Interactive Leaflet Map */}
       <div className="flex-1 w-full h-full relative">
-        <MusafirMap
-          vehicles={vehicles}
-          userLocation={userLocation}
-          onSelectLocationOnMap={onSelectLocationOnMap}
-          themeMode={themeMode}
-          originCoords={originCoords}
-          destCoords={destCoords}
-          originName={originQuery}
-          destinationName={destQuery}
-          isAnyModalOpen={isAnyModalOpen}
-        />
+        <ErrorBoundary fallbackTitle="Live Map Loading...">
+          <MusafirMap
+            vehicles={vehicles}
+            userLocation={userLocation}
+            onSelectLocationOnMap={onSelectLocationOnMap}
+            themeMode={themeMode}
+            originCoords={originCoords}
+            destCoords={destCoords}
+            originName={originQuery}
+            destinationName={destQuery}
+            isAnyModalOpen={isAnyModalOpen}
+          />
+        </ErrorBoundary>
       </div>
 
       {/* 3. Glassmorphic Bottom Sheet (Nearby Stops within 500m) */}

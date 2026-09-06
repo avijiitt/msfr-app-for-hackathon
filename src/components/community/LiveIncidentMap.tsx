@@ -2,6 +2,7 @@ import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { CommunityReport } from '../../services/communityReportsService';
+import { isValidLatLng } from '../../utils/latLngValidator';
 import 'leaflet/dist/leaflet.css';
 
 // Fix Leaflet's default icon path issues
@@ -51,9 +52,16 @@ interface LiveIncidentMapProps {
 const MapBoundsEnforcer: React.FC<{ reports: CommunityReport[] }> = ({ reports }) => {
   const map = useMap();
   React.useEffect(() => {
-    if (reports.length > 0) {
-      const bounds = L.latLngBounds(reports.map(r => [r.lat, r.lng]));
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+    const validCoords = (reports || [])
+      .map(r => [r.lat, r.lng] as [number, number])
+      .filter(isValidLatLng);
+    if (validCoords.length > 0) {
+      try {
+        const bounds = L.latLngBounds(validCoords);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+      } catch (err) {
+        console.warn('LiveIncidentMap fitBounds error:', err);
+      }
     }
   }, [reports, map]);
   return null;
@@ -76,7 +84,7 @@ export const LiveIncidentMap: React.FC<LiveIncidentMapProps> = ({ reports, onRep
         <ZoomControl position="bottomright" />
         <MapBoundsEnforcer reports={reports} />
 
-        {reports.map((report) => (
+        {reports.filter(r => isValidLatLng([r.lat, r.lng])).map((report) => (
           <Marker 
             key={report.id} 
             position={[report.lat, report.lng]}

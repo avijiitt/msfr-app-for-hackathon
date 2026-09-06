@@ -197,7 +197,13 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
       (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        const accuracy = Math.round(pos.coords.accuracy || 10);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || Number.isNaN(lat) || Number.isNaN(lng)) {
+          setGpsStatusMessage('⚠️ Received invalid GPS reading. Please retry.');
+          setIsLocatingGps(false);
+          setTimeout(() => setGpsStatusMessage(null), 3500);
+          return;
+        }
+        const accuracy = Math.round(Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : 10);
         const readable = getHumanReadableLocationName(lat, lng);
         const cleanName = `Current Location (${readable.replace('Pinned Location ', '')})`;
         

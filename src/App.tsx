@@ -52,6 +52,7 @@ import { TransportationHubView } from './components/transportation/Transportatio
 import { LogisticsHubView } from './components/logistics/LogisticsHubView';
 import { CommunityHubView } from './components/community/CommunityHubView';
 import { DeliveryWaypoint, SAMPLE_DELIVERY_STOPS } from './services/logisticsOptimizerService';
+import { isValidLatLng } from './utils/latLngValidator';
 
 
 export const App: React.FC = () => {
@@ -162,21 +163,26 @@ export const App: React.FC = () => {
 
   // Update simulator region when origin or dest coords change
   useEffect(() => {
-    if (originCoords && destCoords) {
-      const centerLat = (originCoords[0] + destCoords[0]) / 2;
-      const centerLng = (originCoords[1] + destCoords[1]) / 2;
-      transitSimulator.updateRegion(centerLat, centerLng, [originCoords, destCoords]);
-    } else if (destCoords) {
-      transitSimulator.updateRegion(destCoords[0], destCoords[1]);
-    } else if (originCoords) {
-      transitSimulator.updateRegion(originCoords[0], originCoords[1]);
+    const validOrigin = isValidLatLng(originCoords) ? originCoords : null;
+    const validDest = isValidLatLng(destCoords) ? destCoords : null;
+
+    if (validOrigin && validDest) {
+      const centerLat = (validOrigin[0] + validDest[0]) / 2;
+      const centerLng = (validOrigin[1] + validDest[1]) / 2;
+      transitSimulator.updateRegion(centerLat, centerLng, [validOrigin, validDest]);
+    } else if (validDest) {
+      transitSimulator.updateRegion(validDest[0], validDest[1]);
+    } else if (validOrigin) {
+      transitSimulator.updateRegion(validOrigin[0], validOrigin[1]);
     }
   }, [originCoords, destCoords]);
 
   // GPS Geolocation Subscription
   useEffect(() => {
     const unsub = geolocationService.subscribe((loc) => {
-      setUserLocation(loc);
+      if (loc && isValidLatLng([loc.lat, loc.lng])) {
+        setUserLocation(loc);
+      }
     });
     return () => unsub();
   }, []);
@@ -202,7 +208,7 @@ export const App: React.FC = () => {
       setIsGpsActive(true);
       geolocationService.startLiveTracking();
       const livePos = await geolocationService.getCurrentLivePosition();
-      if (livePos) {
+      if (livePos && isValidLatLng([livePos.lat, livePos.lng])) {
         setOriginCoords([livePos.lat, livePos.lng]);
         setUserLocation(livePos);
         const readable = getHumanReadableLocationName(livePos.lat, livePos.lng);
@@ -225,15 +231,15 @@ export const App: React.FC = () => {
 
     // 1. Resolve Origin Coordinates anywhere in India
     if (from) {
-      if (from.includes('Current Location') && userLocation) {
+      if (from.includes('Current Location') && userLocation && isValidLatLng([userLocation.lat, userLocation.lng])) {
         setOriginCoords([userLocation.lat, userLocation.lng]);
       } else {
         const res = await geocodeAddressIndia(from);
-        if (res && res[0] && res[0].lat && res[0].lng) {
+        if (res && res[0] && isValidLatLng([res[0].lat, res[0].lng])) {
           setOriginCoords([res[0].lat, res[0].lng]);
         } else {
           const exactStop = getExactStopCoordinates(from);
-          if (exactStop) {
+          if (exactStop && isValidLatLng(exactStop)) {
             setOriginCoords(exactStop);
           }
         }
@@ -243,11 +249,11 @@ export const App: React.FC = () => {
     // 2. Resolve Destination Coordinates anywhere in India
     if (to) {
       const res = await geocodeAddressIndia(to);
-      if (res && res[0] && res[0].lat && res[0].lng) {
+      if (res && res[0] && isValidLatLng([res[0].lat, res[0].lng])) {
         setDestCoords([res[0].lat, res[0].lng]);
       } else {
         const exactStop = getExactStopCoordinates(to);
-        if (exactStop) {
+        if (exactStop && isValidLatLng(exactStop)) {
           setDestCoords(exactStop);
         }
       }
@@ -257,17 +263,22 @@ export const App: React.FC = () => {
 
   // Called when user picks a location from dropdown (has real lat/lng)
   const handleOriginSelected = (result: IndiaLocationResult) => {
-    setOriginCoords([result.lat, result.lng]);
+    if (result && isValidLatLng([result.lat, result.lng])) {
+      setOriginCoords([result.lat, result.lng]);
+    }
     setOriginQuery(result.name);
   };
 
   const handleDestSelected = (result: IndiaLocationResult) => {
-    setDestCoords([result.lat, result.lng]);
+    if (result && isValidLatLng([result.lat, result.lng])) {
+      setDestCoords([result.lat, result.lng]);
+    }
     setDestQuery(result.name);
   };
 
   // Called when user sets a location on the map
   const handleSelectLocationOnMap = (lat: number, lng: number, name?: string, type: 'origin' | 'dest' = 'dest') => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Number.isNaN(lat) || Number.isNaN(lng)) return;
     const cleanName = name || getHumanReadableLocationName(lat, lng);
     if (type === 'origin') {
       setOriginCoords([lat, lng]);

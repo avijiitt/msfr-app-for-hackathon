@@ -11,6 +11,7 @@ import { getAlternativeRoutes, RouteOption } from '../../services/olaRoutingServ
 import { getHumanReadableLocationName, BHUBANESWAR_STATIONS } from '../../data/cities/bhubaneswar';
 import { findMoBusRoutesDynamic, STOP_COORDINATES_MAP, getExactStopCoordinates } from '../../data/busRoutesData';
 import { isBhubaneswarRegion } from '../../services/fareMatrixService';
+import { isValidLatLng, extractLatLng } from '../../utils/latLngValidator';
 
 // Offline Primary Road Corridors in Bhubaneswar (Always visible when internet disconnected)
 const BHUBANESWAR_OFFLINE_ROADS: { name: string; type: 'highway' | 'arterial'; coords: [number, number][] }[] = [
@@ -355,12 +356,14 @@ const routeLabelIcon = (route: RouteOption, isSelected: boolean) => {
 };
 
 const getRouteBubblePosition = (route: RouteOption, idx: number): [number, number] => {
-  if (!route.coordinates || route.coordinates.length === 0) return [20.2961, 85.8245];
+  const validCoords = (route?.coordinates || []).filter(isValidLatLng);
+  if (validCoords.length === 0) return [20.2961, 85.8245];
   // Slightly stagger along length so multiple route bubbles don't stack directly over each other
   const fractions = [0.5, 0.38, 0.62, 0.45];
   const fraction = fractions[idx % fractions.length];
-  const targetIdx = Math.floor(route.coordinates.length * fraction);
-  return route.coordinates[targetIdx] || route.coordinates[0];
+  const targetIdx = Math.floor(validCoords.length * fraction);
+  const pos = validCoords[targetIdx] || validCoords[0];
+  return isValidLatLng(pos) ? pos : [20.2961, 85.8245];
 };
 
 // Internal Map Controller (handles bounds & camera movement)
@@ -374,29 +377,46 @@ const MapController: React.FC<{
 
   useMapEvents({
     click(e) {
-      onMapClick(e.latlng.lat, e.latlng.lng);
+      if (e?.latlng && Number.isFinite(e.latlng.lat) && Number.isFinite(e.latlng.lng)) {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      }
     },
   });
 
   useEffect(() => {
-    if (originCoords && destCoords) {
-      const bounds = L.latLngBounds([originCoords, destCoords]);
-      const key = `od-${originCoords.join(',')}-${destCoords.join(',')}`;
-      if (prevBoundsRef.current !== key) {
-        prevBoundsRef.current = key;
-        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16, animate: true });
+    const validOrigin = isValidLatLng(originCoords) ? originCoords : null;
+    const validDest = isValidLatLng(destCoords) ? destCoords : null;
+
+    if (validOrigin && validDest) {
+      try {
+        const bounds = L.latLngBounds([validOrigin, validDest]);
+        const key = `od-${validOrigin.join(',')}-${validDest.join(',')}`;
+        if (prevBoundsRef.current !== key) {
+          prevBoundsRef.current = key;
+          map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16, animate: true });
+        }
+      } catch (err) {
+        console.warn('MapController fitBounds error:', err);
       }
-    } else if (originCoords) {
-      const key = `orig-${originCoords.join(',')}`;
-      if (prevBoundsRef.current !== key) {
-        prevBoundsRef.current = key;
-        map.flyTo(originCoords, 15, { animate: true, duration: 1.2 });
+    } else if (validOrigin) {
+      try {
+        const key = `orig-${validOrigin.join(',')}`;
+        if (prevBoundsRef.current !== key) {
+          prevBoundsRef.current = key;
+          map.flyTo(validOrigin, 15, { animate: true, duration: 1.2 });
+        }
+      } catch (err) {
+        console.warn('MapController flyTo origin error:', err);
       }
-    } else if (destCoords) {
-      const key = `dest-${destCoords.join(',')}`;
-      if (prevBoundsRef.current !== key) {
-        prevBoundsRef.current = key;
-        map.flyTo(destCoords, 15, { animate: true, duration: 1.2 });
+    } else if (validDest) {
+      try {
+        const key = `dest-${validDest.join(',')}`;
+        if (prevBoundsRef.current !== key) {
+          prevBoundsRef.current = key;
+          map.flyTo(validDest, 15, { animate: true, duration: 1.2 });
+        }
+      } catch (err) {
+        console.warn('MapController flyTo dest error:', err);
       }
     }
   }, [originCoords, destCoords, map]);
@@ -586,14 +606,17 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   }, [originName, destinationName, originCoords, destCoords, routeCoordinates]);
 
   const handleMapClick = (lat: number, lng: number) => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Number.isNaN(lat) || Number.isNaN(lng)) return;
     const readable = getHumanReadableLocationName(lat, lng);
     const cleanName = readable.replace('Pinned Location ', '');
     setClickedPin({ lat, lng, name: cleanName });
   };
 
-  const mapCenter: [number, number] = originCoords
-    ? originCoords
-    : (userLocation && userLocation.lat ? [userLocation.lat, userLocation.lng] : [20.2961, 85.8245]);
+  const validOrigin = extractLatLng(originCoords);
+  const validDest = extractLatLng(destCoords);
+  const validUser = userLocation ? extractLatLng([userLocation.lat, userLocation.lng]) : null;
+
+  const mapCenter: [number, number] = validOrigin || validUser || [20.2961, 85.8245];
 
   return (
     <div className="relative w-full h-[420px] sm:h-[500px] lg:h-[580px] rounded-3xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-800 transition-all bg-slate-900 z-0 isolate">
@@ -604,8 +627,8 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         zoomControl={false}
       >
         <MapController
-          originCoords={originCoords || null}
-          destCoords={destCoords || null}
+          originCoords={validOrigin}
+          destCoords={validDest}
           onMapClick={handleMapClick}
         />
 
@@ -688,38 +711,54 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         {/* ─── Non-selected alternate routes (drawn first, dim + clickable) ─── */}
         {routeOptions
           .filter((r) => r.id !== selectedRouteId)
-          .map((route, idx) => (
-            <React.Fragment key={route.id}>
-              <Polyline
-                positions={route.coordinates}
-                pathOptions={{ color: '#94a3b8', weight: 5, opacity: 0.65 }}
-                eventHandlers={{ click: () => setSelectedRouteId(route.id) }}
-              />
-              <Marker
-                position={getRouteBubblePosition(route, idx + 1)}
-                icon={routeLabelIcon(route, false)}
-                eventHandlers={{ click: () => setSelectedRouteId(route.id) }}
-              />
-            </React.Fragment>
-          ))}
+          .map((route, idx) => {
+            const validCoords = (route.coordinates || []).filter(isValidLatLng);
+            const bubblePos = getRouteBubblePosition(route, idx + 1);
+            return (
+              <React.Fragment key={route.id}>
+                {validCoords.length >= 2 && (
+                  <Polyline
+                    positions={validCoords}
+                    pathOptions={{ color: '#94a3b8', weight: 5, opacity: 0.65 }}
+                    eventHandlers={{ click: () => setSelectedRouteId(route.id) }}
+                  />
+                )}
+                {isValidLatLng(bubblePos) && (
+                  <Marker
+                    position={bubblePos}
+                    icon={routeLabelIcon(route, false)}
+                    eventHandlers={{ click: () => setSelectedRouteId(route.id) }}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
 
         {/* ─── Selected route on top, bold blue ─── */}
-        {selectedRoute && (
-          <React.Fragment key={selectedRoute.id}>
-            <Polyline
-              positions={selectedRoute.coordinates}
-              pathOptions={{ color: '#2563eb', weight: 7, opacity: 0.95 }}
-            />
-            <Marker
-              position={getRouteBubblePosition(selectedRoute, 0)}
-              icon={routeLabelIcon(selectedRoute, true)}
-            />
-          </React.Fragment>
-        )}
+        {selectedRoute && (() => {
+          const validCoords = (selectedRoute.coordinates || []).filter(isValidLatLng);
+          const bubblePos = getRouteBubblePosition(selectedRoute, 0);
+          return (
+            <React.Fragment key={selectedRoute.id}>
+              {validCoords.length >= 2 && (
+                <Polyline
+                  positions={validCoords}
+                  pathOptions={{ color: '#2563eb', weight: 7, opacity: 0.95 }}
+                />
+              )}
+              {isValidLatLng(bubblePos) && (
+                <Marker
+                  position={bubblePos}
+                  icon={routeLabelIcon(selectedRoute, true)}
+                />
+              )}
+            </React.Fragment>
+          );
+        })()}
 
         {/* ─── Origin Pin ─── */}
-        {originCoords && (
-          <Marker position={originCoords} icon={createLeafletPinIcon('#2563eb', '🛫')}>
+        {validOrigin && (
+          <Marker position={validOrigin} icon={createLeafletPinIcon('#2563eb', '🛫')}>
             <Popup>
               <div className="text-xs font-bold text-slate-900 p-1">
                 <span className="text-blue-600 font-extrabold block">Origin Departure</span>
@@ -730,8 +769,8 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         )}
 
         {/* ─── Destination Pin ─── */}
-        {destCoords && (
-          <Marker position={destCoords} icon={createLeafletPinIcon('#e11d48', '🏁')}>
+        {validDest && (
+          <Marker position={validDest} icon={createLeafletPinIcon('#e11d48', '🏁')}>
             <Popup>
               <div className="text-xs font-bold text-slate-900 p-1">
                 <span className="text-rose-600 font-extrabold block">Destination</span>
@@ -742,7 +781,9 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         )}
 
         {/* ─── Intermediate Ama Bus Stops along Route Corridor (Clean Minimal Points within 100m) ─── */}
-        {showStops && routeStops.map((stop, i) => (
+        {showStops && routeStops
+          .filter((stop) => isValidLatLng(stop.coords))
+          .map((stop, i) => (
           <CircleMarker
             key={`stop-${stop.name}-${i}`}
             center={stop.coords}
@@ -787,7 +828,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         ))}
 
         {/* ─── Clicked Temporary Pin ─── */}
-        {clickedPin && (
+        {clickedPin && isValidLatLng([clickedPin.lat, clickedPin.lng]) && (
           <Marker position={[clickedPin.lat, clickedPin.lng]} icon={createLeafletPinIcon('#e11d48', '📍')}>
             <Popup>
               <div className="text-xs font-bold text-slate-900 p-1">
@@ -801,19 +842,21 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         )}
 
         {/* ─── User Real-Time GPS Pin ─── */}
-        {isGpsActive && userLocation && userLocation.lat && (
+        {isGpsActive && validUser && (
           <>
-            <Marker position={[userLocation.lat, userLocation.lng]} icon={createLeafletPinIcon('#3b82f6', '📍')}>
+            <Marker position={validUser} icon={createLeafletPinIcon('#3b82f6', '📍')}>
               <Popup>
                 <div className="text-xs font-bold text-slate-900 p-1">
                   <strong className="text-blue-600 block">Your Current GPS Location</strong>
-                  <span className="text-[10px] text-slate-500">Accuracy: ±{Math.round(userLocation.accuracy || 10)}m</span>
+                  <span className="text-[10px] text-slate-500">
+                    Accuracy: ±{Math.round(Number.isFinite(userLocation?.accuracy) ? (userLocation?.accuracy || 10) : 10)}m
+                  </span>
                 </div>
               </Popup>
             </Marker>
             <Circle
-              center={[userLocation.lat, userLocation.lng]}
-              radius={Math.max(30, userLocation.accuracy || 30)}
+              center={validUser}
+              radius={Math.max(30, Number.isFinite(userLocation?.accuracy) ? (userLocation?.accuracy || 30) : 30)}
               pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.15 }}
             />
           </>

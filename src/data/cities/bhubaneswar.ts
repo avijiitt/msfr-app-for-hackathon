@@ -818,6 +818,9 @@ export function findMatchingMoBusRoutes(originQuery: string, destQuery: string):
  * e.g., "Near Institute of Physics, Sachivalaya Marg" instead of raw numbers.
  */
 export function getHumanReadableLocationName(lat: number, lng: number): string {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Number.isNaN(lat) || Number.isNaN(lng)) {
+    return 'Bhubaneswar Central';
+  }
   let closestDist = Infinity;
   let closestName = '';
   let subArea = '';

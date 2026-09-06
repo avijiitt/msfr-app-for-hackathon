@@ -56,6 +56,7 @@ import { BHUBANESWAR_LOCALITIES } from '../../data/cities/bhubaneswar';
 import { STOP_COORDINATES_MAP } from '../../data/busRoutesData';
 import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
 import { PaymentVerificationResult } from '../../services/paymentService';
+import { isValidLatLng, sanitizeLatLng, filterValidLatLngs } from '../../utils/latLngValidator';
 
 // Verified Driver Rest & Stay Hubs near Delivery Corridors
 const DRIVER_STAY_HUBS = [
@@ -171,9 +172,14 @@ const createLogisticsWarehouseIcon = () => {
 const MapBoundsUpdater: React.FC<{ coords: [number, number][] }> = ({ coords }) => {
   const map = useMap();
   React.useEffect(() => {
-    if (coords && coords.length > 0) {
-      const bounds = L.latLngBounds(coords);
-      map.fitBounds(bounds, { padding: [25, 25], maxZoom: 15, animate: true });
+    const validCoords = (coords || []).filter(isValidLatLng);
+    if (validCoords.length > 0) {
+      try {
+        const bounds = L.latLngBounds(validCoords);
+        map.fitBounds(bounds, { padding: [25, 25], maxZoom: 15, animate: true });
+      } catch (err) {
+        console.warn('MapBoundsUpdater fitBounds error:', err);
+      }
     }
   }, [coords, map]);
   return null;
@@ -1106,7 +1112,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
               {/* Real-time Interactive Google Maps Preview with Multi-Stop Polyline */}
               <div className="relative h-64 sm:h-72 rounded-2xl overflow-hidden bg-[#0A111E] border border-slate-800">
                 <MapContainer
-                  center={[originHub.lat, originHub.lng]}
+                  center={sanitizeLatLng([originHub?.lat, originHub?.lng], [20.2818, 85.7938])}
                   zoom={12}
                   className="w-full h-full z-0"
                   zoomControl={false}
@@ -1132,29 +1138,31 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                   />
 
                   {/* Warehouse Origin Pin */}
-                  <Marker position={[originHub.lat, originHub.lng]} icon={createLogisticsWarehouseIcon()}>
-                    <Popup>
-                      <div className="text-xs font-bold text-slate-900 p-1">
-                        <span className="text-blue-600 font-extrabold block">🏭 Dispatch Warehouse</span>
-                        <span className="text-slate-800 block">{originHub.name}</span>
-                        <span className="text-[10px] text-slate-500 font-mono block mt-0.5">
-                          GPS: {originHub.lat.toFixed(4)}, {originHub.lng.toFixed(4)}
-                        </span>
-                      </div>
-                    </Popup>
-                  </Marker>
+                  {isValidLatLng([originHub.lat, originHub.lng]) && (
+                    <Marker position={[originHub.lat, originHub.lng]} icon={createLogisticsWarehouseIcon()}>
+                      <Popup>
+                        <div className="text-xs font-bold text-slate-900 p-1">
+                          <span className="text-blue-600 font-extrabold block">🏭 Dispatch Warehouse</span>
+                          <span className="text-slate-800 block">{originHub.name}</span>
+                          <span className="text-[10px] text-slate-500 font-mono block mt-0.5">
+                            GPS: {originHub.lat.toFixed(4)}, {originHub.lng.toFixed(4)}
+                          </span>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  )}
 
                   {/* Connected Dispatch Corridor Polyline */}
                   <Polyline
-                    positions={[
+                    positions={filterValidLatLngs([
                       [originHub.lat, originHub.lng],
                       ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
-                    ]}
+                    ])}
                     pathOptions={{ color: '#10b981', weight: 4, opacity: 0.9 }}
                   />
 
                   {/* Waypoint Pins */}
-                  {waypoints.map((wp, idx) => {
+                  {waypoints.filter((wp) => isValidLatLng([wp.lat, wp.lng])).map((wp, idx) => {
                     const isLast = idx === waypoints.length - 1;
                     return (
                       <Marker
@@ -1692,7 +1700,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
             {/* Modal Map */}
             <div className="flex-1 w-full h-full relative">
               <MapContainer
-                center={[originHub.lat, originHub.lng]}
+                center={sanitizeLatLng([originHub?.lat, originHub?.lng], [20.2818, 85.7938])}
                 zoom={13}
                 className="w-full h-full z-0"
                 zoomControl={true}
@@ -1716,34 +1724,36 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                 />
 
                 {/* Warehouse Origin Marker */}
-                <Marker
-                  position={[originHub.lat, originHub.lng]}
-                  icon={createLogisticsWarehouseIcon()}
-                >
-                  <Popup>
-                    <div className="text-xs font-bold text-slate-900 p-1">
-                      <div className="text-emerald-700 font-extrabold flex items-center gap-1">
-                        <span>🏭 Logistics Base Hub</span>
+                {isValidLatLng([originHub.lat, originHub.lng]) && (
+                  <Marker
+                    position={[originHub.lat, originHub.lng]}
+                    icon={createLogisticsWarehouseIcon()}
+                  >
+                    <Popup>
+                      <div className="text-xs font-bold text-slate-900 p-1">
+                        <div className="text-emerald-700 font-extrabold flex items-center gap-1">
+                          <span>🏭 Logistics Base Hub</span>
+                        </div>
+                        <div className="text-slate-800 font-bold mt-1">{originHub.name}</div>
+                        <div className="text-[10px] text-slate-500 font-mono mt-1">
+                          Google Maps: {originHub.lat.toFixed(4)}, {originHub.lng.toFixed(4)}
+                        </div>
                       </div>
-                      <div className="text-slate-800 font-bold mt-1">{originHub.name}</div>
-                      <div className="text-[10px] text-slate-500 font-mono mt-1">
-                        Google Maps: {originHub.lat.toFixed(4)}, {originHub.lng.toFixed(4)}
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
+                    </Popup>
+                  </Marker>
+                )}
 
                 {/* Route Path */}
                 <Polyline
-                  positions={[
+                  positions={filterValidLatLngs([
                     [originHub.lat, originHub.lng],
                     ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
-                  ]}
+                  ])}
                   pathOptions={{ color: '#10b981', weight: 5, opacity: 0.9 }}
                 />
 
                 {/* Waypoints */}
-                {waypoints.map((wp, idx) => {
+                {waypoints.filter((wp) => isValidLatLng([wp.lat, wp.lng])).map((wp, idx) => {
                   const isLast = idx === waypoints.length - 1;
                   return (
                     <Marker

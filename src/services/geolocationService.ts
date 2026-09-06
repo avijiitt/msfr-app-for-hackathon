@@ -101,9 +101,11 @@ class GeolocationService {
   }
 
   public setCustomLocation(lat: number, lng: number, addressName = 'Custom Pinned Location, India'): LiveLocationData {
+    const validLat = Number.isFinite(lat) ? lat : 20.2961;
+    const validLng = Number.isFinite(lng) ? lng : 85.8245;
     this.currentLocation = {
-      lat,
-      lng,
+      lat: validLat,
+      lng: validLng,
       accuracy: 5,
       heading: null,
       speed: null,
@@ -115,14 +117,22 @@ class GeolocationService {
   }
 
   private updatePosition(pos: GeolocationPosition): void {
-    const readable = getHumanReadableLocationName(pos.coords.latitude, pos.coords.longitude);
+    if (!pos || !pos.coords) return;
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Number.isNaN(lat) || Number.isNaN(lng)) {
+      console.warn('Ignoring invalid GeolocationPosition with non-finite coords:', lat, lng);
+      return;
+    }
+    const readable = getHumanReadableLocationName(lat, lng);
+    const accuracy = Number.isFinite(pos.coords.accuracy) ? Math.round(pos.coords.accuracy) : 15;
     this.currentLocation = {
-      lat: pos.coords.latitude,
-      lng: pos.coords.longitude,
-      accuracy: Math.round(pos.coords.accuracy),
-      heading: pos.coords.heading,
-      speed: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : null,
-      timestamp: pos.timestamp,
+      lat,
+      lng,
+      accuracy: Math.max(5, accuracy),
+      heading: Number.isFinite(pos.coords.heading) ? pos.coords.heading : null,
+      speed: Number.isFinite(pos.coords.speed) && pos.coords.speed !== null ? Math.round(pos.coords.speed * 3.6) : null,
+      timestamp: pos.timestamp || Date.now(),
       address: `Current Location (${readable.replace('Pinned Location ', '')})`,
     };
     this.notifyListeners();
