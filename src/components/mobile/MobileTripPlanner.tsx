@@ -20,7 +20,6 @@ interface MobileTripPlannerProps {
   onOpenAlerts?: () => void;
   onUseLiveGps?: () => void;
   isGpsActive?: boolean;
-  onOpenTrainSchedule?: () => void;
   t?: TranslationDictionary;
 }
 
@@ -39,7 +38,6 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
   onOpenAlerts,
   onUseLiveGps,
   isGpsActive = false,
-  onOpenTrainSchedule,
   t,
 }) => {
   const [selectedCardId, setSelectedCardId] = useState<'fastest' | 'cheapest' | 'eco'>('fastest');
@@ -580,31 +578,6 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
           ))}
         </div>
 
-      {onOpenTrainSchedule && (
-        <div 
-          onClick={onOpenTrainSchedule}
-          className="glass-panel p-3 rounded-2xl border border-amber-300/80 dark:border-amber-700/80 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent flex items-center justify-between cursor-pointer hover:border-amber-400 active:scale-[0.99] transition group shadow-xs"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base font-bold flex-shrink-0">
-              🚆
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-black text-amber-900 dark:text-amber-200">Indian Railways Connect</span>
-                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/30">
-                  IRCTC
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-600 dark:text-slate-300 truncate">Live Schedule, Stoppages, Platforms & Intermodal Feeder</p>
-            </div>
-          </div>
-          <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-0.5 group-hover:translate-x-0.5 transition flex-shrink-0">
-            Check <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-          </span>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 gap-3.5">
         {/* ── Route 1: Fastest Direct AC ── */}
         <div
@@ -749,8 +722,8 @@ export const MobileTripPlanner: React.FC<MobileTripPlannerProps> = ({
 
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2.5 py-0.5 rounded-full text-xs font-extrabold border border-indigo-200 dark:border-indigo-800/60">
-              <span className="material-symbols-outlined text-[14px]">train</span>
-              <span>Connected Train & Feeder EV</span>
+              <span className="material-symbols-outlined text-[14px]">electric_car</span>
+              <span>Feeder EV & Fast Track</span>
             </div>
             <span className="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400">
               {thirdStopsCount} Stoppages

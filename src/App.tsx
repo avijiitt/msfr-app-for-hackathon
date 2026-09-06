@@ -44,7 +44,6 @@ import { LoginModal } from './components/auth/LoginModal';
 import { authService, AuthUser } from './services/supabaseClient';
 import { PermissionsModal } from './components/auth/PermissionsModal';
 import { BusRoutesModal } from './components/routes/BusRoutesModal';
-import { ConnectedTrainModal } from './components/trains/ConnectedTrainModal';
 import { LanguageSelectModal } from './components/language/LanguageSelectModal';
 import { tripService } from './services/tripService';
 import { TripsHistoryModal } from './components/trips/TripsHistoryModal';
@@ -118,7 +117,6 @@ export const App: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isTripsOpen, setIsTripsOpen] = useState(false);
   const [isBusRoutesOpen, setIsBusRoutesOpen] = useState(false);
-  const [isTrainScheduleOpen, setIsTrainScheduleOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -132,7 +130,6 @@ export const App: React.FC = () => {
     isPermissionsOpen ||
     isMobileMenuOpen ||
     isBusRoutesOpen ||
-    isTrainScheduleOpen ||
     isFareCalcOpen ||
     isRewardsOpen ||
     isTripAssuranceOpen ||
@@ -391,9 +388,6 @@ export const App: React.FC = () => {
       case 'open_bus_routes':
         setIsBusRoutesOpen(true);
         break;
-      case 'open_train_schedule':
-        setIsTrainScheduleOpen(true);
-        break;
       case 'open_community':
         handleSidebarTabChange('community');
         break;
@@ -476,7 +470,6 @@ export const App: React.FC = () => {
           onOpenLanguage={() => setIsLangSelectOpen(true)}
           onOpenWallet={() => setIsWalletOpen(true)}
           onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
-          onOpenTrainSchedule={() => setIsTrainScheduleOpen(true)}
           onOpenAI={() => setIsAIAssistantOpen(true)}
           onOpenFareCalc={() => setIsFareCalcOpen(true)}
           onOpenTripsHistory={() => setIsTripsOpen(true)}
@@ -528,7 +521,6 @@ export const App: React.FC = () => {
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           onSearchFocusChange={setIsSearchFocused}
           onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
-          onOpenTrainSchedule={() => setIsTrainScheduleOpen(true)}
           currentLang={currentLang}
           onOpenLanguageModal={() => setIsLangSelectOpen(true)}
           t={t}
@@ -546,7 +538,6 @@ export const App: React.FC = () => {
               onOpenSOS={() => setIsSosOpen(true)}
               onOpenStudent={() => setIsStudentOpen(true)}
               onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
-              onOpenTrainSchedule={() => setIsTrainScheduleOpen(true)}
               onSelectSavedPlace={(place) => setDestQuery(place)}
               t={t}
             />
@@ -856,14 +847,6 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* Indian Railways Live Train Schedule & Stoppages Modal (RapidAPI IRCTC) */}
-      <ConnectedTrainModal
-        isOpen={isTrainScheduleOpen}
-        onClose={() => setIsTrainScheduleOpen(false)}
-        defaultTrainNo="12936"
-        originStation="Bhubaneswar"
-      />
-
       {/* Permissions Request Modal (location, notifications) */}
       <PermissionsModal
         isOpen={isPermissionsOpen}
@@ -889,7 +872,6 @@ export const App: React.FC = () => {
         onOpenWomenSafety={() => setIsWomenSafetyOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenAI={() => setIsAIAssistantOpen(true)}
-        onOpenTrainSchedule={() => setIsTrainScheduleOpen(true)}
         onLogout={handleLogout}
         themeMode={themeMode}
         onToggleTheme={handleToggleTheme}

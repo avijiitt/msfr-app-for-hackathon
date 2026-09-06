@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X, Bookmark, Sparkles, Bus, ExternalLink, Mic, QrCode, Train } from 'lucide-react';
+import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X, Bookmark, Sparkles, Bus, ExternalLink, Mic, QrCode } from 'lucide-react';
 import { indiaGeocodingService, geocodeAddressIndia, IndiaLocationResult, POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
 import { getNearbyLocationsAlongCorridor, BHUBANESWAR_LOCALITIES, BhubaneswarLocality } from '../../data/cities/bhubaneswar';
 import { sosService } from '../../services/sosService';
@@ -32,7 +32,6 @@ interface MusafirHeaderProps {
   onOpenMobileMenu?: () => void;
   onSearchFocusChange?: (isFocused: boolean) => void;
   onOpenBusRoutes?: () => void;
-  onOpenTrainSchedule?: () => void;
   currentLang?: string;
   onOpenLanguageModal?: () => void;
   onOpenAI?: () => void;
@@ -63,7 +62,6 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   onOpenMobileMenu,
   onSearchFocusChange,
   onOpenBusRoutes,
-  onOpenTrainSchedule,
   currentLang = 'en',
   onOpenLanguageModal,
   onOpenAI,
@@ -726,18 +724,6 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
             >
               <Bus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span className="hidden sm:inline">Ama Bus (82)</span>
-            </button>
-          )}
-
-          {onOpenTrainSchedule && (
-            <button
-              type="button"
-              onClick={onOpenTrainSchedule}
-              title="Indian Railways Live Connected Train Schedule & Stoppages"
-              className="px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700 text-xs font-bold flex items-center gap-1.5 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition active:scale-95"
-            >
-              <Train className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span className="hidden sm:inline">Train Schedule</span>
             </button>
           )}
 

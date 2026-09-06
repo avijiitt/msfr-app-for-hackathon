@@ -46,7 +46,6 @@ export type AIActionType =
   | 'open_planner'
   | 'plan_trip'
   | 'open_bus_routes'
-  | 'open_train_schedule'
   | 'open_community'
   | 'open_logistics'
   | 'open_transit_hub'
@@ -247,30 +246,6 @@ class AIAssistantService {
           actionType: 'plan_trip',
           payload,
         },
-      };
-    }
-
-    // ── INDIAN RAILWAYS CONNECT & LIVE TRAIN SCHEDULE ──────────────
-    if (
-      q.includes('train') ||
-      q.includes('railway') ||
-      q.includes('irctc') ||
-      q.includes('rail') ||
-      q.includes('vande bharat') ||
-      q.includes('12936') ||
-      q.includes('gadi number') ||
-      q.includes('train schedule') ||
-      q.includes('bhubaneswar station') ||
-      q.includes('platform')
-    ) {
-      return {
-        id,
-        sender: 'assistant',
-        timestamp: now,
-        autoExecute: true,
-        executedLabel: '🚆 Indian Railways Live Schedule Opened',
-        text: `🚆 **Indian Railways Connected Train Hub Open ho gaya hai!**\n\n• Live IRCTC train schedule lookup (Train 12936, 20836 Vande Bharat, 12074 Jan Shatabdi, etc.)\n• Stoppages, arrival/departure timings & platform numbers\n• Direct Mo Bus feeder bus connectivity from Bhubaneswar & Cuttack Railway Stations.`,
-        actionButton: { label: '🚆 Open Train Schedule', actionType: 'open_train_schedule' },
       };
     }
 
