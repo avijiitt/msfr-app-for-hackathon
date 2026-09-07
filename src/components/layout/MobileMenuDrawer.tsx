@@ -20,6 +20,7 @@ interface MobileMenuDrawerProps {
   onOpenStudent: () => void;
   onOpenWomenSafety: () => void;
   onOpenProfile: () => void;
+  onOpenBackendUsers?: () => void;
   onOpenAI?: () => void;
   onLogout?: () => void;
   themeMode: ThemeMode;
@@ -39,6 +40,7 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
   onOpenStudent,
   onOpenWomenSafety,
   onOpenProfile,
+  onOpenBackendUsers,
   onOpenAI,
   onLogout,
   themeMode,
@@ -184,6 +186,16 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
             <MapPin className="w-4 h-4 text-emerald-600" />
             <span>Nearby Stores</span>
           </button>
+
+          {onOpenBackendUsers && (
+            <button
+              onClick={() => { onOpenBackendUsers(); onClose(); }}
+              className="p-2.5 col-span-2 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center justify-center gap-2"
+            >
+              <Users className="w-4 h-4 text-indigo-600" />
+              <span>👤 User Backend & Admin Access Console</span>
+            </button>
+          )}
         </div>
 
         {/* All Main Navigation Links (With visible scrollbar) */}

@@ -44,6 +44,7 @@ import { LoginModal } from './components/auth/LoginModal';
 import { authService, AuthUser } from './services/supabaseClient';
 import { PermissionsModal } from './components/auth/PermissionsModal';
 import { BusRoutesModal } from './components/routes/BusRoutesModal';
+import { UserBackendAccessModal } from './components/admin/UserBackendAccessModal';
 import { LanguageSelectModal } from './components/language/LanguageSelectModal';
 import { tripService } from './services/tripService';
 import { TripsHistoryModal } from './components/trips/TripsHistoryModal';
@@ -117,6 +118,7 @@ export const App: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isTripsOpen, setIsTripsOpen] = useState(false);
   const [isBusRoutesOpen, setIsBusRoutesOpen] = useState(false);
+  const [isBackendUsersOpen, setIsBackendUsersOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -130,6 +132,7 @@ export const App: React.FC = () => {
     isPermissionsOpen ||
     isMobileMenuOpen ||
     isBusRoutesOpen ||
+    isBackendUsersOpen ||
     isFareCalcOpen ||
     isRewardsOpen ||
     isTripAssuranceOpen ||
@@ -521,6 +524,7 @@ export const App: React.FC = () => {
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           onSearchFocusChange={setIsSearchFocused}
           onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
+          onOpenBackendUsers={() => setIsBackendUsersOpen(true)}
           currentLang={currentLang}
           onOpenLanguageModal={() => setIsLangSelectOpen(true)}
           t={t}
@@ -538,6 +542,7 @@ export const App: React.FC = () => {
               onOpenSOS={() => setIsSosOpen(true)}
               onOpenStudent={() => setIsStudentOpen(true)}
               onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
+              onOpenBackendUsers={() => setIsBackendUsersOpen(true)}
               onSelectSavedPlace={(place) => setDestQuery(place)}
               t={t}
             />
@@ -871,11 +876,18 @@ export const App: React.FC = () => {
         onOpenStudent={() => setIsStudentOpen(true)}
         onOpenWomenSafety={() => setIsWomenSafetyOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenBackendUsers={() => setIsBackendUsersOpen(true)}
         onOpenAI={() => setIsAIAssistantOpen(true)}
         onLogout={handleLogout}
         themeMode={themeMode}
         onToggleTheme={handleToggleTheme}
         t={t}
+      />
+
+      {/* 6. Admin & Developer User Master Access Modal */}
+      <UserBackendAccessModal
+        isOpen={isBackendUsersOpen}
+        onClose={() => setIsBackendUsersOpen(false)}
       />
     </div>
   );

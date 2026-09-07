@@ -376,6 +376,199 @@ app.get('/api/users/profile', async (req: Request, res: Response) => {
   }
 });
 
+// ── 1.2 Admin Full Backend Access to Users API ─────────────────────────────
+// Complete admin overview of all users, OTP records, and transactions
+app.get('/api/admin/overview', async (_req: Request, res: Response) => {
+  try {
+    let profiles = memoryStore.profiles;
+    if (supabase) {
+      const { data } = await supabase.from('profiles').select('*');
+      if (data && data.length > 0) profiles = data;
+    }
+    const otpLogs = safeFileRead(OTP_LOGS_FILE, memoryStore.otpLogs);
+    const payments = safeFileRead(PAYMENTS_FILE, memoryStore.payments);
+
+    res.json({
+      success: true,
+      stats: {
+        totalUsers: profiles.length,
+        totalOtpGenerated: otpLogs.length,
+        verifiedOtps: otpLogs.filter((o: any) => o.status === 'verified').length,
+        totalPayments: payments.length,
+        studentUsers: profiles.filter((p: any) => p.is_student).length,
+        seniorUsers: profiles.filter((p: any) => p.is_senior_verified).length,
+        womenUsers: profiles.filter((p: any) => p.is_women_passenger).length,
+        localStoreFile: PROFILES_FILE,
+        supabaseConnected: Boolean(supabase),
+      },
+      recentUsers: profiles.slice(0, 10),
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Admin Get All Users (with complete fields & statistics)
+app.get('/api/admin/users', async (_req: Request, res: Response) => {
+  try {
+    let profiles = memoryStore.profiles;
+    let source = 'in_memory';
+
+    if (supabase) {
+      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        profiles = data;
+        source = 'supabase';
+      }
+    }
+
+    res.json({
+      success: true,
+      count: profiles.length,
+      source,
+      users: profiles,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Admin Create New User
+app.post('/api/admin/users', async (req: Request, res: Response) => {
+  try {
+    const {
+      email,
+      fullName,
+      phone,
+      bloodGroup,
+      homeAddress,
+      emergencyContact,
+      walletBalance,
+      isStudent,
+      isSenior,
+      isWomen,
+    } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email is required' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const newUser = {
+      id: crypto.randomUUID(),
+      email: cleanEmail,
+      full_name: sanitizeInput(fullName || 'New User'),
+      phone: sanitizeInput(phone || ''),
+      blood_group: sanitizeInput(bloodGroup || 'B+'),
+      home_address: sanitizeInput(homeAddress || 'Bhubaneswar, Odisha'),
+      emergency_contact: sanitizeInput(emergencyContact || ''),
+      wallet_balance: Number(walletBalance) || 500,
+      karma_points: 100,
+      is_student: Boolean(isStudent),
+      is_senior_verified: Boolean(isSenior),
+      is_women_passenger: Boolean(isWomen),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (supabase) {
+      try {
+        await supabase.from('profiles').upsert(newUser);
+      } catch (dbErr) {
+        console.warn('Supabase admin create notice:', dbErr);
+      }
+    }
+
+    memoryStore.profiles.unshift(newUser);
+    safeFileWrite(PROFILES_FILE, memoryStore.profiles);
+
+    res.json({ success: true, message: 'User created successfully', user: newUser });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Admin Update User Profile
+app.put('/api/admin/users/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const idx = memoryStore.profiles.findIndex((p: any) => p.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const updatedUser = {
+      ...memoryStore.profiles[idx],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    memoryStore.profiles[idx] = updatedUser;
+    safeFileWrite(PROFILES_FILE, memoryStore.profiles);
+
+    if (supabase) {
+      try {
+        await supabase.from('profiles').update(updatedUser).eq('id', id);
+      } catch (dbErr) {
+        console.warn('Supabase admin update notice:', dbErr);
+      }
+    }
+
+    res.json({ success: true, message: 'User updated successfully', user: updatedUser });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Admin Delete User
+app.delete('/api/admin/users/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    memoryStore.profiles = memoryStore.profiles.filter((p: any) => p.id !== id);
+    safeFileWrite(PROFILES_FILE, memoryStore.profiles);
+
+    if (supabase) {
+      try {
+        await supabase.from('profiles').delete().eq('id', id);
+      } catch (dbErr) {
+        console.warn('Supabase admin delete notice:', dbErr);
+      }
+    }
+
+    res.json({ success: true, message: `User ${id} deleted successfully` });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Admin Get OTP Logs (Access to view all authentication logs)
+app.get('/api/admin/otp-logs', async (_req: Request, res: Response) => {
+  try {
+    const logs = safeFileRead(OTP_LOGS_FILE, memoryStore.otpLogs);
+    res.json({ success: true, count: logs.length, logs });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Admin Export Users JSON
+app.get('/api/admin/export/users', async (_req: Request, res: Response) => {
+  try {
+    let profiles = memoryStore.profiles;
+    if (supabase) {
+      const { data } = await supabase.from('profiles').select('*');
+      if (data && data.length > 0) profiles = data;
+    }
+    res.setHeader('Content-Disposition', 'attachment; filename="musafir_users_backup.json"');
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(profiles, null, 2));
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ── 2. Trips API ───────────────────────────────────────────────────────────
 // Record a new trip
 app.post('/api/trips', validateBody(TripCreateSchema), async (req: Request, res: Response) => {

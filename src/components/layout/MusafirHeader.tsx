@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X, Bookmark, Sparkles, Bus, ExternalLink, Mic, QrCode } from 'lucide-react';
+import { MapPin, ArrowLeftRight, Search, Sun, Moon, Bell, LocateFixed, Wifi, WifiOff, Wallet, Navigation2, Loader2, Menu, X, Bookmark, Sparkles, Bus, ExternalLink, Mic, QrCode, Users } from 'lucide-react';
 import { indiaGeocodingService, geocodeAddressIndia, IndiaLocationResult, POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
 import { getNearbyLocationsAlongCorridor, BHUBANESWAR_LOCALITIES, BhubaneswarLocality } from '../../data/cities/bhubaneswar';
 import { sosService } from '../../services/sosService';
@@ -32,6 +32,7 @@ interface MusafirHeaderProps {
   onOpenMobileMenu?: () => void;
   onSearchFocusChange?: (isFocused: boolean) => void;
   onOpenBusRoutes?: () => void;
+  onOpenBackendUsers?: () => void;
   currentLang?: string;
   onOpenLanguageModal?: () => void;
   onOpenAI?: () => void;
@@ -62,6 +63,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   onOpenMobileMenu,
   onSearchFocusChange,
   onOpenBusRoutes,
+  onOpenBackendUsers,
   currentLang = 'en',
   onOpenLanguageModal,
   onOpenAI,
@@ -724,6 +726,18 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
             >
               <Bus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span className="hidden sm:inline">Ama Bus (82)</span>
+            </button>
+          )}
+
+          {onOpenBackendUsers && (
+            <button
+              type="button"
+              onClick={onOpenBackendUsers}
+              title="Open Backend User Master Directory & Admin Console"
+              className="px-2.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700 text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition active:scale-95"
+            >
+              <Users className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span className="hidden sm:inline">Backend Users</span>
             </button>
           )}
 
