@@ -33,6 +33,9 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
   };
 
   const handleClose = () => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     setInternalIsOpen(false);
     controlledOnClose?.();
   };
@@ -51,10 +54,31 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
   const [isThinking, setIsThinking] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isVoiceOutputEnabled, setIsVoiceOutputEnabled] = useState(true);
+  const isVoiceOutputEnabledRef = useRef(true);
   const [speechError, setSpeechError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  // Stop speech when component unmounts
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const toggleVoiceOutput = () => {
+    setIsVoiceOutputEnabled(prev => {
+      const next = !prev;
+      isVoiceOutputEnabledRef.current = next;
+      if (!next && typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -102,7 +126,7 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
 
   // Text-To-Speech function
   const speakText = (text: string) => {
-    if (!isVoiceOutputEnabled || !window.speechSynthesis) return;
+    if (!isVoiceOutputEnabledRef.current || typeof window === 'undefined' || !window.speechSynthesis) return;
 
     try {
       window.speechSynthesis.cancel(); // stop current speech
@@ -198,8 +222,8 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
         onExecuteAction(finalMsg.actionButton.actionType, finalMsg.actionButton.payload);
       }
 
-      // Speak output aloud if voice is enabled or user spoke
-      if (isVoiceOutputEnabled || wasSpoken) {
+      // Speak output aloud ONLY if voice is enabled (never bypass if muted)
+      if (isVoiceOutputEnabledRef.current) {
         speakText(finalMsg.text);
       }
     } catch {
@@ -210,7 +234,7 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
         text: errText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }]);
-      if (isVoiceOutputEnabled) speakText(errText);
+      if (isVoiceOutputEnabledRef.current) speakText(errText);
     } finally {
       setIsThinking(false);
     }
@@ -274,9 +298,9 @@ export const PopupAIAssistant: React.FC<PopupAIAssistantProps> = ({
 
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setIsVoiceOutputEnabled(!isVoiceOutputEnabled)}
+                onClick={toggleVoiceOutput}
                 className="p-2 rounded-xl hover:bg-white/20 text-white transition"
-                title={isVoiceOutputEnabled ? 'Voice audio enabled' : 'Voice audio muted'}
+                title={isVoiceOutputEnabled ? 'Voice audio enabled (Click to mute)' : 'Voice audio muted (Click to enable)'}
               >
                 {isVoiceOutputEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </button>
