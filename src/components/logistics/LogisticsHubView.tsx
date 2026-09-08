@@ -318,8 +318,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
 }) => {
   const originHub = { name: 'Warehouse', lat: 20.2818, lng: 85.7938 };
 
-  // USER REQUIREMENT 1: "kuch default input mat karna user input dale aese karna"
-  // Default to empty array [] so user enters their own delivery stops!
+  // Initialize with empty delivery queue; stops are populated on user input
   const [internalWaypoints, setInternalWaypoints] = useState<DeliveryWaypoint[]>([]);
 
   const waypoints = externalWaypoints ?? internalWaypoints;
@@ -336,7 +335,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
   const [searchAddress, setSearchAddress] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  // USER REQUIREMENT 5: "logistics optimizer ,mein others mein aana chahiye user likh sakta hey"
+  // Custom parcel type specification
   const [parcelType, setParcelType] = useState<'Documents' | 'Electronics' | 'Clothing' | 'Food' | 'Other'>('Documents');
   const [customParcelType, setCustomParcelType] = useState('');
   const [parcelWeight, setParcelWeight] = useState('4.5');
@@ -460,7 +459,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
         </div>
       )}
 
-      {/* ─── 1. TOP HEADER (Matching Screenshot Exactly) ─── */}
+      {/* Header & Status Bar */}
       <div className="flex items-center justify-between border-b border-slate-800/80 px-4 sm:px-6 py-3.5 bg-[#090E1B] shrink-0 sticky top-0 z-20">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="flex items-center gap-2">
@@ -499,7 +498,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
         </div>
       </div>
 
-      {/* ─── 2. MAIN 3-COLUMN DASHBOARD (Matching media_1788877567294.jpg) ─── */}
+      {/* Main Dashboard Grid */}
       <div className="max-w-[1600px] mx-auto w-full p-3 sm:p-4 lg:p-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
@@ -594,7 +593,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
               </div>
             </div>
 
-            {/* Parcel Type Chips + Custom Other Input (USER REQUIREMENT 5) */}
+            {/* Parcel Category Selection */}
             <div className="space-y-2 pt-1">
               <label className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
                 <Package className="w-3.5 h-3.5 text-amber-400" />
@@ -617,7 +616,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                 ))}
               </div>
 
-              {/* USER REQUIREMENT 5: "logistics optimizer ,mein others mein aana chahiye user likh sakta hey" */}
+              {/* Custom parcel description input */}
               {parcelType === 'Other' && (
                 <div className="pt-1.5 animate-in fade-in">
                   <input
@@ -735,7 +734,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                   </span>
                 </div>
 
-                {/* USER REQUIREMENT 1: Dynamic User Waypoint List (Empty by default) */}
+                {/* Active Waypoints Queue */}
                 {waypoints.length === 0 ? (
                   <div className="p-4 rounded-2xl bg-[#10182E]/50 border border-dashed border-slate-800 text-center space-y-2">
                     <Package className="w-6 h-6 text-slate-500 mx-auto" />
@@ -808,7 +807,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                 )}
               </div>
 
-              {/* Big Gold Button: ✨ Optimize Routes (Matching Screenshot) */}
+              {/* Optimize Multi-Stop Corridor */}
               <button
                 type="button"
                 onClick={handleOptimizeRoutes}
@@ -940,7 +939,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
               </MapContainer>
             </div>
 
-            {/* Bottom-Left Floating Vehicles Card (Matching Screenshot) */}
+            {/* Vehicle Fleet Allocation Overview */}
             <div className="absolute left-3.5 bottom-3.5 z-[1000] bg-[#0C1425]/92 border border-slate-800/90 backdrop-blur-md rounded-2xl p-3 shadow-2xl space-y-2 min-w-[170px]">
               <h4 className="font-extrabold text-slate-400 text-[11px] uppercase tracking-wider">Vehicles</h4>
               <div className="space-y-1.5 text-xs font-bold">
@@ -980,7 +979,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
              ========================================================================= */}
           <div className="lg:col-span-3 space-y-4">
             
-            {/* Card 1: Optimized Route Summary (Matching Screenshot) */}
+            {/* Route Metrics & Optimization Summary */}
             <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
               <div className="flex items-center gap-2 text-white">
                 <Sparkles className="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -1059,7 +1058,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
               </div>
             </div>
 
-            {/* Card 2: Vehicle Assignment (Matching Screenshot) */}
+            {/* Fleet Vehicle Dispatch Assignment */}
             <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-white">
@@ -1138,7 +1137,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
               </div>
             </div>
 
-            {/* Card 3: Real-Time Tracking (Matching Screenshot) */}
+            {/* Real-Time Corridor Tracking */}
             <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-white">
@@ -1270,7 +1269,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
             })}
           </div>
 
-          {/* Eco Banner Footer matching screenshot */}
+          {/* Sustainability & Carbon Offset Banner */}
           <div className="w-full py-3 px-4 rounded-2xl bg-[#18392B] border border-emerald-600/40 text-emerald-200 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-inner">
             <Leaf className="w-4 h-4 text-emerald-400 fill-emerald-400" />
             <span>Smarter logistics today for a more connected and sustainable tomorrow.</span>

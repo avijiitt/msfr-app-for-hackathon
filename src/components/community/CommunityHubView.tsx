@@ -30,7 +30,7 @@ interface CommunityHubProps {
 
 type TabView = 'feed' | 'map' | 'polls' | 'my_reports' | 'leaderboard';
 
-// Custom Map Marker Icons matching mockup exactly
+// Custom Map Marker Icons
 const createPinIcon = (bgColor: string, emoji: string) => {
   return L.divIcon({
     className: 'custom-civic-pin',
@@ -182,7 +182,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
   return (
     <div className="flex-1 flex flex-col min-h-full bg-[#080C16] text-white p-3 sm:p-5 md:p-6 overflow-y-auto pb-24 font-sans">
       
-      {/* ─── 1. TOP HEADER (Exact matching mockup) ─── */}
+      {/* Top Header Banner */}
       <div className="bg-gradient-to-r from-[#170F33] via-[#1E1442] to-[#121132] border border-purple-900/40 rounded-3xl p-4 sm:p-6 flex items-center justify-between shadow-2xl relative overflow-hidden shrink-0 mb-4">
         {/* Glow effect */}
         <div className="absolute top-0 right-0 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
@@ -217,7 +217,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
         </div>
       </div>
 
-      {/* ─── 2. TOP NAVIGATION TABS (Exact matching mockup) ─── */}
+      {/* Navigation Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1 mb-4 shrink-0">
         {[
           { id: 'feed', icon: <List className="w-4 h-4" />, label: 'Live Feed' },
@@ -244,7 +244,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
         })}
       </div>
 
-      {/* ─── 3. TAB 1: LIVE FEED VIEW (Mockup 2-column layout) ─── */}
+      {/* Feed View */}
       {activeTab === 'feed' && (
         <div className="space-y-4">
           
@@ -321,7 +321,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
             {/* ── LEFT COLUMN: INCIDENT FEED (7 Cols) ── */}
             <div className="lg:col-span-7 space-y-3.5">
               {filteredReports.slice(0, visibleCount).map((report) => {
-                // Determine badge styles exactly matching mockup
+                // Categorize severity and badge styling
                 const isOvercrowd = report.category === 'overcrowding';
                 const isLighting = report.category === 'poor_lighting';
                 const isWaterlogging = report.category === 'waterlogging';
@@ -398,7 +398,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
                             alt={report.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
-                          {/* 40+ badge on overcrowding card matching mockup */}
+                          {/* Crowd density indicator */}
                           {isOvercrowd && (
                             <div className="absolute bottom-1.5 right-1.5 bg-[#4C1D95]/90 backdrop-blur-sm text-purple-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border border-purple-500/30">
                               <Users className="w-2.5 h-2.5" />
@@ -420,7 +420,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
                 );
               })}
 
-              {/* Load More Button matching mockup */}
+              {/* Pagination / Load More */}
               {visibleCount < filteredReports.length && (
                 <div className="pt-2 text-center">
                   <button
@@ -438,7 +438,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
             {/* ── RIGHT COLUMN: WIDGETS (5 Cols) ── */}
             <div className="lg:col-span-5 space-y-4">
               
-              {/* Widget 1: Live Incident Map matching mockup */}
+              {/* Live Incident Radar Map */}
               <div className="bg-[#0D1527] border border-slate-800 rounded-3xl p-4 overflow-hidden shadow-lg space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-black text-white flex items-center gap-2">
@@ -467,7 +467,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
                       maxZoom={19}
                     />
 
-                    {/* Bhubaneswar Hotspot Pins matching screenshot */}
+                    {/* Bhubaneswar Transit Hotspots */}
                     <Marker position={[20.3039, 85.8188]} icon={overcrowdingIcon}>
                       <Popup>
                         <div className="text-xs font-bold text-slate-900 p-1">
@@ -514,7 +514,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
                     </Marker>
                   </MapContainer>
 
-                  {/* Layer / Center buttons on map matching screenshot */}
+                  {/* Map Controls */}
                   <div className="absolute right-2 bottom-2 z-[1000] flex flex-col gap-1.5">
                     <button
                       type="button"
@@ -535,7 +535,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
                   </div>
                 </div>
 
-                {/* Map Legend matching mockup footer */}
+                {/* Incident Category Legend */}
                 <div className="flex items-center justify-between text-[11px] text-slate-300 font-bold pt-1 px-1">
                   <div className="flex items-center gap-1">
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
@@ -556,7 +556,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
                 </div>
               </div>
 
-              {/* Widget 2: Make a Report matching mockup */}
+              {/* Report Incident Action Card */}
               <div className="bg-[#0D1527] border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-lg space-y-3">
                 <div>
                   <h3 className="text-sm font-black text-white">Make a Report</h3>
@@ -575,7 +575,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
                 </button>
               </div>
 
-              {/* Widget 3: Top Reporters This Week matching mockup */}
+              {/* Contributor Leaderboard */}
               <div className="bg-[#0D1527] border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-lg space-y-3.5">
                 <h3 className="text-sm font-black text-white">Top Reporters This Week</h3>
 

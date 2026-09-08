@@ -212,7 +212,7 @@ export const CIVIC_LEADERBOARD: CivicLeaderboardUser[] = [
 export function useCommunityStore() {
   const [reports, setReports] = useState<CommunityReport[]>([]);
   const [polls, setPolls] = useState<CommunityPoll[]>([]);
-  const [userKarma, setUserKarma] = useState<number>(320); // Default user karma: 320 Points matching mockup
+  const [userKarma, setUserKarma] = useState<number>(320); // Initial baseline civic karma for active citizen contributor
 
   useEffect(() => {
     // Load from local storage or initialize
