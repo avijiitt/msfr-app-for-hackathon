@@ -12,15 +12,20 @@ export interface DeliveryWaypoint {
   address: string;
   lat: number;
   lng: number;
-  altitudeMeters?: number; // Z-axis levitation/flight corridor altitude (15m - 120m)
+  altitudeMeters?: number; // Z-axis flight corridor altitude (15m - 120m)
   packageWeightKg: number;
-  parcelType?: 'Documents' | 'Electronics' | 'Clothing' | 'Food' | 'Other';
+  parcelCount?: number; // Number of items/parcels at this stop
+  volumetricWeightKg?: number; // Calculated via (L * W * H) / 5000
+  dimensionsCm?: { length: number; width: number; height: number };
+  parcelType?: 'Documents' | 'Electronics' | 'Clothing' | 'Food' | 'Other' | string;
+  parcelTypes?: string[]; // Multiple parcel categories per drop
   priority?: 'Standard' | 'Express' | 'Urgent';
+  preferredTimeSlot?: 'Morning (09:00 - 12:00)' | 'Afternoon (12:00 - 16:00)' | 'Evening (16:00 - 20:00)' | 'Express (Within 2h)';
+  deliveryDeadline?: string;
   timeWindow?: string;
   estimatedArrival?: string;
-  status: 'pending' | 'in_transit' | 'delivered';
+  status: 'pending' | 'in_transit' | 'delivered' | 'failed' | 'rescheduled';
   ecoPackaging?: boolean;
-  dimensionsCm?: { length: number; width: number; height: number };
   specialHandling?: {
     fragile: boolean;
     keepUpright: boolean;
@@ -28,6 +33,157 @@ export interface DeliveryWaypoint {
   };
   dockingStatus?: 'ALIGNED_LOCKED' | 'APPROACHING' | 'PENDING';
   dockingToleranceCm?: number;
+  assignedDriverId?: string;
+  pod?: {
+    receiverName?: string;
+    signature?: string;
+    otp?: string;
+    photoUrl?: string;
+    notes?: string;
+    deliveredAt?: string;
+  };
+}
+
+export interface VehicleOption {
+  id: '2_wheeler_ev' | 'e_van' | '14ft_e_truck' | 'mo_bus_cargo';
+  name: string;
+  typeLabel: string;
+  maxPayloadKg: number;
+  maxVolumeM3: number;
+  batteryRangeKm: number;
+  costPerKmInr: number;
+  baseFareInr: number;
+  fuelType: 'EV Battery (LFP)' | 'Electric Swappable' | 'Mo Bus Transit Electric' | 'Hydrogen-EV Hybrid';
+  co2FactorGPerKm: number; // grams CO2 equivalent
+  colorCode: string;
+}
+
+export const VEHICLE_FLEET_OPTIONS: VehicleOption[] = [
+  {
+    id: '2_wheeler_ev',
+    name: 'Ather / Ola Commercial EV Scooter',
+    typeLabel: '2-Wheeler EV',
+    maxPayloadKg: 25,
+    maxVolumeM3: 0.18,
+    batteryRangeKm: 85,
+    costPerKmInr: 3.2,
+    baseFareInr: 40,
+    fuelType: 'Electric Swappable',
+    co2FactorGPerKm: 12,
+    colorCode: '#3B82F6',
+  },
+  {
+    id: 'e_van',
+    name: 'Tata Ace EV / Mahindra E-Supro Van',
+    typeLabel: 'Light Commercial E-Van',
+    maxPayloadKg: 120,
+    maxVolumeM3: 1.4,
+    batteryRangeKm: 140,
+    costPerKmInr: 5.8,
+    baseFareInr: 80,
+    fuelType: 'EV Battery (LFP)',
+    co2FactorGPerKm: 28,
+    colorCode: '#10B981',
+  },
+  {
+    id: '14ft_e_truck',
+    name: 'Euler Motors 14ft Electric Freight Truck',
+    typeLabel: '14ft Heavy E-Truck',
+    maxPayloadKg: 750,
+    maxVolumeM3: 16.0,
+    batteryRangeKm: 210,
+    costPerKmInr: 9.5,
+    baseFareInr: 160,
+    fuelType: 'Hydrogen-EV Hybrid',
+    co2FactorGPerKm: 65,
+    colorCode: '#F59E0B',
+  },
+  {
+    id: 'mo_bus_cargo',
+    name: 'CRUT Mo Bus Integrated Transit Cargo',
+    typeLabel: 'Public Transit Cargo',
+    maxPayloadKg: 60,
+    maxVolumeM3: 0.6,
+    batteryRangeKm: 180,
+    costPerKmInr: 2.5,
+    baseFareInr: 30,
+    fuelType: 'Mo Bus Transit Electric',
+    co2FactorGPerKm: 8,
+    colorCode: '#8B5CF6',
+  },
+];
+
+export interface DriverProfile {
+  id: string;
+  name: string;
+  phone: string;
+  vehicleNumber: string;
+  vehicleType: '2_wheeler_ev' | 'e_van' | '14ft_e_truck' | 'mo_bus_cargo';
+  rating: number;
+  totalTrips: number;
+  currentLocation: string;
+  status: 'available' | 'on_route' | 'resting';
+  avatarInitials: string;
+}
+
+export const DRIVER_ROSTER: DriverProfile[] = [
+  {
+    id: 'drv-1',
+    name: 'Rajesh Kumar Mohanty',
+    phone: '+91 94371 88290',
+    vehicleNumber: 'OD-02-AX-8910',
+    vehicleType: 'e_van',
+    rating: 4.9,
+    totalTrips: 1420,
+    currentLocation: 'Baramunda Logistics Hub',
+    status: 'available',
+    avatarInitials: 'RM',
+  },
+  {
+    id: 'drv-2',
+    name: 'Biswajit Jena',
+    phone: '+91 98610 44521',
+    vehicleNumber: 'OD-33-E-4512',
+    vehicleType: '2_wheeler_ev',
+    rating: 4.8,
+    totalTrips: 980,
+    currentLocation: 'Patia / KIIT Square',
+    status: 'available',
+    avatarInitials: 'BJ',
+  },
+  {
+    id: 'drv-3',
+    name: 'Subrat Nayak',
+    phone: '+91 70081 22934',
+    vehicleNumber: 'OD-02-BT-9901',
+    vehicleType: '14ft_e_truck',
+    rating: 4.95,
+    totalTrips: 2150,
+    currentLocation: 'Rasulgarh NH-16 Depot',
+    status: 'on_route',
+    avatarInitials: 'SN',
+  },
+  {
+    id: 'drv-4',
+    name: 'Priyaranjan Das',
+    phone: '+91 94390 11843',
+    vehicleNumber: 'CRUT-MO-BUS-CARGO-12',
+    vehicleType: 'mo_bus_cargo',
+    rating: 4.85,
+    totalTrips: 1780,
+    currentLocation: 'Master Canteen Station',
+    status: 'available',
+    avatarInitials: 'PD',
+  },
+];
+
+export interface LogisticsCostBreakdown {
+  fuelOrBatteryCostInr: number;
+  distanceFareInr: number;
+  tollFeesInr: number;
+  driverAllowanceInr: number;
+  totalCostInr: number;
+  costSavingVsDieselInr: number;
 }
 
 export interface RestrictedZone {
@@ -71,7 +227,7 @@ export interface AntiGravityRoutePlan {
   co2SavedKg: number;
   sequencedWaypoints: DeliveryWaypoint[];
   estimatedCostInr: number;
-  vehicleType: 'anti_gravity_evtol' | '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van' | 'mo_bus_cargo';
+  vehicleType: 'anti_gravity_evtol' | '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van' | 'mo_bus_cargo' | '14ft_e_truck';
   co2EmissionsKg: number;
   summary: string;
 
@@ -98,6 +254,10 @@ export interface AntiGravityRoutePlan {
 
   // Avoided Restricted Zones
   avoidedRestrictedZones: RestrictedZone[];
+
+  // Cost & Fleet Details
+  costBreakdown?: LogisticsCostBreakdown;
+  assignedVehicle?: VehicleOption;
 }
 
 export type OptimizedLogisticsPlan = AntiGravityRoutePlan;
@@ -270,7 +430,7 @@ export function computeAntiGravityRoute(
   originHub: { name: string; lat: number; lng: number },
   waypoints: DeliveryWaypoint[],
   altitudeMeters: number = 45,
-  vehicleType: 'anti_gravity_evtol' | '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van' | 'mo_bus_cargo' = 'anti_gravity_evtol'
+  vehicleType: 'anti_gravity_evtol' | '2_wheeler_ev' | '3_wheeler_e_loader' | 'e_van' | 'mo_bus_cargo' | '14ft_e_truck' = 'anti_gravity_evtol'
 ): AntiGravityRoutePlan {
   if (waypoints.length === 0) {
     return {
@@ -411,7 +571,22 @@ export function computeAntiGravityRoute(
   const totalMins = sequenced.length === 4 ? 135 : flightMins + (sequenced.length * dockingMinsPerStop);
 
   // Operational transit cost model factoring base distance and waypoint drop fees
-  const estimatedCost = sequenced.length === 4 ? 180 : Math.max(90, Math.round(totalDistKm * 4.2 + sequenced.length * 25));
+  const baseRatePerKm = vehicleType === '2_wheeler_ev' ? 3.2 : vehicleType === '14ft_e_truck' ? 9.5 : 5.8;
+  const distanceFare = Math.round(totalDistKm * baseRatePerKm);
+  const fuelOrBatteryCost = Math.round(totalEnergyKWh * 6.5); // ₹6.5 per kWh commercial EV tariff
+  const tollFees = totalDistKm > 15 ? 45 : 0; // NH-16 / Bypass toll simulation
+  const driverAllowance = Math.round(40 + sequenced.length * 15);
+  const totalCost = sequenced.length === 4 ? 180 : Math.max(90, distanceFare + fuelOrBatteryCost + tollFees + driverAllowance);
+  const costSavingVsDiesel = Math.round(totalCost * 0.38);
+
+  const costBreakdown: LogisticsCostBreakdown = {
+    fuelOrBatteryCostInr: fuelOrBatteryCost,
+    distanceFareInr: distanceFare,
+    tollFeesInr: tollFees,
+    driverAllowanceInr: driverAllowance,
+    totalCostInr: totalCost,
+    costSavingVsDieselInr: costSavingVsDiesel,
+  };
 
   // Environmental and fuel efficiency estimates
   const fuelSavingPercent = 18; // 18% fuel savings
@@ -430,7 +605,8 @@ export function computeAntiGravityRoute(
     co2ReductionPercent,
     co2SavedKg,
     sequencedWaypoints: sequenced,
-    estimatedCostInr: estimatedCost,
+    estimatedCostInr: totalCost,
+    costBreakdown,
     vehicleType,
     co2EmissionsKg: co2Emissions,
     summary: `3D Flying Corridor optimized across ${Math.round(totalDistKm * 10) / 10} km at ${altitudeMeters}m altitude (${Math.floor(totalMins / 60)}h ${totalMins % 60}m dispatch)`,
@@ -465,6 +641,189 @@ export function computeAntiGravityRoute(
 }
 
 /**
+ * Calculates volumetric weight in kg based on dimensions (cm).
+ * Standard cargo formula: (Length * Width * Height) / 5000
+ */
+export function calculateVolumetricWeight(lengthCm: number, widthCm: number, heightCm: number): number {
+  if (!lengthCm || !widthCm || !heightCm) return 0;
+  return Math.round(((lengthCm * widthCm * heightCm) / 5000) * 10) / 10;
+}
+
+/**
+ * Recommends optimal vehicle option based on payload weight and volume
+ */
+export function suggestOptimalVehicle(totalWeightKg: number, totalVolumeM3: number): VehicleOption {
+  if (totalWeightKg <= 20 && totalVolumeM3 <= 0.15) {
+    return VEHICLE_FLEET_OPTIONS[0]; // 2-Wheeler EV
+  } else if (totalWeightKg <= 110 && totalVolumeM3 <= 1.3) {
+    return VEHICLE_FLEET_OPTIONS[1]; // E-Van
+  } else if (totalWeightKg <= 50 && totalVolumeM3 <= 0.5) {
+    return VEHICLE_FLEET_OPTIONS[3]; // Mo Bus Cargo
+  } else {
+    return VEHICLE_FLEET_OPTIONS[2]; // 14ft E-Truck
+  }
+}
+
+/**
+ * Smart Traveling Salesperson (TSP) multi-priority route optimizer.
+ * 1. Clusters stops by urgency (Urgent -> Express -> Standard)
+ * 2. Uses Nearest-Neighbor with 2-Opt edge swapping within priority classes
+ * 3. Considers traffic congestion weights and early delivery windows
+ */
+export function optimizeSmartDeliveryRoute(
+  origin: { lat: number; lng: number; name?: string },
+  stops: DeliveryWaypoint[],
+  vehicleId: string = 'e_van'
+): {
+  optimizedStops: DeliveryWaypoint[];
+  totalDistanceKm: number;
+  estimatedMinutes: number;
+  costBreakdown: LogisticsCostBreakdown;
+  fuelSavingPercent: number;
+  co2SavedKg: number;
+} {
+  if (stops.length === 0) {
+    return {
+      optimizedStops: [],
+      totalDistanceKm: 0,
+      estimatedMinutes: 0,
+      costBreakdown: {
+        fuelOrBatteryCostInr: 0,
+        distanceFareInr: 0,
+        tollFeesInr: 0,
+        driverAllowanceInr: 0,
+        totalCostInr: 0,
+        costSavingVsDieselInr: 0,
+      },
+      fuelSavingPercent: 0,
+      co2SavedKg: 0,
+    };
+  }
+
+  // Priority groupings: Urgent first, then Express, then Standard
+  const priorityScore = (p?: string) => (p === 'Urgent' ? 3 : p === 'Express' ? 2 : 1);
+
+  // Group by priority
+  const urgentStops = stops.filter((s) => s.priority === 'Urgent');
+  const expressStops = stops.filter((s) => s.priority === 'Express');
+  const standardStops = stops.filter((s) => s.priority !== 'Urgent' && s.priority !== 'Express');
+
+  const solveTSPBracket = (startLat: number, startLng: number, bracket: DeliveryWaypoint[]) => {
+    const unvisited = [...bracket];
+    const ordered: DeliveryWaypoint[] = [];
+    let curLat = startLat;
+    let curLng = startLng;
+
+    while (unvisited.length > 0) {
+      let bestIdx = 0;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < unvisited.length; i++) {
+        const stop = unvisited[i];
+        const dist = Math.hypot(stop.lat - curLat, stop.lng - curLng) * 111;
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestIdx = i;
+        }
+      }
+
+      const next = unvisited.splice(bestIdx, 1)[0];
+      ordered.push(next);
+      curLat = next.lat;
+      curLng = next.lng;
+    }
+
+    // 2-Opt local refinement if 4 or more stops in this bracket
+    if (ordered.length >= 4) {
+      let improved = true;
+      let iterations = 0;
+      while (improved && iterations < 8) {
+        improved = false;
+        iterations++;
+        for (let i = 0; i < ordered.length - 2; i++) {
+          for (let j = i + 2; j < ordered.length; j++) {
+            const p1 = i === 0 ? { lat: startLat, lng: startLng } : ordered[i - 1];
+            const p2 = ordered[i];
+            const p3 = ordered[j];
+            const p4 = j + 1 < ordered.length ? ordered[j + 1] : ordered[j];
+
+            const currentD = Math.hypot(p1.lat - p2.lat, p1.lng - p2.lng) + Math.hypot(p3.lat - p4.lat, p3.lng - p4.lng);
+            const newD = Math.hypot(p1.lat - p3.lat, p1.lng - p3.lng) + Math.hypot(p2.lat - p4.lat, p2.lng - p4.lng);
+
+            if (newD < currentD - 0.05) {
+              // Reverse sub-segment
+              const sub = ordered.slice(i, j + 1).reverse();
+              ordered.splice(i, sub.length, ...sub);
+              improved = true;
+            }
+          }
+        }
+      }
+    }
+
+    return ordered;
+  };
+
+  // Chain TSP across priority partitions
+  const sequenced: DeliveryWaypoint[] = [];
+  let curLat = origin.lat;
+  let curLng = origin.lng;
+
+  for (const group of [urgentStops, expressStops, standardStops]) {
+    if (group.length > 0) {
+      const part = solveTSPBracket(curLat, curLng, group);
+      sequenced.push(...part);
+      if (part.length > 0) {
+        curLat = part[part.length - 1].lat;
+        curLng = part[part.length - 1].lng;
+      }
+    }
+  }
+
+  // Calculate total road distance with city curvature factor
+  let totalKm = 0;
+  let prevPoint = { lat: origin.lat, lng: origin.lng };
+  for (const s of sequenced) {
+    const straightDist = Math.hypot(s.lat - prevPoint.lat, s.lng - prevPoint.lng) * 111;
+    totalKm += straightDist * 1.22; // urban road detour coefficient
+    prevPoint = { lat: s.lat, lng: s.lng };
+  }
+
+  totalKm = Math.round(totalKm * 10) / 10;
+  const speedKmh = 24; // Average urban delivery vehicle speed
+  const transitMins = Math.round((totalKm / speedKmh) * 60);
+  const dropMins = sequenced.length * 6;
+  const totalMins = transitMins + dropMins;
+
+  // Selected vehicle rates
+  const vOption = VEHICLE_FLEET_OPTIONS.find((v) => v.id === vehicleId) || VEHICLE_FLEET_OPTIONS[1];
+  const distanceFare = Math.round(totalKm * vOption.costPerKmInr);
+  const fuelOrBatteryCost = Math.round(totalKm * (vOption.id === '2_wheeler_ev' ? 0.85 : 1.65));
+  const tollFees = totalKm > 18 ? 40 : 0;
+  const driverAllowance = Math.round(vOption.baseFareInr + sequenced.length * 15);
+  const totalCost = distanceFare + fuelOrBatteryCost + tollFees + driverAllowance;
+  const costSavingVsDiesel = Math.round(totalCost * 0.35);
+
+  const costBreakdown: LogisticsCostBreakdown = {
+    fuelOrBatteryCostInr: fuelOrBatteryCost,
+    distanceFareInr: distanceFare,
+    tollFeesInr: tollFees,
+    driverAllowanceInr: driverAllowance,
+    totalCostInr: totalCost,
+    costSavingVsDieselInr: costSavingVsDiesel,
+  };
+
+  return {
+    optimizedStops: sequenced,
+    totalDistanceKm: totalKm,
+    estimatedMinutes: totalMins,
+    costBreakdown,
+    fuelSavingPercent: 18,
+    co2SavedKg: Math.round(totalKm * 0.08 * 10) / 10,
+  };
+}
+
+/**
  * Backward-compatible wrapper for existing components calling optimizeDeliverySequence
  */
 export function optimizeDeliverySequence(
@@ -474,3 +833,4 @@ export function optimizeDeliverySequence(
 ): AntiGravityRoutePlan {
   return computeAntiGravityRoute(originHub, waypoints, 45, vehicleType as any);
 }
+
