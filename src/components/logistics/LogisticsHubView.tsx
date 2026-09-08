@@ -55,6 +55,14 @@ import {
   Copy,
   Radio,
   Timer,
+  CloudOff,
+  Cloud,
+  ThumbsUp,
+  HelpCircle,
+  Eye,
+  Route,
+  Gauge,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -72,6 +80,13 @@ import {
   calculateVolumetricWeight,
   suggestOptimalVehicle,
   optimizeSmartDeliveryRoute,
+  OptimizationGoal,
+  RouteExplainability,
+  DisruptionEvent,
+  BBSR_LOGISTICS_DISRUPTIONS,
+  RouteRiskAssessment,
+  calculateRouteRiskScore,
+  generateExplainableReasons,
 } from '../../services/logisticsOptimizerService';
 import { POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
 import { BHUBANESWAR_LOCALITIES } from '../../data/cities/bhubaneswar';
@@ -79,66 +94,6 @@ import { STOP_COORDINATES_MAP } from '../../data/busRoutesData';
 import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
 import { ProofOfDeliveryModal } from './ProofOfDeliveryModal';
 import { isValidLatLng, filterValidLatLngs } from '../../utils/latLngValidator';
-
-// Verified Driver Rest & Stay Hubs near Delivery Corridors
-const DRIVER_STAY_HUBS = [
-  {
-    id: 'stay-1',
-    name: 'CRUT Baramunda Driver Dormitory & Rest Lounge',
-    distance: '0.4 km from Baramunda Hub',
-    amenities: ['🛏️ Resting Beds', '🚿 Clean Showers', '☕ ₹30 Thali', '⚡ 60kW EV Fast Charger', '🅿️ Night Parking'],
-    safetyRating: '4.9 ★',
-    phone: '+91 674 235 4890',
-  },
-  {
-    id: 'stay-2',
-    name: 'Patia Logistics Rest Pods & Highway Dhaba',
-    distance: '1.2 km from Patia / Infocity',
-    amenities: ['🛏️ AC Sleep Pods', '☕ 24/7 Hot Chai & Food', '🚿 Sanitized Washroom', '⚡ Battery Swap Station'],
-    safetyRating: '4.8 ★',
-    phone: '+91 94370 88219',
-  },
-  {
-    id: 'stay-3',
-    name: 'Vani Vihar Transit Shelter & Refreshment Center',
-    distance: '0.8 km from Janpath',
-    amenities: ['🚿 Clean Restrooms', '🚰 RO Water Refill', '☕ Beverages & Snacks', '📶 Free Wi-Fi'],
-    safetyRating: '4.7 ★',
-    phone: '+91 674 254 1120',
-  },
-];
-
-// Live Corridor Traffic Flow
-const LIVE_CORRIDOR_TRAFFIC = [
-  {
-    corridor: 'Janpath Arterial (Master Canteen ➔ Vani Vihar)',
-    status: '🟢 Smooth Flow',
-    speed: '28 km/h',
-    delay: '0 mins delay',
-    color: 'border-emerald-500/40 bg-emerald-950/20 text-emerald-300',
-  },
-  {
-    corridor: 'Nandankanan Rd (Jayadev Vihar ➔ Patia KIIT)',
-    status: '🟡 Moderate Flow',
-    speed: '19 km/h',
-    delay: '+6 mins (Damana Square signal)',
-    color: 'border-amber-500/40 bg-amber-950/20 text-amber-300',
-  },
-  {
-    corridor: 'Rasulgarh Flyover / NH-16 Junction',
-    status: '🔴 Heavy Congestion',
-    speed: '8 km/h',
-    delay: '+14 mins (Take service road bypass)',
-    color: 'border-rose-500/40 bg-rose-950/20 text-rose-300',
-  },
-  {
-    corridor: 'Cuttack-Puri Bypass Expressway',
-    status: '🟢 Fast Flow',
-    speed: '44 km/h',
-    delay: '0 mins delay',
-    color: 'border-emerald-500/40 bg-emerald-950/20 text-emerald-300',
-  },
-];
 
 const STOP_PIN_COLORS = [
   '#3B82F6', // Blue (Van 1)
@@ -152,25 +107,25 @@ const STOP_PIN_COLORS = [
 const createNumberedPinIcon = (stopNumber: number, recipientName?: string, status?: string) => {
   const isDelivered = status === 'delivered';
   const bgColor = isDelivered ? '#10B981' : STOP_PIN_COLORS[(stopNumber - 1) % STOP_PIN_COLORS.length];
-  const shortName = (recipientName || `Stop ${stopNumber}`).split(',')[0].slice(0, 16);
+  const shortName = (recipientName || `Stop ${stopNumber}`).split(',')[0].slice(0, 15);
 
   return L.divIcon({
     className: 'custom-numbered-logistics-pin',
     html: `
-      <div style="display: flex; align-items: center; gap: 5px; transform: translate(-14px, -14px);">
+      <div style="display: flex; align-items: center; gap: 4px; transform: translate(-13px, -13px);">
         <div style="
-          width: 28px;
-          height: 28px;
+          width: 26px;
+          height: 26px;
           border-radius: 50%;
           background: ${bgColor};
           color: #ffffff;
           font-weight: 900;
-          font-size: 12px;
+          font-size: 11px;
           display: flex;
           align-items: center;
           justify-content: center;
           border: 2px solid #ffffff;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+          box-shadow: 0 3px 8px rgba(0,0,0,0.5);
           flex-shrink: 0;
         ">
           ${isDelivered ? '✓' : stopNumber}
@@ -182,18 +137,18 @@ const createNumberedPinIcon = (stopNumber: number, recipientName?: string, statu
                 color: #f1f5f9;
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 font-weight: 700;
-                font-size: 11px;
-                padding: 2px 7px;
-                border-radius: 6px;
+                font-size: 10px;
+                padding: 1px 6px;
+                border-radius: 5px;
                 white-space: nowrap;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+                box-shadow: 0 2px 6px rgba(0,0,0,0.6);
               ">${shortName}</div>`
             : ''
         }
       </div>
     `,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
   });
 };
 
@@ -201,19 +156,19 @@ const createLogisticsWarehouseIcon = () => {
   return L.divIcon({
     className: 'logistics-hub-pin',
     html: `
-      <div style="display: flex; align-items: center; gap: 6px; transform: translate(-17px, -17px);">
+      <div style="display: flex; align-items: center; gap: 5px; transform: translate(-15px, -15px);">
         <div style="
-          width: 34px;
-          height: 34px;
+          width: 30px;
+          height: 30px;
           border-radius: 50%;
           background: #F59E0B;
           color: #000000;
-          font-size: 16px;
+          font-size: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
           border: 2px solid #ffffff;
-          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.7);
+          box-shadow: 0 3px 10px rgba(245, 158, 11, 0.7);
           flex-shrink: 0;
         ">
           🏠
@@ -223,18 +178,17 @@ const createLogisticsWarehouseIcon = () => {
           color: #F59E0B;
           border: 1px solid rgba(245, 158, 11, 0.5);
           font-weight: 800;
-          font-size: 11px;
-          padding: 2px 8px;
-          border-radius: 8px;
+          font-size: 10px;
+          padding: 2px 6px;
+          border-radius: 6px;
           white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
         ">
-          Warehouse Base
+          Base Hub
         </div>
       </div>
     `,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
   });
 };
 
@@ -245,7 +199,7 @@ const MapBoundsUpdater: React.FC<{ coords: [number, number][] }> = ({ coords }) 
     if (validCoords.length > 0) {
       try {
         const bounds = L.latLngBounds(validCoords);
-        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14, animate: true });
+        map.fitBounds(bounds, { padding: [25, 25], maxZoom: 14, animate: true });
       } catch (err) {
         console.warn('MapBoundsUpdater fitBounds error:', err);
       }
@@ -367,8 +321,14 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
     onWaypointsChange?.(updated);
   };
 
-  // Top Nav Tab: 'plans' | 'live_map' | 'history'
+  // Navigation & Multi-Goal Optimization
   const [activeMainTab, setActiveMainTab] = useState<'plans' | 'live_map' | 'history'>('plans');
+  const [optimizationGoal, setOptimizationGoal] = useState<OptimizationGoal>('balanced');
+
+  // Live Disruption & Dynamic Rerouting Engine
+  const [activeDisruptionId, setActiveDisruptionId] = useState<string | null>('disrupt-1');
+  const [isRerouteApplied, setIsRerouteApplied] = useState<boolean>(false);
+  const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
 
   // Search & Input States
   const [searchAddress, setSearchAddress] = useState('');
@@ -415,6 +375,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
           setInternalWaypoints(parsed.waypoints);
           if (parsed.vehicleId) setSelectedVehicleId(parsed.vehicleId);
           if (parsed.driverId) setSelectedDriverId(parsed.driverId);
+          if (parsed.goal) setOptimizationGoal(parsed.goal);
         }
       }
     } catch (e) {
@@ -453,7 +414,19 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
   );
   const remainingVolumeM3 = Math.max(0, activeVehicle.maxVolumeM3 - parseFloat(totalVolumeM3)).toFixed(2);
 
-  // Compute Route Plan
+  // Multi-Objective Smart Route Optimization with Explainability & Risk Assessment
+  const smartOptimization = useMemo(() => {
+    const effectiveDisruption = isRerouteApplied ? null : activeDisruptionId;
+    return optimizeSmartDeliveryRoute(
+      originHub,
+      waypoints,
+      selectedVehicleId,
+      optimizationGoal,
+      effectiveDisruption
+    );
+  }, [originHub, waypoints, selectedVehicleId, optimizationGoal, isRerouteApplied, activeDisruptionId]);
+
+  // Fallback / standard route plan
   const plan: AntiGravityRoutePlan = useMemo(() => {
     return computeAntiGravityRoute(originHub, waypoints, 45, selectedVehicleId);
   }, [originHub, waypoints, selectedVehicleId]);
@@ -472,6 +445,16 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
   const van1Parcels = van1Stops.reduce((sum, s) => sum + (s.parcelCount || 1), 0) || (waypoints.length > 0 ? 8 : 0);
   const van2Parcels = van2Stops.reduce((sum, s) => sum + (s.parcelCount || 1), 0) || (waypoints.length > 0 ? 6 : 0);
   const van3Parcels = van3Stops.reduce((sum, s) => sum + (s.parcelCount || 1), 0) || (waypoints.length > 0 ? 4 : 0);
+
+  // Geographic Clusters Detection
+  const detectedClusters = useMemo(() => {
+    const patiaStops = waypoints.filter((w) => w.address.toLowerCase().includes('patia') || w.address.toLowerCase().includes('kiit') || w.address.toLowerCase().includes('trident'));
+    const centralStops = waypoints.filter((w) => w.address.toLowerCase().includes('master canteen') || w.address.toLowerCase().includes('unit 2') || w.address.toLowerCase().includes('vani vihar'));
+    const clusters: string[] = [];
+    if (patiaStops.length > 0) clusters.push(`Patia Tech Corridor (${patiaStops.length} drops)`);
+    if (centralStops.length > 0) clusters.push(`Central Commercial (${centralStops.length} drops)`);
+    return clusters;
+  }, [waypoints]);
 
   // Toggle Parcel Type Multi-selection
   const handleToggleParcelType = (type: string) => {
@@ -521,8 +504,8 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
     setWaypoints([...waypoints, newStop]);
     setSearchAddress('');
     setIsSearchFocused(false);
-    setToastMessage(`✅ Stop "${newStop.recipientName}" added with ${effectiveTypes.join(', ')}!`);
-    setTimeout(() => setToastMessage(null), 3500);
+    setToastMessage(`✅ Stop "${newStop.recipientName}" added!`);
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleRemoveStop = (id: string) => {
@@ -537,8 +520,6 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
     reordered[index - 1] = reordered[index];
     reordered[index] = temp;
     setWaypoints(reordered);
-    setToastMessage(`↕️ Moved Stop ${index + 1} to position ${index}`);
-    setTimeout(() => setToastMessage(null), 2500);
   };
 
   // Stop Reordering: Move Down
@@ -549,16 +530,14 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
     reordered[index + 1] = reordered[index];
     reordered[index] = temp;
     setWaypoints(reordered);
-    setToastMessage(`↕️ Moved Stop ${index + 1} to position ${index + 2}`);
-    setTimeout(() => setToastMessage(null), 2500);
   };
 
   // Update Status of Stop
   const handleUpdateStopStatus = (id: string, newStatus: DeliveryWaypoint['status']) => {
     const updated = waypoints.map((w) => (w.id === id ? { ...w, status: newStatus } : w));
     setWaypoints(updated);
-    setToastMessage(`📦 Stop status updated to: ${newStatus.toUpperCase()}`);
-    setTimeout(() => setToastMessage(null), 3000);
+    setToastMessage(`📦 Status updated: ${newStatus.toUpperCase()}`);
+    setTimeout(() => setToastMessage(null), 2500);
   };
 
   // Save Draft to LocalStorage
@@ -568,11 +547,12 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
         waypoints,
         vehicleId: selectedVehicleId,
         driverId: selectedDriverId,
+        goal: optimizationGoal,
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem('musafir_logistics_draft_v1', JSON.stringify(draftPayload));
-      setToastMessage('💾 Logistics plan saved as draft! Your data is preserved.');
-      setTimeout(() => setToastMessage(null), 3500);
+      setToastMessage('💾 Plan saved to local draft!');
+      setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
       setToastMessage('⚠️ Unable to save draft locally.');
       setTimeout(() => setToastMessage(null), 3000);
@@ -587,18 +567,30 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
       return;
     }
 
-    const res = optimizeSmartDeliveryRoute(originHub, waypoints, selectedVehicleId);
-    setWaypoints(res.optimizedStops);
+    setWaypoints(smartOptimization.optimizedStops);
     setToastMessage(
-      `✨ Smart Route re-ordered! Urgent deliveries prioritized. ${res.totalDistanceKm} km total corridor.`
+      `✨ Re-ordered for ${optimizationGoal.toUpperCase()}! ${smartOptimization.totalDistanceKm} km corridor.`
     );
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Trigger Live Rerouting
+  const handleApplyLiveReroute = () => {
+    setIsRerouteApplied(true);
+    setToastMessage('⚡ Live Re-route Engaged! Rasulgarh congestion bypassed via Expressway (Saved 9 mins).');
     setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const handleResetDisruption = () => {
+    setIsRerouteApplied(false);
+    setToastMessage('🔄 Live disruption re-initialized.');
+    setTimeout(() => setToastMessage(null), 2500);
   };
 
   // Load Benchmark Stops
   const handleLoadSampleStops = () => {
     setWaypoints(SAMPLE_DELIVERY_STOPS);
-    setToastMessage('✅ Loaded sample Bhubaneswar delivery routes!');
+    setToastMessage('✅ Loaded benchmark Bhubaneswar delivery stops!');
     setTimeout(() => setToastMessage(null), 3000);
   };
 
@@ -606,7 +598,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
   const handleClearAllStops = () => {
     setWaypoints([]);
     setToastMessage('🗑️ Cleared all delivery stops.');
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 2500);
   };
 
   // Proof of Delivery Completion Handler
@@ -632,8 +624,8 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
       return w;
     });
     setWaypoints(updated);
-    setToastMessage(`🎉 e-POD complete for ${podData.receiverName}! Stop marked as Delivered.`);
-    setTimeout(() => setToastMessage(null), 4000);
+    setToastMessage(`🎉 e-POD confirmed for ${podData.receiverName}!`);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
   // Actionable Musafir AI Prompts
@@ -645,10 +637,9 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
 
     switch (actionKey) {
       case 'optimize': {
-        const res = optimizeSmartDeliveryRoute(originHub, waypoints, selectedVehicleId);
-        setWaypoints(res.optimizedStops);
+        setWaypoints(smartOptimization.optimizedStops);
         setAiActionMessage(
-          `🤖 **Musafir AI Optimized Route:** Arranged ${res.optimizedStops.length} stops using Nearest-Neighbor TSP + Priority clustering. Distance reduced to **${res.totalDistanceKm} km**, saving ~18% battery cost.`
+          `🤖 **Musafir AI Multi-Criteria Optimization:** Applied **${optimizationGoal.toUpperCase()}** model across ${smartOptimization.optimizedStops.length} stops. Road corridor reduced to **${smartOptimization.totalDistanceKm} km** (${smartOptimization.estimatedMinutes} mins).`
         );
         break;
       }
@@ -656,20 +647,21 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
         const urgentList = waypoints.filter((w) => w.priority === 'Urgent');
         if (urgentList.length > 0) {
           setAiActionMessage(
-            `🚨 **Urgent Priority Stop:** "${urgentList[0].recipientName}" at ${urgentList[0].address} has top delivery priority. Recommended dispatch window: within 45 mins.`
+            `🚨 **Urgent Priority Stop:** "${urgentList[0].recipientName}" at ${urgentList[0].address} has top delivery priority. SLA target: within 45 mins.`
           );
         } else {
           setAiActionMessage(
-            `✅ All current ${waypoints.length} stops are marked Standard/Express. No critical urgent delays detected!`
+            `✅ All current ${waypoints.length} stops are marked Standard/Express. No urgent deadline bottleneck detected!`
           );
         }
         break;
       }
       case 'fuel': {
+        setOptimizationGoal('eco');
         const optimal = suggestOptimalVehicle(totalWeightKg, parseFloat(totalVolumeM3));
         setSelectedVehicleId(optimal.id);
         setAiActionMessage(
-          `🌱 **Eco Fuel Recommendation:** Selected **${optimal.name}** (${optimal.fuelType}). Fuel & energy cost drops to **₹${activeVehicle.costPerKmInr}/km** with 0g local tailpipe emissions!`
+          `🌱 **Eco Fuel Engine:** Switched to **Eco Green Goal** + **${optimal.name}**. Cuts net CO₂ by 24% and delivers 0g tailpipe emissions across the corridor!`
         );
         break;
       }
@@ -686,7 +678,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
         const optimal = suggestOptimalVehicle(totalWeightKg, parseFloat(totalVolumeM3));
         setSelectedVehicleId(optimal.id);
         setAiActionMessage(
-          `🚛 **Fleet Match:** For ${totalWeightKg.toFixed(1)} kg and ${totalVolumeM3} m³ load, **${optimal.name}** is the most cost-effective (${optimal.maxPayloadKg} kg max, ${optimal.batteryRangeKm} km range).`
+          `🚛 **Capacity-Aware Vehicle Match:** For ${totalWeightKg.toFixed(1)} kg and ${totalVolumeM3} m³ load, **${optimal.name}** is the most cost-effective vehicle.`
         );
         break;
       }
@@ -696,10 +688,10 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#070B14] text-slate-100 overflow-y-auto pb-24 font-sans">
+    <div className="flex-1 flex flex-col h-full bg-[#070B14] text-slate-100 overflow-y-auto pb-20 font-sans">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-[99999] p-3.5 rounded-2xl bg-amber-500 text-slate-950 text-xs font-black shadow-2xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 border border-amber-300">
+        <div className="fixed top-3 right-3 z-[99999] p-3 rounded-2xl bg-amber-500 text-slate-950 text-xs font-black shadow-2xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 border border-amber-300">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 flex-shrink-0 fill-slate-950" />
             <span>{toastMessage}</span>
@@ -710,36 +702,57 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
         </div>
       )}
 
-      {/* ─── 1. TOP HEADER & STATUS BAR ─── */}
-      <div className="flex items-center justify-between border-b border-slate-800/80 px-4 sm:px-6 py-3.5 bg-[#090E1B] shrink-0 sticky top-0 z-20">
+      {/* ─── 1. COMPACT TOP HEADER & STATUS BAR ─── */}
+      <div className="flex items-center justify-between border-b border-slate-800/80 px-3.5 sm:px-5 py-2.5 bg-[#090E1B] shrink-0 sticky top-0 z-20">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <Navigation className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-400" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <Navigation className="w-4 h-4 fill-amber-400" />
             </div>
-            <span className="font-black text-lg sm:text-xl tracking-wider text-white">MUSAFIR</span>
+            <span className="font-black text-base sm:text-lg tracking-wider text-white">MUSAFIR</span>
           </div>
 
-          <div className="h-6 w-px bg-slate-800 mx-1 sm:mx-2 hidden sm:block" />
+          <div className="h-5 w-px bg-slate-800 mx-1 hidden sm:block" />
 
           <div>
-            <h1 className="text-xs sm:text-sm font-black text-white leading-none">Smart Logistics Hub</h1>
-            <p className="text-[10px] sm:text-[11px] text-slate-300 mt-0.5">
-              Multi-Drop Route Optimization, Fleet Allocation & e-POD
-            </p>
+            <h1 className="text-xs sm:text-sm font-black text-white leading-none flex items-center gap-2">
+              <span>Mobility Intelligence & Logistics Optimizer</span>
+              <span className="text-[10px] font-bold bg-amber-500/15 text-amber-300 px-1.5 py-0.2 rounded border border-amber-500/30">
+                v2.4
+              </span>
+            </h1>
           </div>
         </div>
 
-        {/* Right Controls: Notifications, Save Draft, Musafir AI, User Profile */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Actionable Musafir AI Assistant Trigger */}
+        {/* Right Controls: Offline Mode Toggle, Musafir AI, Save Draft, Notifications */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Offline Resilient Toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsOfflineMode(!isOfflineMode);
+              setToastMessage(isOfflineMode ? '📡 Connected to Cloud Telemetry' : '💾 Offline Mode: Using Cached Route');
+              setTimeout(() => setToastMessage(null), 3000);
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition cursor-pointer ${
+              isOfflineMode
+                ? 'bg-slate-800 border-amber-500/60 text-amber-300'
+                : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
+            }`}
+            title="Toggle Offline Fallback"
+          >
+            {isOfflineMode ? <CloudOff className="w-3.5 h-3.5 text-amber-400" /> : <Cloud className="w-3.5 h-3.5 text-emerald-400" />}
+            <span className="hidden sm:inline">{isOfflineMode ? 'Offline Cache' : 'Cloud Sync'}</span>
+          </button>
+
+          {/* Actionable Musafir AI Trigger */}
           <button
             type="button"
             onClick={() => setIsAIDrawerOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/20 hover:scale-[1.02] transition cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20 hover:scale-[1.02] transition cursor-pointer active:scale-95"
             title="Actionable Musafir AI"
           >
-            <Bot className="w-4 h-4 fill-slate-950" />
+            <Bot className="w-3.5 h-3.5 fill-slate-950" />
             <span className="hidden md:inline">Musafir AI</span>
           </button>
 
@@ -747,7 +760,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
           <button
             type="button"
             onClick={handleSaveDraft}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-200 text-xs font-bold transition cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-200 text-xs font-bold transition cursor-pointer"
             title="Save Plan Draft"
           >
             <Save className="w-3.5 h-3.5 text-amber-400" />
@@ -758,68 +771,77 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
           <button
             type="button"
             onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-            className="relative p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-slate-800 cursor-pointer"
+            className="relative p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-slate-800 cursor-pointer"
             title="Notifications"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
           </button>
+        </div>
+      </div>
 
-          <div className="flex items-center gap-2 bg-[#10182E] border border-slate-800 px-3 py-1.5 rounded-xl cursor-pointer hover:border-slate-700">
-            <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 text-xs">
-              <User className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-xs font-bold text-slate-200 hidden sm:inline">Logistics Dispatcher</span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+      {/* ─── 2. COMPACT DISPATCH PROGRESS & MULTI-GOAL BAR ─── */}
+      <div className="bg-[#0B1222] border-b border-slate-800/80 px-3.5 sm:px-5 py-2">
+        <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2">
+          {/* Progress metric */}
+          <div className="flex items-center gap-2.5 text-xs font-black text-slate-200">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>
+              {completedStopsCount}/{waypoints.length || 4} Stops Completed
+            </span>
+            <span className="text-slate-600">·</span>
+            <span className="text-amber-400 font-mono">
+              {smartOptimization.totalDistanceKm || (18 + waypoints.length * 2.1).toFixed(1)} km
+            </span>
+            <span className="text-slate-600">·</span>
+            <span className="text-slate-300 font-semibold">
+              ETA ~{smartOptimization.estimatedMinutes} mins
+            </span>
+            <span className="text-slate-600 hidden sm:inline">·</span>
+            <span className="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30 hidden sm:inline">
+              CO₂: {smartOptimization.co2SavedKg}kg saved
+            </span>
+          </div>
+
+          {/* Multi-Goal Optimization Objective Tabs (Compact) */}
+          <div className="flex items-center gap-1 bg-[#070D1A] p-1 rounded-xl border border-slate-800 text-[11px] font-bold">
+            <span className="text-[10px] text-slate-400 px-1.5 uppercase font-extrabold hidden lg:inline">Goal:</span>
+            {[
+              { key: 'balanced', label: '🛡️ Balanced', tip: 'Safety & standard SLA' },
+              { key: 'speed', label: '⚡ Fastest SLA', tip: 'Minimum minutes' },
+              { key: 'cost', label: '₹ Lowest Cost', tip: 'No tolls, cheap fare' },
+              { key: 'eco', label: '🌱 Eco Green', tip: 'Minimum CO2' },
+            ].map((g) => (
+              <button
+                key={g.key}
+                type="button"
+                onClick={() => {
+                  setOptimizationGoal(g.key as any);
+                  setToastMessage(`🎯 Switched optimization to: ${g.label}`);
+                  setTimeout(() => setToastMessage(null), 2500);
+                }}
+                className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                  optimizationGoal === g.key
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+                title={g.tip}
+              >
+                {g.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* ─── 2. TOP PROGRESS & DISPATCH METRICS BAR ─── */}
-      <div className="bg-[#0B1222] border-b border-slate-800/80 px-4 sm:px-6 py-2.5">
-        <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-          {/* Progress text */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-xs font-black text-slate-100">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>
-                {completedStopsCount}/{waypoints.length || 4} Stops Completed
-              </span>
-              <span className="text-slate-500">·</span>
-              <span className="text-amber-400 font-mono">
-                {waypoints.length > 0 ? (18 + waypoints.length * 2.1).toFixed(1) : '28.4'} km
-              </span>
-              <span className="text-slate-500">·</span>
-              <span className="text-slate-300 font-semibold">
-                Estimated {Math.floor(plan.totalDurationMinutes / 60)}h {plan.totalDurationMinutes % 60}m
-              </span>
-            </div>
-
-            {waypoints.length > 0 && (
-              <span className="text-[10px] font-bold bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-lg border border-emerald-500/30">
-                {progressPercent}% Done
-              </span>
-            )}
-          </div>
-
-          {/* Animated Visual Progress Bar */}
-          <div className="w-full md:w-72 bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-800/90">
-            <div
-              className="bg-gradient-to-r from-amber-500 via-emerald-400 to-teal-400 h-full rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${Math.max(5, progressPercent)}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* ─── 3. NOTIFICATION DRAWER / DROPDOWN ─── */}
+      {/* ─── 3. NOTIFICATION DRAWER ─── */}
       {isNotificationOpen && (
-        <div className="max-w-[1600px] mx-auto w-full px-4 sm:px-6 pt-3 animate-in fade-in">
-          <div className="bg-[#0F172A] border border-slate-700 rounded-2xl p-3 sm:p-4 shadow-2xl space-y-2">
+        <div className="max-w-[1600px] mx-auto w-full px-3 sm:px-5 pt-2 animate-in fade-in">
+          <div className="bg-[#0F172A] border border-slate-700 rounded-2xl p-3 shadow-xl space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-black text-white flex items-center gap-2">
                 <Bell className="w-3.5 h-3.5 text-amber-400" />
-                <span>Live Route & Traffic Alerts</span>
+                <span>Transit Incident Radar</span>
               </h4>
               <button
                 type="button"
@@ -830,137 +852,135 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-bold">Damana Square Delay (+6 min)</div>
-                  <div className="text-[11px] text-amber-300/80">Moderate signal congestion on Nandankanan corridor.</div>
+              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200">
+                <div className="font-bold flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Damana Square Metro Pile Work</span>
                 </div>
+                <div className="text-[11px] text-amber-300/80 mt-0.5">+6 min single lane crawling</div>
               </div>
-              <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-200 flex items-start gap-2">
-                <RotateCcw className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-bold">Route Deviation Avoided</div>
-                  <div className="text-[11px] text-blue-300/80">Re-routed via Service Road to bypass Rasulgarh jam.</div>
+              <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-200">
+                <div className="font-bold flex items-center gap-1.5">
+                  <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Rasulgarh Flyover Bottleneck</span>
                 </div>
+                <div className="text-[11px] text-rose-300/80 mt-0.5">Heavy congestion. Service road bypass active.</div>
               </div>
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-bold">Fast-Track Verification</div>
-                  <div className="text-[11px] text-emerald-300/80">e-POD OTP enabled for all active deliveries.</div>
+              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-200">
+                <div className="font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Janpath Expressway Green Wave</span>
                 </div>
+                <div className="text-[11px] text-emerald-300/80 mt-0.5">Automated signal sync: 28 km/h smooth speed.</div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── 4. MAIN DASHBOARD CONTENT ─── */}
-      <div className="max-w-[1600px] mx-auto w-full p-3 sm:p-4 lg:p-6 space-y-6">
+      {/* ─── 4. TIGHT SNUG MAIN DASHBOARD GRID ("aas paas rakho") ─── */}
+      <div className="max-w-[1600px] mx-auto w-full p-2.5 sm:p-3.5 space-y-3">
         {/* Navigation Tabs: Plans | Live Map | History */}
-        <div className="flex bg-[#0B1222] p-1.5 rounded-2xl border border-slate-800 max-w-md gap-1">
+        <div className="flex bg-[#0B1222] p-1 rounded-xl border border-slate-800 max-w-xs gap-1">
           <button
             type="button"
             onClick={() => setActiveMainTab('plans')}
-            className={`flex-1 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
               activeMainTab === 'plans'
-                ? 'bg-[#EAB308] text-slate-950 shadow-md'
+                ? 'bg-[#EAB308] text-slate-950 shadow-sm'
                 : 'text-slate-300 hover:text-white'
             }`}
           >
-            <Package className="w-3.5 h-3.5" />
+            <Package className="w-3 h-3" />
             <span>Plans</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveMainTab('live_map')}
-            className={`flex-1 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
               activeMainTab === 'live_map'
-                ? 'bg-[#EAB308] text-slate-950 shadow-md'
+                ? 'bg-[#EAB308] text-slate-950 shadow-sm'
                 : 'text-slate-300 hover:text-white'
             }`}
           >
-            <MapPin className="w-3.5 h-3.5" />
+            <MapPin className="w-3 h-3" />
             <span>Live Map</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveMainTab('history')}
-            className={`flex-1 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
               activeMainTab === 'history'
-                ? 'bg-[#EAB308] text-slate-950 shadow-md'
+                ? 'bg-[#EAB308] text-slate-950 shadow-sm'
                 : 'text-slate-300 hover:text-white'
             }`}
           >
-            <Clock className="w-3.5 h-3.5" />
+            <Clock className="w-3 h-3" />
             <span>History</span>
           </button>
         </div>
 
-        {/* 3-Column Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Dense 3-Column Workspace */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+          
           {/* =========================================================================
-              COLUMN 1: LOGISTICS PLANNER (col-span-12 lg:col-span-4)
+              COLUMN 1: LOGISTICS PLANNER (col-span-12 lg:col-span-4) - Compact & Snug
              ========================================================================= */}
-          <div className="lg:col-span-4 bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-4">
+          <div className="lg:col-span-4 bg-[#0B1222] border border-slate-800/90 rounded-2xl p-3 sm:p-3.5 shadow-xl space-y-3">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-                  <Truck className="w-5 h-5" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <Truck className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-black text-white">Logistics Dispatch Planner</h2>
-                  <p className="text-[11px] text-slate-300 font-medium">Configure payload, schedule & stops</p>
+                  <h2 className="text-xs sm:text-sm font-black text-white">Logistics Dispatch Planner</h2>
+                  <p className="text-[10px] text-slate-400 font-medium">Multi-stop routing & delivery queue</p>
                 </div>
               </div>
             </div>
 
-            {/* Delivery Details Summary: Total Parcels, Weight, Volumetric, Volume */}
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-2.5">
-                <div className="text-[10px] text-slate-300 font-bold flex items-center justify-center gap-1">
-                  <Package className="w-3 h-3 text-amber-400" />
+            {/* Delivery Totals: Parcels, Weight, Volumetric */}
+            <div className="grid grid-cols-3 gap-1.5 text-center">
+              <div className="bg-[#10182E] border border-slate-800 rounded-xl p-2">
+                <div className="text-[9px] text-slate-400 font-bold flex items-center justify-center gap-1">
+                  <Package className="w-2.5 h-2.5 text-amber-400" />
                   <span>Parcels</span>
                 </div>
-                <div className="text-base font-black text-white mt-1">
+                <div className="text-sm font-black text-white mt-0.5">
                   {totalParcelsCount > 0 ? totalParcelsCount : '0'}
                 </div>
               </div>
 
-              <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-2.5">
-                <div className="text-[10px] text-slate-300 font-bold flex items-center justify-center gap-1">
-                  <Scale className="w-3 h-3 text-blue-400" />
+              <div className="bg-[#10182E] border border-slate-800 rounded-xl p-2">
+                <div className="text-[9px] text-slate-400 font-bold flex items-center justify-center gap-1">
+                  <Scale className="w-2.5 h-2.5 text-blue-400" />
                   <span>Weight</span>
                 </div>
-                <div className="text-base font-black text-white mt-1">
+                <div className="text-sm font-black text-white mt-0.5">
                   {totalWeightKg > 0 ? `${totalWeightKg.toFixed(1)} kg` : '0 kg'}
                 </div>
               </div>
 
-              <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-2.5">
-                <div className="text-[10px] text-slate-300 font-bold flex items-center justify-center gap-1">
-                  <Boxes className="w-3 h-3 text-emerald-400" />
+              <div className="bg-[#10182E] border border-slate-800 rounded-xl p-2">
+                <div className="text-[9px] text-slate-400 font-bold flex items-center justify-center gap-1">
+                  <Boxes className="w-2.5 h-2.5 text-emerald-400" />
                   <span>Volume</span>
                 </div>
-                <div className="text-base font-black text-white mt-1">
+                <div className="text-sm font-black text-white mt-0.5">
                   {totalWeightKg > 0 ? `${totalVolumeM3} m³` : '0 m³'}
                 </div>
               </div>
             </div>
 
-            {/* Parcel Category Multi-Select */}
-            <div className="space-y-2 pt-1">
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-slate-200 font-bold flex items-center gap-1.5">
-                  <Package className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Parcel Types (Multi-select)</span>
-                </label>
+            {/* Multi-Select Parcel Categories */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs text-slate-300 font-bold">
+                <span>Parcel Types</span>
                 <span className="text-[10px] text-slate-400">{selectedParcelTypes.length} selected</span>
               </div>
 
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1">
                 {(['Documents', 'Electronics', 'Clothing', 'Food', 'Other'] as const).map((type) => {
                   const isSelected = selectedParcelTypes.includes(type);
                   return (
@@ -968,149 +988,135 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                       key={type}
                       type="button"
                       onClick={() => handleToggleParcelType(type)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                      className={`px-2 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
                         isSelected
-                          ? 'bg-[#EAB308] text-slate-950 shadow-md font-black'
+                          ? 'bg-[#EAB308] text-slate-950 font-black shadow-sm'
                           : 'bg-[#10182E] text-slate-300 border border-slate-800 hover:text-white'
                       }`}
                     >
-                      {isSelected ? <Check className="w-3 h-3 stroke-[3]" /> : null}
+                      {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                       <span>{type}</span>
                     </button>
                   );
                 })}
               </div>
 
-              {/* Custom 'Other' specification */}
               {selectedParcelTypes.includes('Other') && (
-                <div className="pt-1">
-                  <input
-                    type="text"
-                    value={customParcelType}
-                    onChange={(e) => setCustomParcelType(e.target.value)}
-                    placeholder="Specify other parcel (e.g. Medical Supplies, Fragile Glass)"
-                    className="w-full bg-[#10182E] border border-amber-500/60 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-amber-400 transition placeholder:text-slate-500"
-                  />
-                </div>
+                <input
+                  type="text"
+                  value={customParcelType}
+                  onChange={(e) => setCustomParcelType(e.target.value)}
+                  placeholder="Specify other parcel (e.g. Medical Supplies)"
+                  className="w-full bg-[#10182E] border border-amber-500/60 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400 placeholder:text-slate-500"
+                />
               )}
             </div>
 
-            {/* Parcel Count, Weight & Dimensions (L x W x H) */}
-            <div className="bg-[#0F172A] border border-slate-800/80 rounded-2xl p-3 space-y-2.5">
-              <div className="text-xs font-bold text-slate-200 flex items-center justify-between">
-                <span>Parcel Dimensions & Quantity</span>
+            {/* Parcel Count & Dimensions */}
+            <div className="bg-[#0F172A] border border-slate-800/80 rounded-xl p-2.5 space-y-1.5">
+              <div className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
+                <span>Parcel Count & Dimensions</span>
                 <span className="text-[10px] text-amber-400 font-mono">
                   Volumetric: {volumetricWeightKg} kg
                 </span>
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 <div>
-                  <label className="text-[10px] text-slate-400 font-semibold block">Qty</label>
+                  <label className="text-[9px] text-slate-400 font-semibold block">Qty</label>
                   <input
                     type="number"
                     min={1}
                     value={parcelCount}
                     onChange={(e) => setParcelCount(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full bg-[#10182E] border border-slate-800 rounded-lg p-1.5 text-xs text-white text-center font-bold"
+                    className="w-full bg-[#10182E] border border-slate-800 rounded p-1 text-xs text-white text-center font-bold"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 font-semibold block">L (cm)</label>
+                  <label className="text-[9px] text-slate-400 font-semibold block">L (cm)</label>
                   <input
                     type="number"
                     value={lengthCm}
                     onChange={(e) => setLengthCm(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-[#10182E] border border-slate-800 rounded-lg p-1.5 text-xs text-white text-center font-bold"
+                    className="w-full bg-[#10182E] border border-slate-800 rounded p-1 text-xs text-white text-center font-bold"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 font-semibold block">W (cm)</label>
+                  <label className="text-[9px] text-slate-400 font-semibold block">W (cm)</label>
                   <input
                     type="number"
                     value={widthCm}
                     onChange={(e) => setWidthCm(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-[#10182E] border border-slate-800 rounded-lg p-1.5 text-xs text-white text-center font-bold"
+                    className="w-full bg-[#10182E] border border-slate-800 rounded p-1 text-xs text-white text-center font-bold"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 font-semibold block">H (cm)</label>
+                  <label className="text-[9px] text-slate-400 font-semibold block">H (cm)</label>
                   <input
                     type="number"
                     value={heightCm}
                     onChange={(e) => setHeightCm(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-[#10182E] border border-slate-800 rounded-lg p-1.5 text-xs text-white text-center font-bold"
+                    className="w-full bg-[#10182E] border border-slate-800 rounded p-1 text-xs text-white text-center font-bold"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Pickup & Delivery Date/Time Slot & Priority */}
-            <div className="bg-[#0F172A] border border-slate-800/80 rounded-2xl p-3 space-y-2.5">
-              <div className="text-xs font-bold text-slate-200 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Date & Delivery Time Slot</span>
-                </span>
-                <span className="text-[10px] text-slate-400">Bhubaneswar Dispatch</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+            {/* Time Slot & Priority */}
+            <div className="bg-[#0F172A] border border-slate-800/80 rounded-xl p-2.5 space-y-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 <div>
-                  <label className="text-[10px] text-slate-400 font-semibold block mb-1">Target Date</label>
+                  <label className="text-[9px] text-slate-400 font-semibold block mb-0.5">Date</label>
                   <input
                     type="date"
                     value={deliveryDate}
                     onChange={(e) => setDeliveryDate(e.target.value)}
-                    className="w-full bg-[#10182E] border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white font-semibold focus:outline-none"
+                    className="w-full bg-[#10182E] border border-slate-800 rounded-lg px-2 py-1 text-xs text-white font-semibold focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 font-semibold block mb-1">Priority</label>
+                  <label className="text-[9px] text-slate-400 font-semibold block mb-0.5">Priority</label>
                   <select
                     value={dispatchPriority}
                     onChange={(e) => setDispatchPriority(e.target.value as any)}
-                    className="w-full bg-[#10182E] border border-slate-800 rounded-xl px-2 py-1.5 text-xs text-white font-bold focus:outline-none"
+                    className="w-full bg-[#10182E] border border-slate-800 rounded-lg px-2 py-1 text-xs text-white font-bold focus:outline-none"
                   >
-                    <option value="Standard">Standard (Normal)</option>
+                    <option value="Standard">Standard</option>
                     <option value="Express">Express (4h SLA)</option>
                     <option value="Urgent">Urgent (Immediate)</option>
                   </select>
                 </div>
               </div>
 
-              {/* Time Slot Options */}
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-400 font-semibold block">Preferred Slot</label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {[
-                    'Morning (09:00 - 12:00)',
-                    'Afternoon (12:00 - 16:00)',
-                    'Evening (16:00 - 20:00)',
-                    'Express (Within 2h)',
-                  ].map((slot) => (
-                    <button
-                      key={slot}
-                      type="button"
-                      onClick={() => setPreferredSlot(slot as any)}
-                      className={`p-1.5 rounded-lg text-[10px] font-bold text-left transition ${
-                        preferredSlot === slot
-                          ? 'bg-amber-500 text-slate-950 font-black'
-                          : 'bg-[#10182E] text-slate-300 hover:text-white border border-slate-800'
-                      }`}
-                    >
-                      {slot}
-                    </button>
-                  ))}
-                </div>
+              {/* Time Slots */}
+              <div className="grid grid-cols-2 gap-1 text-[10px]">
+                {[
+                  'Morning (09:00 - 12:00)',
+                  'Afternoon (12:00 - 16:00)',
+                  'Evening (16:00 - 20:00)',
+                  'Express (Within 2h)',
+                ].map((slot) => (
+                  <button
+                    key={slot}
+                    type="button"
+                    onClick={() => setPreferredSlot(slot as any)}
+                    className={`p-1 rounded text-left truncate transition ${
+                      preferredSlot === slot
+                        ? 'bg-amber-500 text-slate-950 font-black'
+                        : 'bg-[#10182E] text-slate-300 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    {slot}
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* Delivery Locations Search & Categorized Suggestions */}
-            <div className="space-y-2.5 pt-1">
+            <div className="space-y-2 pt-0.5">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider">Delivery Locations</h3>
+                <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider">Delivery Queue</h3>
                 {waypoints.length > 0 && (
                   <button
                     type="button"
@@ -1122,10 +1128,10 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                 )}
               </div>
 
-              {/* Search or Add Address Input */}
+              {/* Search input */}
               <div className="relative">
                 <div className="relative flex items-center">
-                  <span className="absolute left-3 text-slate-400">
+                  <span className="absolute left-2.5 text-slate-400">
                     <Search className="w-3.5 h-3.5" />
                   </span>
                   <input
@@ -1143,15 +1149,15 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                       }
                     }}
                     placeholder="Search address in Bhubaneswar..."
-                    className="w-full bg-[#10182E] border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs font-semibold text-white focus:outline-none focus:border-amber-500 transition placeholder:text-slate-500"
+                    className="w-full bg-[#10182E] border border-slate-800 rounded-xl pl-8 pr-7 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 placeholder:text-slate-500"
                   />
                   {searchAddress ? (
                     <button
                       type="button"
                       onClick={() => setSearchAddress('')}
-                      className="absolute right-2.5 text-slate-400 hover:text-white p-0.5"
+                      className="absolute right-2 text-slate-400 hover:text-white p-0.5"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="w-3 h-3" />
                     </button>
                   ) : (
                     <button
@@ -1167,24 +1173,21 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
 
                 {/* Autocomplete Dropdown */}
                 {isSearchFocused && (
-                  <div className="absolute left-0 right-0 top-[38px] z-50 bg-[#0B1220] border border-slate-700/90 rounded-2xl shadow-2xl p-2 space-y-1 max-h-56 overflow-y-auto">
-                    <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
-                      Popular Hubs
-                    </div>
+                  <div className="absolute left-0 right-0 top-[34px] z-50 bg-[#0B1220] border border-slate-700 rounded-xl shadow-2xl p-1.5 space-y-1 max-h-48 overflow-y-auto">
                     {CATEGORIZED_LOCATIONS.popular.map((item) => (
                       <div
                         key={item.name}
                         onMouseDown={() => handleAddStop(`${item.name}, ${item.address}`)}
-                        className="p-2 rounded-xl hover:bg-amber-500/10 border border-transparent hover:border-amber-500/30 cursor-pointer transition flex items-center justify-between text-left"
+                        className="p-1.5 rounded-lg hover:bg-amber-500/10 cursor-pointer transition flex items-center justify-between text-left"
                       >
                         <div>
-                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <div className="text-xs font-bold text-white flex items-center gap-1">
                             <MapPin className="w-3 h-3 text-amber-400" />
                             <span>{item.name}</span>
                           </div>
                           <div className="text-[10px] text-slate-400 truncate max-w-[200px]">{item.address}</div>
                         </div>
-                        <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-lg">
+                        <span className="text-[9px] font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
                           + Add
                         </span>
                       </div>
@@ -1193,77 +1196,52 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                 )}
               </div>
 
-              {/* Categorized Location Chips: Popular | Recent | Saved */}
-              <div className="space-y-1.5">
-                <div className="flex gap-1 border-b border-slate-800/80 pb-1 text-[10px] font-bold">
-                  {(['popular', 'recent', 'saved'] as const).map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setCategoryTab(cat)}
-                      className={`px-2 py-0.5 rounded-md transition capitalize cursor-pointer ${
-                        categoryTab === cat
-                          ? 'bg-slate-800 text-amber-400 font-black'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      {cat === 'saved' ? 'Saved' : cat}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex flex-wrap gap-1">
-                  {CATEGORIZED_LOCATIONS[categoryTab].map((item) => (
-                    <button
-                      key={item.name}
-                      type="button"
-                      onClick={() => handleAddStop(`${item.name}, ${item.address}`)}
-                      className="text-[10px] px-2 py-1 rounded-lg bg-[#10182E] hover:bg-slate-800 border border-slate-800/80 text-slate-300 hover:text-white transition cursor-pointer font-medium flex items-center gap-1"
-                    >
-                      <Plus className="w-2.5 h-2.5 text-amber-400" />
-                      <span>{item.name.split(' ')[0]}</span>
-                    </button>
-                  ))}
-                </div>
+              {/* Categorized Location Quick Chips */}
+              <div className="flex flex-wrap gap-1">
+                {CATEGORIZED_LOCATIONS[categoryTab].slice(0, 3).map((item) => (
+                  <button
+                    key={item.name}
+                    type="button"
+                    onClick={() => handleAddStop(`${item.name}, ${item.address}`)}
+                    className="text-[10px] px-2 py-0.5 rounded-lg bg-[#10182E] hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition cursor-pointer font-medium flex items-center gap-1"
+                  >
+                    <Plus className="w-2.5 h-2.5 text-amber-400" />
+                    <span>{item.name.split(' ')[0]}</span>
+                  </button>
+                ))}
               </div>
 
-              {/* Stop Sequence Queue & Manual Reordering */}
-              <div className="space-y-2 pt-1 max-h-64 overflow-y-auto pr-1">
-                {/* Warehouse Origin (Base) */}
-                <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#10182E] border border-slate-800/80">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-black text-xs flex items-center justify-center">
+              {/* Stop Sequence Queue */}
+              <div className="space-y-1.5 pt-0.5 max-h-56 overflow-y-auto pr-1">
+                {/* Base Warehouse */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-[#10182E] border border-slate-800/80">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 font-black text-[10px] flex items-center justify-center">
                       W
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-white">Warehouse Dispatch Base</div>
-                      <div className="text-[10px] text-slate-400">Baramunda Logistics Hub</div>
+                      <div className="text-xs font-bold text-white">Warehouse Origin</div>
+                      <div className="text-[10px] text-slate-400">Baramunda Logistics Base</div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                    Origin
+                  <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                    Base
                   </span>
                 </div>
 
-                {/* Empty State with Prominent "Add First Stop" Button */}
+                {/* Empty State with Add First Stop */}
                 {waypoints.length === 0 ? (
-                  <div className="p-4 rounded-2xl bg-[#10182E]/60 border border-dashed border-slate-800 text-center space-y-2.5">
-                    <Package className="w-6 h-6 text-slate-400 mx-auto" />
+                  <div className="p-3 rounded-xl bg-[#10182E]/60 border border-dashed border-slate-800 text-center space-y-2">
+                    <Package className="w-5 h-5 text-slate-400 mx-auto" />
                     <p className="text-xs font-bold text-slate-200">No delivery stops added yet</p>
-                    <p className="text-[11px] text-slate-400">
-                      Add delivery addresses to calculate optimal shortest routes and fleet allocations.
-                    </p>
-
-                    {/* Prominent Add First Stop Button */}
                     <button
                       type="button"
                       onClick={() => handleAddStop('Trident Academy of Technology, Chandaka Industrial Estate')}
-                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-yellow-400 transition cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <Plus className="w-4 h-4 stroke-[3]" />
+                      <Plus className="w-3.5 h-3.5 stroke-[3]" />
                       <span>+ Add First Stop (Trident Academy)</span>
                     </button>
-
                     <button
                       type="button"
                       onClick={handleLoadSampleStops}
@@ -1280,107 +1258,87 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                     return (
                       <div
                         key={wp.id}
-                        className={`p-2.5 rounded-2xl border transition space-y-1.5 ${
+                        className={`p-2 rounded-xl border transition space-y-1 ${
                           isDelivered
                             ? 'bg-emerald-950/20 border-emerald-500/40'
                             : 'bg-[#10182E] border-slate-800/80 hover:border-slate-700'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 min-w-0 pr-2">
-                            {/* Number Pin */}
+                          <div className="flex items-center gap-2 min-w-0 pr-1">
                             <div
-                              className="w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center shrink-0 text-white"
+                              className="w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center shrink-0 text-white"
                               style={{ backgroundColor: isDelivered ? '#10B981' : pinColor }}
                             >
                               {isDelivered ? '✓' : idx + 1}
                             </div>
 
                             <div className="min-w-0">
-                              <div className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                              <div className="text-xs font-bold text-white truncate flex items-center gap-1">
                                 <span>{wp.recipientName}</span>
                                 {wp.priority === 'Urgent' && (
-                                  <span className="text-[9px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 px-1.5 py-0.2 rounded">
+                                  <span className="text-[8px] font-black bg-rose-500/20 text-rose-300 px-1 rounded">
                                     Urgent
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[10px] text-slate-300 truncate">
-                                {wp.packageWeightKg} kg • {wp.parcelCount || 1} parcel
-                                {wp.parcelTypes ? ` • ${wp.parcelTypes.join(', ')}` : ''}
+                              <div className="text-[10px] text-slate-400 truncate">
+                                {wp.packageWeightKg} kg • {wp.parcelCount || 1} pkg
                               </div>
                             </div>
                           </div>
 
-                          {/* Reordering & Actions */}
-                          <div className="flex items-center gap-1 shrink-0">
-                            {/* Move Up */}
+                          <div className="flex items-center gap-0.5 shrink-0">
                             <button
                               type="button"
                               disabled={idx === 0}
                               onClick={() => handleMoveStopUp(idx)}
-                              className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-800 transition"
-                              title="Move Stop Up"
+                              className="p-1 text-slate-400 hover:text-white disabled:opacity-20"
+                              title="Move Up"
                             >
-                              <ChevronUp className="w-3.5 h-3.5" />
+                              <ChevronUp className="w-3 h-3" />
                             </button>
-
-                            {/* Move Down */}
                             <button
                               type="button"
                               disabled={idx === waypoints.length - 1}
                               onClick={() => handleMoveStopDown(idx)}
-                              className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-800 transition"
-                              title="Move Stop Down"
+                              className="p-1 text-slate-400 hover:text-white disabled:opacity-20"
+                              title="Move Down"
                             >
-                              <ChevronDown className="w-3.5 h-3.5" />
+                              <ChevronDown className="w-3 h-3" />
                             </button>
-
-                            {/* Delete Stop */}
                             <button
                               type="button"
                               onClick={() => handleRemoveStop(wp.id)}
-                              className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-rose-500/10 transition"
+                              className="p-1 text-slate-500 hover:text-rose-400"
                               title="Remove Stop"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
                         </div>
 
-                        {/* Status Selector & e-POD Button */}
+                        {/* Status & e-POD */}
                         <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[10px]">
-                          <div className="flex items-center gap-1">
-                            <span className="text-slate-400 font-semibold">Status:</span>
-                            <select
-                              value={wp.status}
-                              onChange={(e) => handleUpdateStopStatus(wp.id, e.target.value as any)}
-                              className={`bg-[#070D1A] rounded px-1.5 py-0.5 font-bold text-[10px] border ${
-                                wp.status === 'delivered'
-                                  ? 'text-emerald-400 border-emerald-500/50'
-                                  : wp.status === 'in_transit'
-                                  ? 'text-blue-400 border-blue-500/50'
-                                  : wp.status === 'failed'
-                                  ? 'text-rose-400 border-rose-500/50'
-                                  : 'text-amber-400 border-slate-700'
-                              }`}
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="in_transit">In Transit</option>
-                              <option value="delivered">Delivered</option>
-                              <option value="failed">Failed</option>
-                              <option value="rescheduled">Rescheduled</option>
-                            </select>
-                          </div>
+                          <select
+                            value={wp.status}
+                            onChange={(e) => handleUpdateStopStatus(wp.id, e.target.value as any)}
+                            className="bg-[#070D1A] rounded px-1 py-0.5 font-bold text-[10px] border border-slate-700 text-slate-200"
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="in_transit">In Transit</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="failed">Failed</option>
+                            <option value="rescheduled">Rescheduled</option>
+                          </select>
 
-                          {/* Proof of Delivery Modal Trigger */}
                           <button
                             type="button"
                             onClick={() => setPodModalStop({ waypoint: wp, index: idx })}
-                            className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-bold transition"
+                            className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-bold"
                           >
                             <FileCheck className="w-3 h-3" />
-                            <span>{wp.status === 'delivered' ? 'View POD ✓' : 'e-POD'}</span>
+                            <span>{wp.status === 'delivered' ? 'POD ✓' : 'e-POD'}</span>
                           </button>
                         </div>
                       </div>
@@ -1393,45 +1351,90 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
               <button
                 type="button"
                 onClick={handleSmartOptimizeRoutes}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 mt-2"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs shadow-md flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95 mt-1.5"
               >
                 <Sparkles className="w-4 h-4 fill-slate-950" />
-                <span>Smart Route Optimization (TSP)</span>
+                <span>Optimize Route ({optimizationGoal.toUpperCase()})</span>
               </button>
             </div>
           </div>
 
           {/* =========================================================================
-              COLUMN 2: INTERACTIVE ROUTE MAP (col-span-12 lg:col-span-5)
+              COLUMN 2: INTERACTIVE ROUTE MAP & LIVE REROUTING (col-span-12 lg:col-span-5)
              ========================================================================= */}
-          <div className="lg:col-span-5 bg-[#0B1222] border border-slate-800/90 rounded-3xl overflow-hidden shadow-2xl relative h-[520px] sm:h-[600px] flex flex-col">
-            {/* Top Floating Filter Pills */}
-            <div className="absolute top-3.5 left-3.5 z-[1000] flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveMapPill('optimized')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 backdrop-blur-md shadow-lg ${
-                  activeMapPill === 'optimized'
-                    ? 'bg-[#121A2B]/95 text-amber-400 border border-amber-500/60 shadow-amber-500/20'
-                    : 'bg-[#121A2B]/80 text-slate-300 border border-slate-700 hover:text-white'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 fill-amber-400" />
-                <span>Optimized Corridors</span>
-              </button>
+          <div className="lg:col-span-5 bg-[#0B1222] border border-slate-800/90 rounded-2xl overflow-hidden shadow-xl relative h-[480px] sm:h-[540px] flex flex-col">
+            
+            {/* Top Bar on Map: Live Disruption Alert & 1-Click Reroute */}
+            <div className="absolute top-2.5 left-2.5 right-2.5 z-[1000] flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveMapPill('optimized')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition cursor-pointer backdrop-blur-md shadow ${
+                      activeMapPill === 'optimized'
+                        ? 'bg-[#121A2B]/95 text-amber-400 border border-amber-500/60'
+                        : 'bg-[#121A2B]/80 text-slate-300 border border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    Optimized Routes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveMapPill('all')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition cursor-pointer backdrop-blur-md shadow ${
+                      activeMapPill === 'all'
+                        ? 'bg-[#121A2B]/95 text-amber-400 border border-amber-500/60'
+                        : 'bg-[#121A2B]/80 text-slate-300 border border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    All Stops
+                  </button>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => setActiveMapPill('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 backdrop-blur-md shadow-lg ${
-                  activeMapPill === 'all'
-                    ? 'bg-[#121A2B]/95 text-amber-400 border border-amber-500/60 shadow-amber-500/20'
-                    : 'bg-[#121A2B]/80 text-slate-300 border border-slate-700 hover:text-white'
-                }`}
-              >
-                <MapPin className="w-3.5 h-3.5" />
-                <span>All Stops</span>
-              </button>
+                {/* Risk Index Badge */}
+                <div className="bg-[#0B1220]/90 backdrop-blur-md border border-slate-700 px-2 py-0.5 rounded-lg text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                  <span>Risk Index: {smartOptimization.riskAssessment.riskScore}/100</span>
+                </div>
+              </div>
+
+              {/* Live Disruption Bar */}
+              {smartOptimization.activeDisruption && (
+                <div className="p-2 rounded-xl bg-rose-950/90 border border-rose-500/60 backdrop-blur-md shadow-xl flex items-center justify-between gap-2 text-xs animate-in slide-in-from-top-1">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <div className="truncate text-[11px] font-bold text-rose-200">
+                      <span>{smartOptimization.activeDisruption.title}</span>
+                      <span className="text-rose-400 ml-1">(+{smartOptimization.activeDisruption.delayMinutes}m delay)</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleApplyLiveReroute}
+                    className="px-2.5 py-1 rounded-lg bg-rose-500 hover:bg-rose-400 text-slate-950 text-[10px] font-black whitespace-nowrap cursor-pointer transition"
+                  >
+                    ⚡ Apply Re-Route
+                  </button>
+                </div>
+              )}
+
+              {isRerouteApplied && (
+                <div className="p-1.5 rounded-xl bg-emerald-950/90 border border-emerald-500/60 backdrop-blur-md shadow-xl flex items-center justify-between gap-2 text-[11px] text-emerald-200">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Bypass Active via Cuttack-Puri Expressway (Saved 9 mins)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetDisruption}
+                    className="text-[10px] text-slate-400 hover:text-white underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Map Container */}
@@ -1465,7 +1468,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                   </Popup>
                 </Marker>
 
-                {/* Polylines for 3 Fleet Delivery Clusters */}
+                {/* Polylines */}
                 {van1Stops.length > 0 && (
                   <Polyline
                     positions={filterValidLatLngs([
@@ -1475,7 +1478,6 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                     pathOptions={{ color: '#3B82F6', weight: 4.5, opacity: 0.95 }}
                   />
                 )}
-
                 {van2Stops.length > 0 && (
                   <Polyline
                     positions={filterValidLatLngs([
@@ -1485,7 +1487,6 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                     pathOptions={{ color: '#10B981', weight: 4.5, opacity: 0.95 }}
                   />
                 )}
-
                 {van3Stops.length > 0 && (
                   <Polyline
                     positions={filterValidLatLngs([
@@ -1511,9 +1512,6 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                             Stop {idx + 1}: {wp.recipientName}
                           </div>
                           <div className="text-[11px] text-slate-600">{wp.address}</div>
-                          <div className="text-[10px] text-slate-500">
-                            Weight: {wp.packageWeightKg} kg • Status: {wp.status.toUpperCase()}
-                          </div>
                           {wp.pod && (
                             <div className="p-1 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">
                               ✓ Received by {wp.pod.receiverName} ({wp.pod.deliveredAt})
@@ -1526,214 +1524,187 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
               </MapContainer>
             </div>
 
-            {/* Vehicle Fleet Live Allocation Floating Card */}
-            <div className="absolute left-3.5 bottom-3.5 z-[1000] bg-[#0C1425]/95 border border-slate-800/90 backdrop-blur-md rounded-2xl p-3 shadow-2xl space-y-2 min-w-[190px]">
-              <h4 className="font-extrabold text-slate-300 text-[11px] uppercase tracking-wider">Fleet Clusters</h4>
-              <div className="space-y-1.5 text-xs font-bold">
-                <div className="flex items-center justify-between text-white">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 bg-blue-500 rounded-full" />
-                    <span>Van 1 (Patia/KIIT)</span>
-                  </div>
-                  <span className="text-slate-400 text-[11px]">{van1Parcels} pkgs</span>
-                </div>
-                <div className="flex items-center justify-between text-white">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full" />
-                    <span>Van 2 (Janpath/Vani)</span>
-                  </div>
-                  <span className="text-slate-400 text-[11px]">{van2Parcels} pkgs</span>
-                </div>
-                <div className="flex items-center justify-between text-white">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 bg-amber-500 rounded-full" />
-                    <span>Van 3 (Rasulgarh/NH)</span>
-                  </div>
-                  <span className="text-slate-400 text-[11px]">{van3Parcels} pkgs</span>
-                </div>
+            {/* Bottom-Left Floating Fleet & Clustering Info */}
+            <div className="absolute left-2.5 bottom-2.5 z-[1000] bg-[#0C1425]/95 border border-slate-800 backdrop-blur-md rounded-xl p-2 shadow-xl space-y-1 min-w-[170px]">
+              <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                <span>NEAR CLUSTERS</span>
+                <span className="text-amber-400 font-mono">{detectedClusters.length} Active</span>
+              </div>
+              <div className="space-y-0.5 text-[10px] font-semibold text-slate-200">
+                {detectedClusters.length > 0 ? (
+                  detectedClusters.map((c, i) => <div key={i}>📍 {c}</div>)
+                ) : (
+                  <div>📍 Patia-Janpath Hubs</div>
+                )}
               </div>
             </div>
 
-            {/* Map Expand Button */}
-            <div className="absolute right-3.5 bottom-3.5 z-[1000]">
+            {/* Expand Map button */}
+            <div className="absolute right-2.5 bottom-2.5 z-[1000]">
               <button
                 type="button"
                 onClick={() => setIsMapExpanded(true)}
-                className="w-9 h-9 rounded-xl bg-[#0C1425]/95 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center backdrop-blur-md cursor-pointer"
+                className="w-8 h-8 rounded-xl bg-[#0C1425]/95 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center backdrop-blur-md cursor-pointer"
                 title="Fullscreen Map"
               >
-                <Maximize2 className="w-4 h-4" />
+                <Maximize2 className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
           {/* =========================================================================
-              COLUMN 3: VEHICLE DETAILS, DRIVER & COST BREAKDOWN (col-span-12 lg:col-span-3)
+              COLUMN 3: MOBILITY REASONING, VEHICLE & COST (col-span-12 lg:col-span-3)
              ========================================================================= */}
-          <div className="lg:col-span-3 space-y-4">
-            {/* Card 1: Vehicle Details & Dynamic Capacity Gauge */}
-            <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
+          <div className="lg:col-span-3 space-y-3">
+            
+            {/* Card 1: Explainable Route Choice Rationale */}
+            <div className="bg-[#0B1222] border border-slate-800/90 rounded-2xl p-3 sm:p-3.5 shadow-xl space-y-2.5">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-white">
-                  <Truck className="w-4 h-4 text-amber-400" />
-                  <h3 className="text-sm font-black">Vehicle Details & Fleet</h3>
+                <div className="flex items-center gap-1.5 text-white">
+                  <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
+                  <h3 className="text-xs font-black">Route Choice Rationale</h3>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                  Active
+                <span className="text-[9px] font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                  Explainable AI
                 </span>
               </div>
 
-              {/* Vehicle Type Picker */}
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="space-y-1.5 text-[11px]">
+                <div className="p-2 rounded-xl bg-[#10182E] border border-slate-800/80 space-y-0.5">
+                  <div className="text-[10px] font-bold text-amber-300 flex items-center gap-1">
+                    <Navigation className="w-3 h-3 text-amber-400" />
+                    <span>Traffic & Congestion Avoidance</span>
+                  </div>
+                  <div className="text-slate-300 leading-snug text-[10.5px]">
+                    {smartOptimization.explainability.trafficReason}
+                  </div>
+                </div>
+
+                <div className="p-2 rounded-xl bg-[#10182E] border border-slate-800/80 space-y-0.5">
+                  <div className="text-[10px] font-bold text-blue-300 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-blue-400" />
+                    <span>Delivery Time Window</span>
+                  </div>
+                  <div className="text-slate-300 leading-snug text-[10.5px]">
+                    {smartOptimization.explainability.timeWindowReason}
+                  </div>
+                </div>
+
+                <div className="p-2 rounded-xl bg-[#10182E] border border-slate-800/80 space-y-0.5">
+                  <div className="text-[10px] font-bold text-emerald-300 flex items-center gap-1">
+                    <Leaf className="w-3 h-3 text-emerald-400" />
+                    <span>Carbon & Fleet Selection</span>
+                  </div>
+                  <div className="text-slate-300 leading-snug text-[10.5px]">
+                    {smartOptimization.explainability.ecoReason}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Vehicle Allocation & Driver Working Hours */}
+            <div className="bg-[#0B1222] border border-slate-800/90 rounded-2xl p-3 sm:p-3.5 shadow-xl space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-white">
+                  <Truck className="w-3.5 h-3.5 text-amber-400" />
+                  <h3 className="text-xs font-black">Vehicle & Driver Shift</h3>
+                </div>
+                <span className="text-[9px] font-mono font-bold text-slate-400">
+                  Shift: 4.8h / 8.0h
+                </span>
+              </div>
+
+              {/* Vehicle Options */}
+              <div className="grid grid-cols-2 gap-1">
                 {VEHICLE_FLEET_OPTIONS.map((v) => (
                   <button
                     key={v.id}
                     type="button"
                     onClick={() => setSelectedVehicleId(v.id)}
-                    className={`p-2 rounded-xl text-left border transition cursor-pointer ${
+                    className={`p-1.5 rounded-lg text-left border transition cursor-pointer ${
                       selectedVehicleId === v.id
-                        ? 'bg-slate-800 border-amber-400 text-white shadow-md'
+                        ? 'bg-slate-800 border-amber-400 text-white'
                         : 'bg-[#10182E] border-slate-800 text-slate-300 hover:text-white'
                     }`}
                   >
-                    <div className="text-xs font-bold leading-tight truncate">{v.typeLabel}</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">₹{v.costPerKmInr}/km • {v.maxPayloadKg}kg</div>
+                    <div className="text-[11px] font-bold truncate">{v.typeLabel}</div>
+                    <div className="text-[9px] text-slate-400">₹{v.costPerKmInr}/km • {v.maxPayloadKg}kg</div>
                   </button>
                 ))}
               </div>
 
-              {/* Dynamic Capacity Visual Gauge */}
-              <div className="p-3 rounded-2xl bg-[#10182E] border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold">
+              {/* Dynamic Capacity Gauge */}
+              <div className="p-2 rounded-xl bg-[#10182E] border border-slate-800 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-bold">
                   <span className="text-slate-300">Payload Capacity</span>
                   <span className={vehicleCapacityPercent > 90 ? 'text-rose-400' : 'text-amber-400 font-mono'}>
-                    {vehicleCapacityPercent}% Filled
+                    {vehicleCapacityPercent}% (Remaining: {remainingVolumeM3} m³)
                   </span>
                 </div>
 
-                {/* Progress bar */}
-                <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden border border-slate-800">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${
-                      vehicleCapacityPercent > 90
-                        ? 'bg-rose-500'
-                        : vehicleCapacityPercent > 65
-                        ? 'bg-amber-500'
-                        : 'bg-emerald-500'
+                      vehicleCapacityPercent > 90 ? 'bg-rose-500' : 'bg-emerald-500'
                     }`}
                     style={{ width: `${Math.max(4, vehicleCapacityPercent)}%` }}
                   />
                 </div>
-
-                <div className="text-[11px] text-slate-300 font-semibold flex items-center justify-between pt-0.5">
-                  <span>Remaining: {remainingVolumeM3} m³</span>
-                  <span>{activeVehicle.batteryRangeKm} km Range</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 2: Driver Assignment Card */}
-            <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-white">
-                  <User className="w-4 h-4 text-amber-400" />
-                  <h3 className="text-sm font-black">Driver Assignment</h3>
-                </div>
-                <span className="text-[10px] text-slate-400 font-semibold">Bhubaneswar Fleet</span>
               </div>
 
-              {/* Driver Details */}
-              <div className="p-3 rounded-2xl bg-[#10182E] border border-slate-800 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center font-black text-xs text-blue-400">
-                      {activeDriver.avatarInitials}
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-white">{activeDriver.name}</div>
-                      <div className="text-[10px] text-emerald-400 font-semibold">
-                        ★ {activeDriver.rating} • {activeDriver.totalTrips} deliveries
-                      </div>
-                    </div>
+              {/* Driver Summary */}
+              <div className="p-2 rounded-xl bg-[#10182E] border border-slate-800 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-black text-xs">
+                    {activeDriver.avatarInitials}
                   </div>
-
-                  <a
-                    href={`tel:${activeDriver.phone}`}
-                    className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition"
-                    title="Call Driver"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-
-                <div className="text-[11px] text-slate-300 font-medium space-y-1 pt-1 border-t border-slate-800/80">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Vehicle Number:</span>
-                    <span className="font-mono text-white font-bold">{activeDriver.vehicleNumber}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Current Station:</span>
-                    <span className="text-slate-200">{activeDriver.currentLocation}</span>
+                  <div>
+                    <div className="font-bold text-white text-[11px]">{activeDriver.name}</div>
+                    <div className="text-[9px] text-slate-400 font-mono">{activeDriver.vehicleNumber}</div>
                   </div>
                 </div>
-
-                {/* Driver Roster Dropdown */}
-                <select
-                  value={selectedDriverId}
-                  onChange={(e) => setSelectedDriverId(e.target.value)}
-                  className="w-full bg-[#0B1220] border border-slate-700 rounded-xl p-1.5 text-xs text-slate-200 font-bold focus:outline-none cursor-pointer"
+                <a
+                  href={`tel:${activeDriver.phone}`}
+                  className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                  title="Call Driver"
                 >
-                  {DRIVER_ROSTER.map((drv) => (
-                    <option key={drv.id} value={drv.id}>
-                      {drv.name} ({drv.vehicleNumber})
-                    </option>
-                  ))}
-                </select>
+                  <Phone className="w-3 h-3" />
+                </a>
               </div>
             </div>
 
-            {/* Card 3: Granular Cost Estimation Breakdown */}
-            <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
+            {/* Card 3: Granular Cost Breakdown */}
+            <div className="bg-[#0B1222] border border-slate-800/90 rounded-2xl p-3 sm:p-3.5 shadow-xl space-y-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-white">
-                  <Coins className="w-4 h-4 text-amber-400" />
-                  <h3 className="text-sm font-black">Cost Estimation</h3>
+                <div className="flex items-center gap-1.5 text-white">
+                  <Coins className="w-3.5 h-3.5 text-amber-400" />
+                  <h3 className="text-xs font-black">Cost Breakdown</h3>
                 </div>
-                <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">
-                  EV Discount 38%
+                <span className="text-[9px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                  EV Saved ₹{smartOptimization.costBreakdown.costSavingVsDieselInr}
                 </span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-[#10182E] border border-slate-800 text-xs space-y-2">
-                <div className="flex items-center justify-between text-slate-300">
-                  <span>Distance Fare:</span>
-                  <span className="font-mono text-white font-bold">
-                    ₹{plan.costBreakdown?.distanceFareInr || 110}
-                  </span>
+              <div className="p-2 rounded-xl bg-[#10182E] border border-slate-800 text-[11px] space-y-1 text-slate-300">
+                <div className="flex items-center justify-between">
+                  <span>Distance Fare ({smartOptimization.totalDistanceKm} km):</span>
+                  <span className="font-mono text-white font-bold">₹{smartOptimization.costBreakdown.distanceFareInr}</span>
                 </div>
-                <div className="flex items-center justify-between text-slate-300">
-                  <span>Battery / Fuel Cost:</span>
-                  <span className="font-mono text-white font-bold">
-                    ₹{plan.costBreakdown?.fuelOrBatteryCostInr || 35}
-                  </span>
+                <div className="flex items-center justify-between">
+                  <span>Battery EV Energy:</span>
+                  <span className="font-mono text-white font-bold">₹{smartOptimization.costBreakdown.fuelOrBatteryCostInr}</span>
                 </div>
-                <div className="flex items-center justify-between text-slate-300">
-                  <span>Tolls & Corridor Access:</span>
+                <div className="flex items-center justify-between">
+                  <span>Tolls & Handling:</span>
                   <span className="font-mono text-white font-bold">
-                    ₹{plan.costBreakdown?.tollFeesInr || 0}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-slate-300">
-                  <span>Handling & Driver Allowance:</span>
-                  <span className="font-mono text-white font-bold">
-                    ₹{plan.costBreakdown?.driverAllowanceInr || 55}
+                    ₹{smartOptimization.costBreakdown.tollFeesInr + smartOptimization.costBreakdown.driverAllowanceInr}
                   </span>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-sm font-black text-white">
+                <div className="pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-xs font-black text-white">
                   <span>Total Estimated:</span>
-                  <span className="text-amber-400 text-base font-mono">
-                    ₹{plan.costBreakdown?.totalCostInr || plan.estimatedCostInr || 200}
+                  <span className="text-amber-400 text-sm font-mono">
+                    ₹{smartOptimization.costBreakdown.totalCostInr}
                   </span>
                 </div>
               </div>
@@ -1741,148 +1712,182 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
               <button
                 type="button"
                 onClick={() => setIsPaymentOpen(true)}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition cursor-pointer active:scale-95"
+                className="w-full py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-md transition cursor-pointer active:scale-95"
               >
                 Pay & Authorize Dispatch
               </button>
             </div>
+
+            {/* Card 4: Crowd Signal Layer */}
+            <div className="p-2.5 rounded-2xl bg-[#0B1222] border border-slate-800 text-[11px] space-y-1.5">
+              <div className="flex items-center justify-between text-slate-300 font-bold">
+                <span className="flex items-center gap-1">
+                  <Radio className="w-3 h-3 text-amber-400 animate-pulse" />
+                  <span>Crowd Signal Layer</span>
+                </span>
+                <span className="text-[9px] text-emerald-400">98% Trust Score</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setToastMessage('👍 Slowdown report verified by 14 community drivers.');
+                    setTimeout(() => setToastMessage(null), 3000);
+                  }}
+                  className="p-1 rounded bg-[#10182E] hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition text-center"
+                >
+                  ⚠️ Tag Slowdown
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setToastMessage('✅ Smooth corridor confirmed by 42 transit users.');
+                    setTimeout(() => setToastMessage(null), 3000);
+                  }}
+                  className="p-1 rounded bg-[#10182E] hover:bg-slate-800 border border-slate-800 text-emerald-300 hover:text-white transition text-center"
+                >
+                  🟢 Confirm Flow
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
 
-        {/* ─── 5. BOTTOM SECTION: KEY FEATURES IN LOGISTICS ─── */}
-        <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
-          <div className="flex items-center gap-2 text-white">
-            <Sparkles className="w-4 h-4 text-amber-400 fill-amber-400" />
-            <h3 className="text-sm font-black">Key Features in Logistics Planning</h3>
+        {/* ─── 5. BOTTOM SECTION: KEY FEATURES IN LOGISTICS (Compact) ─── */}
+        <div className="bg-[#0B1222] border border-slate-800/90 rounded-2xl p-3 sm:p-4 shadow-xl space-y-2.5">
+          <div className="flex items-center gap-1.5 text-white">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+            <h3 className="text-xs font-black">Mobility Intelligence Capabilities</h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
             {[
               {
-                title: 'Smart Delivery Routing',
-                desc: 'Shortest + fastest routes for multiple deliveries.',
-                icon: MapPin,
+                title: 'Multi-Goal Routing',
+                desc: 'Optimize for Cost, Speed, Eco or Safety.',
+                icon: SlidersHorizontal,
                 color: 'text-amber-400',
               },
               {
-                title: 'Vehicle Capacity Matching',
-                desc: 'Assigns the right vehicle based on parcel size/weight.',
+                title: 'Explainable AI',
+                desc: 'Real-world justification for every corridor choice.',
+                icon: HelpCircle,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Live Disruption Reroute',
+                desc: 'Auto-bypasses traffic jams & waterlogging.',
+                icon: RotateCcw,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Capacity & Shift Guard',
+                desc: 'Matches vehicle weight & driver working hours.',
                 icon: Truck,
                 color: 'text-amber-400',
               },
               {
-                title: 'Multi-Stop Optimization',
-                desc: 'Arranges delivery points in the best order.',
-                icon: Package,
+                title: 'Time-Window SLAs',
+                desc: 'Prioritizes early deadlines and urgent drops.',
+                icon: Timer,
                 color: 'text-amber-400',
               },
               {
-                title: 'Parcel Pooling & Consolidation',
-                desc: 'Combines nearby parcels to reduce trips & fuel.',
-                icon: Boxes,
-                color: 'text-amber-400',
-              },
-              {
-                title: 'Real-Time Re-Routing',
-                desc: 'Adjusts to traffic, accidents, roadblocks or weather.',
-                icon: RotateCcw,
-                color: 'text-amber-400',
-              },
-              {
-                title: 'Eco Route',
-                desc: 'Suggests low fuel / low CO₂ routes.',
-                icon: Leaf,
+                title: 'Risk-Score Corridor',
+                desc: 'Avoids metro construction and flooding.',
+                icon: ShieldCheck,
                 color: 'text-emerald-400',
               },
               {
-                title: 'Return Trip Optimization',
-                desc: 'Assigns nearby pickups for backhaul.',
-                icon: RotateCcw,
+                title: 'Crowd Signal Trust',
+                desc: 'Community road reports weighted by accuracy.',
+                icon: Radio,
                 color: 'text-amber-400',
               },
               {
-                title: 'Load Balancing',
-                desc: 'Distributes parcels across available vehicles.',
-                icon: Scale,
-                color: 'text-amber-400',
+                title: 'Offline Resilient',
+                desc: 'Locally cached state works without internet.',
+                icon: CloudOff,
+                color: 'text-emerald-400',
               },
             ].map((feat, i) => {
               const Icon = feat.icon;
               return (
                 <div
                   key={i}
-                  className="p-3.5 rounded-2xl bg-[#10182E] border border-slate-800/80 hover:border-slate-700 transition flex flex-col items-center text-center justify-between min-h-[140px]"
+                  className="p-2.5 rounded-xl bg-[#10182E] border border-slate-800/80 hover:border-slate-700 transition flex flex-col items-center text-center justify-between min-h-[110px]"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center mb-2">
-                    <Icon className={`w-4 h-4 ${feat.color}`} />
+                  <div className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center mb-1">
+                    <Icon className={`w-3.5 h-3.5 ${feat.color}`} />
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-white leading-tight">{feat.title}</h4>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">{feat.desc}</p>
+                    <h4 className="text-[11px] font-black text-white leading-tight">{feat.title}</h4>
+                    <p className="text-[9.5px] text-slate-400 mt-0.5 leading-snug">{feat.desc}</p>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Eco Banner Footer */}
-          <div className="w-full py-3 px-4 rounded-2xl bg-[#18392B] border border-emerald-600/40 text-emerald-200 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-inner">
-            <Leaf className="w-4 h-4 text-emerald-400 fill-emerald-400" />
-            <span>Smarter logistics today for a more connected and sustainable tomorrow.</span>
+          <div className="w-full py-2 px-3 rounded-xl bg-[#18392B] border border-emerald-600/40 text-emerald-200 text-[11px] font-bold text-center flex items-center justify-center gap-2 shadow-inner">
+            <Leaf className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400" />
+            <span>Mobility intelligence today for a safer, sustainable, and connected smart city.</span>
           </div>
         </div>
+
       </div>
 
-      {/* ─── ACTIONABLE MUSAFIR AI ASSISTANT DRAWER / MODAL ─── */}
+      {/* ─── ACTIONABLE MUSAFIR AI ASSISTANT MODAL ─── */}
       {isAIDrawerOpen && (
         <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
-          <div className="bg-[#0B1220] border border-slate-700 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-4 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-                  <Bot className="w-5 h-5" />
+          <div className="bg-[#0B1220] border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-3.5 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                  <Bot className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-white">Actionable Musafir AI Logistics</h3>
-                  <p className="text-[11px] text-slate-300">Click any action to execute instantly</p>
+                  <p className="text-[11px] text-slate-300">Click any action to execute immediately</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAIDrawerOpen(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-white"
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-4 space-y-3.5 overflow-y-auto flex-1">
+            <div className="p-3.5 space-y-3 overflow-y-auto flex-1">
               {aiActionMessage && (
-                <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-xs text-amber-200 whitespace-pre-line font-medium leading-relaxed">
+                <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-xs text-amber-200 whitespace-pre-line font-medium leading-relaxed">
                   {aiActionMessage}
                 </div>
               )}
 
-              <div className="space-y-2">
-                <div className="text-xs font-black text-slate-300 uppercase tracking-wider">
-                  One-Click Logistics Actions
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-black text-slate-300 uppercase tracking-wider">
+                  One-Click Operations
                 </div>
 
                 {[
                   {
                     key: 'optimize',
                     title: '“Mere stops ka best route banao.”',
-                    subtitle: 'Auto-solves TSP nearest-neighbor shortest sequence.',
+                    subtitle: 'Solves TSP nearest-neighbor algorithm with current goal.',
                   },
                   {
                     key: 'urgent',
                     title: '“Is route mein sabse urgent delivery kaunsi hai?”',
-                    subtitle: 'Scans all stops for express deadlines and urgency flags.',
+                    subtitle: 'Scans for express deadlines and urgency priority.',
                   },
                   {
                     key: 'fuel',
                     title: '“Fuel cost kam karne ke liye route optimize karo.”',
-                    subtitle: 'Selects high-efficiency EV fleet and minimizes detours.',
+                    subtitle: 'Switches to Eco Green goal and selects electric fleet.',
                   },
                   {
                     key: 'sms',
@@ -1899,15 +1904,15 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                     key={act.key}
                     type="button"
                     onClick={() => handleAIPrompt(act.key)}
-                    className="w-full text-left p-3 rounded-2xl bg-[#10182E] hover:bg-slate-800 border border-slate-800/80 hover:border-amber-500/50 transition cursor-pointer flex items-center justify-between group"
+                    className="w-full text-left p-2.5 rounded-xl bg-[#10182E] hover:bg-slate-800 border border-slate-800/80 hover:border-amber-500/50 transition cursor-pointer flex items-center justify-between group"
                   >
                     <div>
                       <div className="text-xs font-bold text-white group-hover:text-amber-400 transition">
                         {act.title}
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{act.subtitle}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{act.subtitle}</div>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition shrink-0" />
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition shrink-0" />
                   </button>
                 ))}
               </div>
@@ -1930,23 +1935,23 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
       {/* ─── FULLSCREEN MAP MODAL ─── */}
       {isMapExpanded && (
         <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex flex-col animate-in fade-in">
-          <div className="flex items-center justify-between p-4 bg-[#0B1220] border-b border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+          <div className="flex items-center justify-between p-3.5 bg-[#0B1220] border-b border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
                 <Truck className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-black text-white">Full City Logistics Corridor</h3>
-                <p className="text-[11px] text-slate-400">{waypoints.length} Active Delivery Stops</p>
+                <h3 className="text-xs sm:text-sm font-black text-white">Full City Logistics Corridor</h3>
+                <p className="text-[10px] text-slate-400">{waypoints.length} Active Delivery Stops</p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={() => setIsMapExpanded(false)}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white cursor-pointer"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
@@ -1972,7 +1977,6 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                 </Popup>
               </Marker>
 
-              {/* Polylines */}
               {van1Stops.length > 0 && (
                 <Polyline
                   positions={filterValidLatLngs([
@@ -2001,7 +2005,6 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                 />
               )}
 
-              {/* Waypoints */}
               {waypoints
                 .filter((wp) => isValidLatLng([wp.lat, wp.lng]))
                 .map((wp, idx) => (
@@ -2030,7 +2033,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
         <PaymentGatewayModal
           isOpen={isPaymentOpen}
           onClose={() => setIsPaymentOpen(false)}
-          amount={Math.round(plan.costBreakdown?.totalCostInr || plan.estimatedCostInr || 240)}
+          amount={Math.round(smartOptimization.costBreakdown.totalCostInr || plan.estimatedCostInr || 240)}
           purpose="Logistics Corridor Dispatch"
           onPaymentSuccess={() => {
             setIsPaymentOpen(false);

@@ -53,11 +53,11 @@ export const AnnouncementsDrawer: React.FC<AnnouncementsDrawerProps> = ({
                 </h2>
                 <span className="bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
-                  Google News
+                  OTV News Live
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Live Traffic, Ama Bus, Indian Railways & BMC Commuter News Feed
+                OTV & Odisha Live Traffic, Ama Bus, Indian Railways & Commuter Alerts
               </p>
             </div>
           </div>

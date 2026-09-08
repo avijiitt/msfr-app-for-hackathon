@@ -1795,8 +1795,8 @@ app.get('/api/news/bbsr-alerts', async (_req: Request, res: Response) => {
       return;
     }
 
-    // 2. Fetch Google News RSS directly
-    const query = encodeURIComponent('Bhubaneswar (traffic OR "Mo Bus" OR Metro OR road OR BMC OR CRUT)');
+    // 2. Fetch OTV & Odisha Regional News RSS directly
+    const query = encodeURIComponent('(OTV OR "Odisha TV" OR Bhubaneswar) (traffic OR "Mo Bus" OR Metro OR road OR BMC OR CRUT)');
     const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=en-IN&gl=IN&ceid=IN:en`;
 
     const controller = new AbortController();
