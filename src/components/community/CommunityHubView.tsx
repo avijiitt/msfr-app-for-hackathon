@@ -61,6 +61,42 @@ const poorLightingIcon = createPinIcon('#f59e0b', '💡');
 const waterloggingIcon = createPinIcon('#0284c7', '🌧️');
 const busDelayIcon = createPinIcon('#10b981', '🚌');
 
+interface TopReporter {
+  rank: number;
+  name: string;
+  points: number;
+  avatarUrl: string;
+  badgeColor?: string;
+  ribbon?: string;
+}
+
+const DEFAULT_TOP_REPORTERS: TopReporter[] = [
+  {
+    rank: 1,
+    name: 'Ananya Sahoo',
+    points: 120,
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120',
+    badgeColor: 'border-amber-400 text-amber-400',
+    ribbon: '🏅',
+  },
+  {
+    rank: 2,
+    name: 'Rakesh Nayak',
+    points: 85,
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120',
+    badgeColor: 'border-slate-400 text-slate-300',
+    ribbon: '🥈',
+  },
+  {
+    rank: 3,
+    name: 'Subhashree Das',
+    points: 60,
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120',
+    badgeColor: 'border-amber-600 text-amber-500',
+    ribbon: '🥉',
+  },
+];
+
 export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap }) => {
   const store = useCommunityStore();
   
@@ -72,9 +108,70 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
   const [visibleCount, setVisibleCount] = useState(3);
   const [isFullscreenMapOpen, setIsFullscreenMapOpen] = useState(false);
 
+  const [topReporters, setTopReporters] = useState<TopReporter[]>(() => {
+    try {
+      const cached = localStorage.getItem('musafir_top_reporters_v2');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_TOP_REPORTERS;
+  });
+
+  const handleReportSubmit = (reportData: any) => {
+    store.addReport(reportData);
+    setIsReportDrawerOpen(false);
+
+    const reporterName = reportData.reporterName || 'You (Verified Citizen)';
+    setTopReporters((prev) => {
+      const updated = [...prev];
+      const existingIdx = updated.findIndex(
+        (r) => r.name.trim().toLowerCase() === reporterName.trim().toLowerCase()
+      );
+
+      if (existingIdx >= 0) {
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          points: updated[existingIdx].points + 35,
+        };
+      } else {
+        updated.push({
+          rank: updated.length + 1,
+          name: reporterName,
+          points: 45,
+          avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120',
+        });
+      }
+
+      updated.sort((a, b) => b.points - a.points);
+      const ranked = updated.map((r, i) => ({
+        ...r,
+        rank: i + 1,
+        badgeColor:
+          i === 0
+            ? 'border-amber-400 text-amber-400'
+            : i === 1
+            ? 'border-slate-400 text-slate-300'
+            : i === 2
+            ? 'border-amber-600 text-amber-500'
+            : 'border-purple-500 text-purple-400',
+        ribbon: i === 0 ? '🏅' : i === 1 ? '🥈' : i === 2 ? '🥉' : '🎖️',
+      }));
+
+      try {
+        localStorage.setItem('musafir_top_reporters_v2', JSON.stringify(ranked));
+      } catch {}
+      return ranked;
+    });
+  };
+
   // Filter Logic
   const filteredReports = store.reports.filter(r => {
-    if (activeTab === 'my_reports' && r.reporterName !== 'You (Verified Citizen)') return false;
+    if (activeTab === 'my_reports') {
+      const currentName = r.reporterName?.toLowerCase() || '';
+      if (!currentName.includes('you') && !currentName.includes('avijeet')) return false;
+    }
     if (selectedFilter === 'overcrowding' && r.category !== 'overcrowding') return false;
     if (selectedFilter === 'poor_lighting' && r.category !== 'poor_lighting') return false;
     if (selectedFilter === 'waterlogging' && r.category !== 'waterlogging') return false;
@@ -483,40 +580,15 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
                 <h3 className="text-sm font-black text-white">Top Reporters This Week</h3>
 
                 <div className="space-y-3">
-                  {[
-                    {
-                      rank: 1,
-                      name: 'Ananya Sahoo',
-                      points: '120 Points',
-                      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120',
-                      badgeColor: 'border-amber-400 text-amber-400',
-                      ribbon: '🏅',
-                    },
-                    {
-                      rank: 2,
-                      name: 'Rakesh Nayak',
-                      points: '85 Points',
-                      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120',
-                      badgeColor: 'border-slate-400 text-slate-300',
-                      ribbon: '🥈',
-                    },
-                    {
-                      rank: 3,
-                      name: 'Subhashree Das',
-                      points: '60 Points',
-                      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120',
-                      badgeColor: 'border-amber-600 text-amber-500',
-                      ribbon: '🥉',
-                    },
-                  ].map((user) => (
+                  {topReporters.map((user) => (
                     <div
-                      key={user.rank}
+                      key={`${user.rank}-${user.name}`}
                       className="flex items-center justify-between p-2.5 rounded-2xl bg-[#11192E]/60 border border-slate-800/80 hover:border-slate-700 transition"
                     >
                       <div className="flex items-center gap-3">
                         {/* Rank Circle */}
                         <div
-                          className={`w-6 h-6 rounded-full border flex items-center justify-center font-black text-xs ${user.badgeColor}`}
+                          className={`w-6 h-6 rounded-full border flex items-center justify-center font-black text-xs ${user.badgeColor || 'border-purple-500 text-purple-400'}`}
                         >
                           {user.rank}
                         </div>
@@ -534,9 +606,9 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
 
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-mono text-slate-400 font-bold">
-                          {user.points}
+                          {user.points} Points
                         </span>
-                        <span className="text-base">{user.ribbon}</span>
+                        <span className="text-base">{user.ribbon || '🎖️'}</span>
                       </div>
                     </div>
                   ))}
@@ -710,10 +782,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
       {isReportDrawerOpen && (
         <ReportIncidentDrawer
           onClose={() => setIsReportDrawerOpen(false)}
-          onSubmit={(reportData) => {
-            store.addReport(reportData);
-            setIsReportDrawerOpen(false);
-          }}
+          onSubmit={handleReportSubmit}
           onDuplicateWarning={store.checkDuplicateReport ? (cat, lat, lng) => store.checkDuplicateReport(cat, lat, lng) !== null : undefined}
         />
       )}

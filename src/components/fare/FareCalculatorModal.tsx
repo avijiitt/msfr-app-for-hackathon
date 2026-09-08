@@ -11,7 +11,7 @@ interface FareCalculatorModalProps {
 }
 
 const POPULAR_LOCALITIES = [
-  'Trident college',
+  'Trident Academy of Technology',
   'Master Canteen',
   'Jayadev Vihar',
   'KIIT University, Patia',

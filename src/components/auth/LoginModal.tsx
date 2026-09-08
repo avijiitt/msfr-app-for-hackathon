@@ -202,7 +202,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
       email: userData.email,
       phone: userData.phone || '',
       category: userData.category || 'general',
-      studentDetails: userData.category === 'student' ? { college: userData.studentCollege || 'KIIT University' } : null,
+      studentDetails: userData.category === 'student' ? { college: userData.studentCollege || 'Trident Academy of Technology' } : null,
       savedLocations: userData.savedLocations || sosService.getSavedLocations(),
       bloodGroup: (userData.bloodGroup as any) || 'B+',
       homeCity: userData.homeAddress || 'Bhubaneswar, Odisha',

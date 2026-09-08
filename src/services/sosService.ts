@@ -6,7 +6,7 @@ const STORAGE_KEY_PROFILE = 'transitsync_user_profile';
 const DEFAULT_SAVED_LOCATIONS: SavedLocation[] = [
   { id: 'loc-1', name: 'Home', address: 'Patia, Bhubaneswar, Odisha', category: 'home', icon: '🏠', lat: 20.3541, lng: 85.8175 },
   { id: 'loc-2', name: 'Work / Office', address: 'InfoCity Tech Park Gate 1, Bhubaneswar', category: 'work', icon: '💼', lat: 20.3602, lng: 85.8035 },
-  { id: 'loc-3', name: 'College / University', address: 'KIIT University Campus 6, Bhubaneswar', category: 'college', icon: '🎓', lat: 20.3533, lng: 85.8164 },
+  { id: 'loc-3', name: 'College / University', address: 'Trident Academy of Technology, Chandaka Industrial Estate, Patia, Bhubaneswar', category: 'college', icon: '🎓', lat: 20.3542, lng: 85.8078 },
 ];
 
 function getDefaultProfile(): UserProfile {

@@ -82,7 +82,7 @@ export const App: React.FC = () => {
   const [activeFilterMode, setActiveFilterMode] = useState<RouteMode>('fastest');
 
   // Real-Time Logistics Waypoints (Synced between Logistics Hub and Live Map)
-  const [logisticsWaypoints, setLogisticsWaypoints] = useState<DeliveryWaypoint[]>(SAMPLE_DELIVERY_STOPS);
+  const [logisticsWaypoints, setLogisticsWaypoints] = useState<DeliveryWaypoint[]>([]);
 
   // Offline Mode State
   const [isOffline, setIsOffline] = useState(false);

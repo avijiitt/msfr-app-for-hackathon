@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Calendar, Clock, Bell, Plus, CheckCircle2, Navigation, Trash2, X } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Calendar, Clock, Bell, Plus, CheckCircle2, Navigation, Trash2, X, MapPin, Search } from 'lucide-react';
 import { ScheduledRide } from '../../types/transit';
-import { BHUBANESWAR_STATIONS } from '../../data/cities/bhubaneswar';
+import { BHUBANESWAR_STATIONS, BHUBANESWAR_LOCALITIES } from '../../data/cities/bhubaneswar';
+import { STOP_COORDINATES_MAP } from '../../data/busRoutesData';
+import { POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
 import { supabaseService } from '../../services/supabaseClient';
 import { tripService } from '../../services/tripService';
 import { TranslationDictionary } from '../../types/i18n';
@@ -18,30 +20,94 @@ export const ScheduleRideModal: React.FC<ScheduleRideModalProps> = ({
   t,
 }) => {
   const [scheduledRides, setScheduledRides] = useState<ScheduledRide[]>(supabaseService.getScheduledRides());
-  const [originId, setOriginId] = useState(BHUBANESWAR_STATIONS[0].id);
-  const [destId, setDestId] = useState(BHUBANESWAR_STATIONS[3].id);
+  const [departureQuery, setDepartureQuery] = useState('Master Canteen Bus Terminal & Railway Hub');
+  const [destinationQuery, setDestinationQuery] = useState('Trident Academy of Technology');
+  const [isDepFocused, setIsDepFocused] = useState(false);
+  const [isDestFocused, setIsDestFocused] = useState(false);
   const [date, setDate] = useState('2026-08-26');
   const [time, setTime] = useState('09:00');
   const [isRecurring, setIsRecurring] = useState(true);
   const [scheduledSuccess, setScheduledSuccess] = useState(false);
 
+  // Compile all available locations across the city & transit network
+  const allLocationsList = useMemo(() => {
+    const list: string[] = [
+      'Trident Academy of Technology',
+      'Master Canteen Bus Terminal & Railway Hub',
+      'Patia / KIIT University Bus Terminal',
+      'Jayadev Vihar Square',
+      'Baramunda ISBT Bus Terminal',
+      'Infocity IT Hub, Patia',
+      'Biju Patnaik International Airport',
+      'Silicon University, Chandaka',
+      'Vani Vihar Square',
+      'Rasulgarh Square',
+      'Khandagiri Square',
+      'AIIMS Hospital & Trauma Bus Bay',
+      'Lingaraj Temple Old Town',
+      'Cuttack Badambadi Bus Stand',
+      'Damana Square, Patia',
+      'Chandrasekharpur Police Station',
+      'Kalinga Stadium Gate 2',
+      'Mani Tribhuban, Nandankanan Road',
+      'Royal Lagoon, Raghunathpur',
+      'Nandankanan Zoological Park',
+      'ITER College, Jagamara',
+      'OUTR / CET Ghatikia',
+    ];
+
+    // Add localities
+    BHUBANESWAR_LOCALITIES.forEach((loc) => {
+      if (!list.includes(loc.name)) list.push(loc.name);
+    });
+
+    // Add stations
+    BHUBANESWAR_STATIONS.forEach((st) => {
+      if (!list.includes(st.name)) list.push(st.name);
+    });
+
+    // Add surveyed stop names
+    Object.keys(STOP_COORDINATES_MAP).forEach((name) => {
+      const formatted = name.charAt(0).toUpperCase() + name.slice(1);
+      if (!list.includes(formatted)) list.push(formatted);
+    });
+
+    return list;
+  }, []);
+
+  const filteredDepLocations = useMemo(() => {
+    const q = departureQuery.toLowerCase().trim();
+    if (!q) return allLocationsList.slice(0, 7);
+    return allLocationsList
+      .filter((loc) => loc.toLowerCase().includes(q))
+      .slice(0, 7);
+  }, [departureQuery, allLocationsList]);
+
+  const filteredDestLocations = useMemo(() => {
+    const q = destinationQuery.toLowerCase().trim();
+    if (!q) return allLocationsList.slice(0, 7);
+    return allLocationsList
+      .filter((loc) => loc.toLowerCase().includes(q))
+      .slice(0, 7);
+  }, [destinationQuery, allLocationsList]);
+
   if (!isOpen) return null;
 
   const handleCreateSchedule = async () => {
-    const originSt = BHUBANESWAR_STATIONS.find(s => s.id === originId) || BHUBANESWAR_STATIONS[0];
-    const destSt = BHUBANESWAR_STATIONS.find(s => s.id === destId) || BHUBANESWAR_STATIONS[3];
+    const originName = departureQuery.trim() || 'Master Canteen';
+    const destName = destinationQuery.trim() || 'Trident Academy of Technology';
 
     const newRide: ScheduledRide = {
       id: 'SCH-' + Math.floor(1000 + Math.random() * 9000),
-      originStationId: originSt.id,
-      originStationName: originSt.name,
-      destStationId: destSt.id,
-      destStationName: destSt.name,
+      originStationId: 'loc-orig-' + Date.now(),
+      originStationName: originName,
+      destStationId: 'loc-dest-' + Date.now(),
+      destStationName: destName,
       date,
       time,
       isRecurring,
       recurringDays: isRecurring ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] : undefined,
-      routeTitle: `Transit Route (${originSt.name} ➔ ${destSt.name})`,
+      routeTitle: `Transit Route (${originName} ➔ ${destName})`,
       estimatedFare: 20,
       notificationMinutesBefore: 15,
       status: 'active',
@@ -53,8 +119,8 @@ export const ScheduleRideModal: React.FC<ScheduleRideModalProps> = ({
 
     // Also record as a scheduled trip in database
     await tripService.recordTrip({
-      origin: originSt.name,
-      destination: destSt.name,
+      origin: originName,
+      destination: destName,
       fareAmount: 20,
       mode: 'bus',
       routeName: `Scheduled Transit (${date} at ${time})`,
@@ -83,7 +149,7 @@ export const ScheduleRideModal: React.FC<ScheduleRideModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                {t.scheduleTrip || 'Schedule Automated Rides'}
+                {t.scheduleTrip || 'Schedule Commute'}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Pre-book & auto-notify daily commutes & trips
@@ -105,29 +171,94 @@ export const ScheduleRideModal: React.FC<ScheduleRideModalProps> = ({
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-            <div>
+            {/* Departure Searchable Input */}
+            <div className="relative">
               <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Departure</label>
-              <select
-                value={originId}
-                onChange={(e) => setOriginId(e.target.value)}
-                className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-              >
-                {BHUBANESWAR_STATIONS.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={departureQuery}
+                  onFocus={() => setIsDepFocused(true)}
+                  onBlur={() => setTimeout(() => setIsDepFocused(false), 200)}
+                  onChange={(e) => setDepartureQuery(e.target.value)}
+                  placeholder="Enter any departure location..."
+                  className="w-full p-2.5 pl-8 pr-7 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-blue-500"
+                />
+                <span className="absolute left-2.5 top-3 text-emerald-500 text-[10px]">🟢</span>
+                {departureQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setDepartureQuery('')}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Autocomplete dropdown for departure */}
+              {isDepFocused && (
+                <div className="absolute left-0 right-0 top-[60px] z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-h-48 overflow-y-auto p-1 space-y-0.5">
+                  {filteredDepLocations.map((loc, idx) => (
+                    <div
+                      key={idx}
+                      onMouseDown={() => {
+                        setDepartureQuery(loc);
+                        setIsDepFocused(false);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 cursor-pointer flex items-center gap-2 truncate"
+                    >
+                      <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                      <span className="truncate">{loc}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div>
+
+            {/* Destination Searchable Input */}
+            <div className="relative">
               <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Destination</label>
-              <select
-                value={destId}
-                onChange={(e) => setDestId(e.target.value)}
-                className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-              >
-                {BHUBANESWAR_STATIONS.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={destinationQuery}
+                  onFocus={() => setIsDestFocused(true)}
+                  onBlur={() => setTimeout(() => setIsDestFocused(false), 200)}
+                  onChange={(e) => setDestinationQuery(e.target.value)}
+                  placeholder="Enter any destination location..."
+                  className="w-full p-2.5 pl-8 pr-7 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-blue-500"
+                />
+                <span className="absolute left-2.5 top-3 text-rose-500 text-[10px]">📍</span>
+                {destinationQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setDestinationQuery('')}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Autocomplete dropdown for destination */}
+              {isDestFocused && (
+                <div className="absolute left-0 right-0 top-[60px] z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-h-48 overflow-y-auto p-1 space-y-0.5">
+                  {filteredDestLocations.map((loc, idx) => (
+                    <div
+                      key={idx}
+                      onMouseDown={() => {
+                        setDestinationQuery(loc);
+                        setIsDestFocused(false);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 cursor-pointer flex items-center gap-2 truncate"
+                    >
+                      <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                      <span className="truncate">{loc}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

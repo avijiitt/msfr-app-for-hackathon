@@ -3,6 +3,7 @@ import {
   X, AlertTriangle, ArrowRight, Camera, CheckCircle2, ShieldAlert
 } from 'lucide-react';
 import { ReportCategory, SeverityLevel } from '../../services/communityReportsService';
+import { authService } from '../../services/supabaseClient';
 
 interface ReportIncidentDrawerProps {
   onClose: () => void;
@@ -22,6 +23,7 @@ interface ReportIncidentDrawerProps {
 }
 
 export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onClose, onSubmit, onDuplicateWarning }) => {
+  const currentUser = authService.getCurrentUser();
   const [step, setStep] = useState(1);
   const [category, setCategory] = useState<ReportCategory | null>(null);
   const [isEmergency, setIsEmergency] = useState(false);
@@ -29,6 +31,7 @@ export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onCl
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [locationName, setLocationName] = useState('');
+  const [reporterName, setReporterName] = useState(currentUser?.fullName || 'Avijeet Rout');
   const [hasDuplicate, setHasDuplicate] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -98,7 +101,7 @@ export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onCl
       lng: mockLng,
       severity,
       isEmergency,
-      reporterName: 'You (Verified Citizen)',
+      reporterName: reporterName.trim() || 'Avijeet Rout',
       photoUrl: photoUrl || undefined
     });
   };
@@ -221,6 +224,18 @@ export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onCl
                   </p>
                 </div>
               )}
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Reporter Name</label>
+                <input
+                  type="text"
+                  value={reporterName}
+                  onChange={(e) => setReporterName(e.target.value)}
+                  placeholder="e.g. Avijeet Rout"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold focus:outline-none focus:border-purple-500 text-slate-900 dark:text-white"
+                  required
+                />
+              </div>
 
               <div className="space-y-3">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Issue Title</label>

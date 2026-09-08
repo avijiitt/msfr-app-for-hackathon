@@ -37,7 +37,7 @@ export const StudentHubModal: React.FC<StudentHubModalProps> = ({
         isVerified: true,
         verificationMethod: 'digilocker',
         rollNo: '2023-CS-0842',
-        collegeName: 'KIIT University, Bhubaneswar',
+        collegeName: 'Trident Academy of Technology, Bhubaneswar',
         courseName: 'B.Tech Computer Science & Engineering',
         validUntil: 'July 2027',
         verifiedAt: new Date().toISOString().split('T')[0],

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Package,
   Truck,
@@ -41,6 +41,11 @@ import {
   Info,
   Maximize2,
   Minimize2,
+  Search,
+  Bell,
+  RotateCcw,
+  Scale,
+  Boxes,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -49,7 +54,7 @@ import {
   RESTRICTED_NO_FLY_ZONES,
   DeliveryWaypoint,
   AntiGravityRoutePlan,
-  computeAntiGravityRoute
+  computeAntiGravityRoute,
 } from '../../services/logisticsOptimizerService';
 import { POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
 import { BHUBANESWAR_LOCALITIES } from '../../data/cities/bhubaneswar';
@@ -118,25 +123,51 @@ const LIVE_CORRIDOR_TRAFFIC = [
   },
 ];
 
-const createLogisticsStopIcon = (num: number, isLast: boolean) => {
+const STOP_PIN_COLORS = ['#3B82F6', '#10B981', '#F97316', '#8B5CF6', '#EC4899', '#06B6D4', '#EAB308'];
+
+const createNumberedPinIcon = (num: number, label?: string, color?: string) => {
+  const pinColor = color || STOP_PIN_COLORS[(num - 1) % STOP_PIN_COLORS.length];
   return L.divIcon({
-    className: 'logistics-stop-pin',
+    className: 'logistics-numbered-pin',
     html: `
-      <div style="
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: ${isLast ? '#ef4444' : '#10b981'};
-        color: #ffffff;
-        font-weight: 900;
-        font-size: 13px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #ffffff;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-      ">
-        ${num}
+      <div style="display: flex; align-items: center; gap: 6px; transform: translate(-14px, -14px);">
+        <div style="
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: ${pinColor};
+          color: #ffffff;
+          font-weight: 900;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid #ffffff;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+          flex-shrink: 0;
+        ">
+          ${num}
+        </div>
+        ${
+          label
+            ? `
+          <div style="
+            background: rgba(12, 20, 37, 0.92);
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.25);
+            backdrop-filter: blur(4px);
+            font-weight: 700;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 8px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+          ">
+            ${label}
+          </div>
+        `
+            : ''
+        }
       </div>
     `,
     iconSize: [28, 28],
@@ -148,20 +179,36 @@ const createLogisticsWarehouseIcon = () => {
   return L.divIcon({
     className: 'logistics-hub-pin',
     html: `
-      <div style="
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        background: #2563eb;
-        color: #ffffff;
-        font-size: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #ffffff;
-        box-shadow: 0 4px 12px rgba(37,99,235,0.7);
-      ">
-        🏭
+      <div style="display: flex; align-items: center; gap: 6px; transform: translate(-17px, -17px);">
+        <div style="
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: #F59E0B;
+          color: #000000;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid #ffffff;
+          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.7);
+          flex-shrink: 0;
+        ">
+          🏠
+        </div>
+        <div style="
+          background: rgba(12, 20, 37, 0.92);
+          color: #F59E0B;
+          border: 1px solid rgba(245, 158, 11, 0.5);
+          font-weight: 800;
+          font-size: 11px;
+          padding: 2px 8px;
+          border-radius: 8px;
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        ">
+          Warehouse
+        </div>
       </div>
     `,
     iconSize: [34, 34],
@@ -176,7 +223,7 @@ const MapBoundsUpdater: React.FC<{ coords: [number, number][] }> = ({ coords }) 
     if (validCoords.length > 0) {
       try {
         const bounds = L.latLngBounds(validCoords);
-        map.fitBounds(bounds, { padding: [25, 25], maxZoom: 15, animate: true });
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14, animate: true });
       } catch (err) {
         console.warn('MapBoundsUpdater fitBounds error:', err);
       }
@@ -188,7 +235,16 @@ const MapBoundsUpdater: React.FC<{ coords: [number, number][] }> = ({ coords }) 
 export function resolveLogisticsCoordinates(inputAddress: string): { lat: number; lng: number; formatted: string } {
   const clean = (inputAddress || '').toLowerCase().trim();
 
-  // 1. Exact match for Mani Tribhuban / Mani Tribhuvan / Manitri bhuban
+  // 1. Trident Academy of Technology
+  if (clean.includes('trident') || clean.includes('tat')) {
+    return {
+      lat: 20.3542,
+      lng: 85.8078,
+      formatted: 'Trident Academy of Technology, Chandaka Industrial Estate, Patia, Bhubaneswar',
+    };
+  }
+
+  // 2. Exact match for Mani Tribhuban / Mani Tribhuvan
   const normalized = clean.replace(/[\s\-_]+/g, '');
   if (
     clean.includes('mani') ||
@@ -207,34 +263,46 @@ export function resolveLogisticsCoordinates(inputAddress: string): { lat: number
     };
   }
 
-  // 2. Search POPULAR_INDIAN_LOCATIONS
-  const popMatch = POPULAR_INDIAN_LOCATIONS.find((loc) =>
-    clean.includes(loc.name.toLowerCase()) ||
-    loc.name.toLowerCase().includes(clean) ||
-    loc.formattedAddress.toLowerCase().includes(clean)
+  // 3. Search POPULAR_INDIAN_LOCATIONS
+  const popMatch = POPULAR_INDIAN_LOCATIONS.find(
+    (loc) =>
+      clean.includes(loc.name.toLowerCase()) ||
+      loc.name.toLowerCase().includes(clean) ||
+      loc.formattedAddress.toLowerCase().includes(clean)
   );
   if (popMatch && popMatch.lat && popMatch.lng) {
     return { lat: popMatch.lat, lng: popMatch.lng, formatted: popMatch.formattedAddress || popMatch.name };
   }
 
-  // 3. Search BHUBANESWAR_LOCALITIES
-  const locMatch = BHUBANESWAR_LOCALITIES.find((loc) =>
-    clean.includes(loc.name.toLowerCase()) ||
-    loc.name.toLowerCase().includes(clean)
+  // 4. Search BHUBANESWAR_LOCALITIES
+  const locMatch = BHUBANESWAR_LOCALITIES.find(
+    (loc) => clean.includes(loc.name.toLowerCase()) || loc.name.toLowerCase().includes(clean)
   );
   if (locMatch) {
     return { lat: locMatch.lat, lng: locMatch.lng, formatted: `${locMatch.name}, Bhubaneswar` };
   }
 
-  // 4. Search STOP_COORDINATES_MAP
+  // 5. Search STOP_COORDINATES_MAP
   for (const [key, coords] of Object.entries(STOP_COORDINATES_MAP)) {
     if (clean.includes(key) || key.includes(clean)) {
       return { lat: coords[0], lng: coords[1], formatted: `${key.toUpperCase()}, Bhubaneswar` };
     }
   }
 
-  // 5. Default anchor to Patia corridor
-  return { lat: 20.3541, lng: 85.8175, formatted: inputAddress };
+  // 6. Common Bhubaneswar Landmark matches
+  if (clean.includes('kiit')) return { lat: 20.3541, lng: 85.8175, formatted: 'KIIT Square, Patia, Bhubaneswar' };
+  if (clean.includes('unit 2') || clean.includes('unit-2')) return { lat: 20.2721, lng: 85.8341, formatted: 'Unit 2, Market Building, Bhubaneswar' };
+  if (clean.includes('lingaraj')) return { lat: 20.2382, lng: 85.8338, formatted: 'Lingaraj Temple, Old Town, Bhubaneswar' };
+  if (clean.includes('vani vihar')) return { lat: 20.3015, lng: 85.8458, formatted: 'Vani Vihar Square, Bhubaneswar' };
+  if (clean.includes('rasulgarh')) return { lat: 20.2974, lng: 85.8647, formatted: 'Rasulgarh Square, NH-16, Bhubaneswar' };
+  if (clean.includes('master canteen')) return { lat: 20.2667, lng: 85.8436, formatted: 'Master Canteen Square, Railway Station' };
+  if (clean.includes('baramunda')) return { lat: 20.2818, lng: 85.7938, formatted: 'Baramunda ISBT Hub, Bhubaneswar' };
+
+  // 7. Default fallback with deterministic offset
+  const hash = clean.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const latOffset = ((hash % 100) / 100 - 0.5) * 0.05;
+  const lngOffset = (((hash >> 2) % 100) / 100 - 0.5) * 0.05;
+  return { lat: 20.315 + latOffset, lng: 85.82 + lngOffset, formatted: inputAddress };
 }
 
 interface LogisticsHubProps {
@@ -248,8 +316,11 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
   waypoints: externalWaypoints,
   onWaypointsChange,
 }) => {
-  const originHub = { name: 'Warehouse (Baramunda Logistics Base)', lat: 20.2818, lng: 85.7938 };
-  const [internalWaypoints, setInternalWaypoints] = useState<DeliveryWaypoint[]>(SAMPLE_DELIVERY_STOPS);
+  const originHub = { name: 'Warehouse', lat: 20.2818, lng: 85.7938 };
+
+  // USER REQUIREMENT 1: "kuch default input mat karna user input dale aese karna"
+  // Default to empty array [] so user enters their own delivery stops!
+  const [internalWaypoints, setInternalWaypoints] = useState<DeliveryWaypoint[]>([]);
 
   const waypoints = externalWaypoints ?? internalWaypoints;
   const setWaypoints = (newWps: DeliveryWaypoint[] | ((prev: DeliveryWaypoint[]) => DeliveryWaypoint[])) => {
@@ -258,1452 +329,537 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
     onWaypointsChange?.(updated);
   };
 
-  // Form State matching User Mockup exactly
-  const [recipientName, setRecipientName] = useState('');
-  const [recipientPhone, setRecipientPhone] = useState('');
-  const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [isAddressFocused, setIsAddressFocused] = useState(false);
+  // Planner Tab: 'New Plan' | 'Live Tracking' | 'History'
+  const [plannerTab, setPlannerTab] = useState<'new_plan' | 'live_tracking' | 'history'>('new_plan');
+
+  // Form & Search Inputs
+  const [searchAddress, setSearchAddress] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // USER REQUIREMENT 5: "logistics optimizer ,mein others mein aana chahiye user likh sakta hey"
   const [parcelType, setParcelType] = useState<'Documents' | 'Electronics' | 'Clothing' | 'Food' | 'Other'>('Documents');
-  const [parcelWeight, setParcelWeight] = useState('2.5');
-  const [deliveryPriority, setDeliveryPriority] = useState<'Standard' | 'Express' | 'Urgent'>('Standard');
-  const [ecoPackaging, setEcoPackaging] = useState(true);
+  const [customParcelType, setCustomParcelType] = useState('');
+  const [parcelWeight, setParcelWeight] = useState('4.5');
 
-  // More Details Accordion State
-  const [isMoreDetailsOpen, setIsMoreDetailsOpen] = useState(true);
-  const [dimLength, setDimLength] = useState('20');
-  const [dimWidth, setDimWidth] = useState('15');
-  const [dimHeight, setDimHeight] = useState('10');
-  const [isFragile, setIsFragile] = useState(true);
-  const [isKeepUpright, setIsKeepUpright] = useState(false);
-  const [isTempSensitive, setIsTempSensitive] = useState(false);
+  // Toast message
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // 3D Altitude Slider State (15m to 120m Z-axis corridor)
-  const [altitudeMeters, setAltitudeMeters] = useState(45);
-  const [showAltitudeModal, setShowAltitudeModal] = useState(false);
+  // Active Map Overlay Pill: 'optimized' | 'all'
+  const [activeMapPill, setActiveMapPill] = useState<'optimized' | 'all'>('optimized');
 
-  // Payment Gateway Modal State
+  // Payment & Modal States
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-  const [dispatchReceipt, setDispatchReceipt] = useState<{
-    orderId: string;
-    amount: number;
-    timestamp: string;
-    waypointCount: number;
-    trackingId: string;
-  } | null>(null);
-
-  // Active View Tab on small devices: 'form' | 'route' | 'safety'
-  const [activeMobileView, setActiveMobileView] = useState<'both' | 'form' | 'route' | 'safety'>('both');
-
-  // Full-screen Logistics Map State & Google Maps Layer
   const [isMapExpanded, setIsMapExpanded] = useState(false);
-  const [logisticsMapLayer, setLogisticsMapLayer] = useState<'google-traffic' | 'google-roadmap' | 'google-hybrid'>('google-traffic');
-
-  // Compute Anti-Gravity / Multi-Objective Route Plan
-  const plan: AntiGravityRoutePlan = computeAntiGravityRoute(
-    originHub,
-    waypoints,
-    altitudeMeters,
-    'anti_gravity_evtol'
-  );
-
-  // Driver Pre-Delivery Safety & Mishap Reporting State
-  const [reportingWaypoint, setReportingWaypoint] = useState<DeliveryWaypoint | null>(null);
-  const [mishapType, setMishapType] = useState<'traffic_accident' | 'weather_flood' | 'vehicle_breakdown' | 'cargo_damage'>('traffic_accident');
-  const [mishapLocation, setMishapLocation] = useState('Near Rasulgarh Flyover, NH-16 Corridor');
-  const [mishapDescription, setMishapDescription] = useState('');
-  const [mishapPhotoUrl, setMishapPhotoUrl] = useState('');
-  const [isPhotoCompressing, setIsPhotoCompressing] = useState(false);
-  const [dispatchedAlerts, setDispatchedAlerts] = useState<Record<string, {
-    recipientName: string;
-    incidentType: string;
-    photoUrl: string;
-    message: string;
-    timestamp: string;
-    claimStatus: string;
-  }>>({});
-  const [alertSuccessToast, setAlertSuccessToast] = useState<string | null>(null);
   const [activeDriverTab, setActiveDriverTab] = useState<'traffic' | 'stay'>('traffic');
 
-  const handleMishapPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Compute Anti-Gravity / Multi-Objective Route Plan
+  const plan: AntiGravityRoutePlan = useMemo(() => {
+    return computeAntiGravityRoute(originHub, waypoints, 45, 'anti_gravity_evtol');
+  }, [waypoints]);
 
-    setIsPhotoCompressing(true);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const scale = Math.min(1, MAX_WIDTH / img.width);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const base64 = canvas.toDataURL('image/jpeg', 0.75);
-          setMishapPhotoUrl(base64);
-        }
-        setIsPhotoCompressing(false);
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  };
+  // Derived Totals
+  const totalParcelsCount = waypoints.length > 0 ? waypoints.reduce((acc, w) => acc + Math.round(w.packageWeightKg || 3), 0) : 0;
+  const totalWeightKg = waypoints.length > 0 ? waypoints.reduce((acc, w) => acc + (w.packageWeightKg || 5), 0) : 0;
+  const totalVolumeM3 = (totalWeightKg * 0.0051).toFixed(1);
 
-  const handleSendMishapAlert = () => {
-    if (!reportingWaypoint) return;
-    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const formattedMessage = `🚨 [MUSAFIR TRANSIT ALERT]\nDear ${reportingWaypoint.recipientName},\nAn unforeseen en-route mishap occurred near ${mishapLocation}.\nIncident Type: ${mishapType.replace('_', ' ').toUpperCase()}.\nPhoto proof has been recorded and attached.\n100% Transit Assurance Claim Initiated (Zero customer liability, instant refund/replacement guarantee).`;
+  // Split waypoints among 3 Vans
+  const van1Stops = waypoints.slice(0, Math.ceil(waypoints.length / 3));
+  const van2Stops = waypoints.slice(Math.ceil(waypoints.length / 3), Math.ceil((waypoints.length * 2) / 3));
+  const van3Stops = waypoints.slice(Math.ceil((waypoints.length * 2) / 3));
 
-    setDispatchedAlerts((prev) => ({
-      ...prev,
-      [reportingWaypoint.id]: {
-        recipientName: reportingWaypoint.recipientName,
-        incidentType: mishapType,
-        photoUrl: mishapPhotoUrl || 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=400',
-        message: formattedMessage,
-        timestamp: now,
-        claimStatus: 'Insurance Claim Auto-Processed (₹2,500 Full Coverage)',
-      },
-    }));
+  const van1Parcels = van1Stops.reduce((sum, s) => sum + Math.round(s.packageWeightKg || 3), 0) || (waypoints.length > 0 ? 8 : 0);
+  const van2Parcels = van2Stops.reduce((sum, s) => sum + Math.round(s.packageWeightKg || 3), 0) || (waypoints.length > 0 ? 6 : 0);
+  const van3Parcels = van3Stops.reduce((sum, s) => sum + Math.round(s.packageWeightKg || 3), 0) || (waypoints.length > 0 ? 4 : 0);
 
-    setAlertSuccessToast(`✅ Emergency alert & photo proof dispatched to ${reportingWaypoint.recipientName}!`);
-    setTimeout(() => setAlertSuccessToast(null), 5000);
-    setReportingWaypoint(null);
-    setMishapPhotoUrl('');
-    setMishapDescription('');
-  };
+  // Handle Add Stop from input
+  const handleAddStop = (addressToAdd?: string) => {
+    const rawAddress = addressToAdd || searchAddress;
+    if (!rawAddress.trim()) return;
 
-  // Add Waypoint handler matching User Mockup
-  const handleAddWaypoint = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!recipientName.trim() || !deliveryAddress.trim()) return;
-
-    const resolved = resolveLogisticsCoordinates(deliveryAddress);
+    const resolved = resolveLogisticsCoordinates(rawAddress);
+    const effectiveType = parcelType === 'Other' && customParcelType.trim() ? customParcelType.trim() : parcelType;
 
     const newStop: DeliveryWaypoint = {
-      id: `dp-${Date.now()}`,
-      recipientName: recipientName.trim(),
-      phone: recipientPhone.trim(),
-      address: resolved.formatted || deliveryAddress.trim(),
+      id: `stop-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      recipientName: rawAddress.split(',')[0].trim(),
+      phone: '+91 94370 00000',
+      address: resolved.formatted,
       lat: resolved.lat,
       lng: resolved.lng,
-      altitudeMeters: altitudeMeters,
-      packageWeightKg: parseFloat(parcelWeight) || 2.5,
-      parcelType: parcelType,
-      priority: deliveryPriority,
-      timeWindow: '10:30 - 11:30 AM',
-      estimatedArrival: '10:45 AM',
+      altitudeMeters: 45,
+      packageWeightKg: parseFloat(parcelWeight) || 3.5,
+      parcelType: effectiveType as any,
+      priority: 'Standard',
       status: 'pending',
-      ecoPackaging: ecoPackaging,
-      dimensionsCm: {
-        length: parseFloat(dimLength) || 20,
-        width: parseFloat(dimWidth) || 15,
-        height: parseFloat(dimHeight) || 10,
-      },
-      specialHandling: {
-        fragile: isFragile,
-        keepUpright: isKeepUpright,
-        tempSensitive: isTempSensitive,
-      },
+      ecoPackaging: true,
       dockingStatus: 'ALIGNED_LOCKED',
-      dockingToleranceCm: 7.8,
+      dockingToleranceCm: 7.5,
     };
 
     setWaypoints([...waypoints, newStop]);
-    setAlertSuccessToast(`✅ Stop "${recipientName}" (${resolved.lat.toFixed(4)}, ${resolved.lng.toFixed(4)}) added! Live route updated.`);
-    setTimeout(() => setAlertSuccessToast(null), 4000);
-    setRecipientName('');
-    setRecipientPhone('');
-    setDeliveryAddress('');
+    setSearchAddress('');
+    setIsSearchFocused(false);
+    setToastMessage(`✅ Stop "${newStop.recipientName}" added! Route optimized.`);
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
   const handleRemoveStop = (id: string) => {
     setWaypoints(waypoints.filter((w) => w.id !== id));
   };
 
-  const handlePaymentSuccess = (result: PaymentVerificationResult) => {
-    setIsPaymentOpen(false);
-    setDispatchReceipt({
-      orderId: result.orderId || result.paymentId,
-      amount: result.amount,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      waypointCount: waypoints.length,
-      trackingId: `AG-LOG-${Math.floor(100000 + Math.random() * 900000)}`,
-    });
+  const handleLoadSampleStops = () => {
+    setWaypoints(SAMPLE_DELIVERY_STOPS);
+    setToastMessage('✅ Loaded sample Bhubaneswar delivery routes!');
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const handleClearAllStops = () => {
+    setWaypoints([]);
+    setToastMessage('🗑️ Cleared all delivery stops.');
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleOptimizeRoutes = () => {
+    if (waypoints.length === 0) {
+      setToastMessage('ℹ️ Add at least 1 delivery stop to calculate optimal routes.');
+      setTimeout(() => setToastMessage(null), 3000);
+      return;
+    }
+    setToastMessage('✨ Routes re-optimized across 3 delivery vans with zero carbon waste!');
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  // Autocomplete Suggestions
+  const SUGGESTIONS = [
+    { name: 'Trident Academy of Technology', address: 'Chandaka Industrial Estate, Patia, Bhubaneswar' },
+    { name: 'KIIT Square', address: 'KIIT Road, Patia, Bhubaneswar' },
+    { name: 'Unit 2', address: 'Market Building, Ashok Nagar, Bhubaneswar' },
+    { name: 'Lingaraj Temple', address: 'Old Town, Bhubaneswar' },
+    { name: 'Vani Vihar', address: 'Utkal University, Janpath, Bhubaneswar' },
+    { name: 'Rasulgarh', address: 'NH-16 Junction, Bhubaneswar' },
+    { name: 'Mani Tribhuban', address: 'Nandankanan Road, Patia, Bhubaneswar' },
+    { name: 'Master Canteen', address: 'Railway Station Square, Bhubaneswar' },
+  ];
+
+  const filteredSuggestions = SUGGESTIONS.filter(
+    (s) => !searchAddress.trim() || s.name.toLowerCase().includes(searchAddress.toLowerCase()) || s.address.toLowerCase().includes(searchAddress.toLowerCase())
+  );
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#070B13] text-slate-100 overflow-y-auto pb-16 font-sans">
-      {/* Toast */}
-      {alertSuccessToast && (
-        <div className="fixed top-4 right-4 z-50 p-3.5 rounded-2xl bg-emerald-600 text-white text-xs font-bold shadow-2xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 border border-emerald-400">
+    <div className="flex-1 flex flex-col h-full bg-[#070B14] text-slate-100 overflow-y-auto pb-20 font-sans">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-[99999] p-3.5 rounded-2xl bg-amber-500 text-slate-950 text-xs font-black shadow-2xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 border border-amber-300">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{alertSuccessToast}</span>
+            <Sparkles className="w-4 h-4 flex-shrink-0 fill-slate-950" />
+            <span>{toastMessage}</span>
           </div>
-          <button onClick={() => setAlertSuccessToast(null)} className="p-1 hover:bg-emerald-700 rounded-lg">
+          <button onClick={() => setToastMessage(null)} className="p-1 hover:bg-amber-600 rounded-lg">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
-      {/* Main Dual-Screen / Responsive Container */}
-      <div className="max-w-7xl mx-auto w-full p-2 sm:p-4 md:p-6 space-y-5">
-        {/* Top Controls Bar for Quick Switching on Mobile */}
-        <div className="flex items-center justify-between bg-[#0E1726] border border-slate-800/80 px-4 py-3 rounded-2xl md:hidden">
+      {/* ─── 1. TOP HEADER (Matching Screenshot Exactly) ─── */}
+      <div className="flex items-center justify-between border-b border-slate-800/80 px-4 sm:px-6 py-3.5 bg-[#090E1B] shrink-0 sticky top-0 z-20">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-              <Package className="w-4 h-4" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <Navigation className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-400" />
             </div>
-            <span className="text-xs font-black tracking-wide">MUSAFIR 3D LOGISTICS</span>
+            <span className="font-black text-lg sm:text-xl tracking-wider text-white">MUSAFIR</span>
           </div>
-          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
-            <button
-              onClick={() => setActiveMobileView('both')}
-              className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition ${
-                activeMobileView === 'both' ? 'bg-emerald-600 text-white' : 'text-slate-400'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setActiveMobileView('form')}
-              className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition ${
-                activeMobileView === 'form' ? 'bg-emerald-600 text-white' : 'text-slate-400'
-              }`}
-            >
-              + Add
-            </button>
-            <button
-              onClick={() => setActiveMobileView('route')}
-              className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition ${
-                activeMobileView === 'route' ? 'bg-emerald-600 text-white' : 'text-slate-400'
-              }`}
-            >
-              Route ({waypoints.length})
-            </button>
+
+          <div className="h-6 w-px bg-slate-800 mx-1 sm:mx-2 hidden sm:block" />
+
+          <div>
+            <h1 className="text-xs sm:text-sm font-black text-white leading-none">Smart Logistics Optimizer</h1>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Smarter routes. Greener cities. Happier deliveries.</p>
           </div>
         </div>
 
-        {/* ─── TWO PANELS SIDE BY SIDE (MATCHING USER MOCKUP EXACTLY) ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {/* =========================================================================
-              LEFT PANEL: ADD DELIVERY WAYPOINT (MATCHES LEFT SCREEN OF MOCKUP)
-             ========================================================================= */}
-          <div
-            className={`bg-[#0C1322] border border-slate-800/90 rounded-[28px] p-5 md:p-6 shadow-2xl shadow-black/40 space-y-5 ${
-              activeMobileView === 'route' ? 'hidden lg:block' : 'block'
-            }`}
+        {/* Right Controls */}
+        <div className="flex items-center gap-2.5 sm:gap-4">
+          <button
+            type="button"
+            className="relative p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800 cursor-pointer"
+            title="Notifications"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-800/70 pb-4">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={onNavigateToMap}
-                  className="w-8 h-8 rounded-full bg-slate-800/60 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition"
-                  title="Go Back"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                    <Package className="w-4 h-4" />
+            <Bell className="w-4 h-4" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500" />
+          </button>
+
+          <div className="flex items-center gap-2 bg-[#10182E] border border-slate-800 px-3 py-1.5 rounded-xl cursor-pointer hover:border-slate-700">
+            <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 text-xs">
+              <User className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-xs font-bold text-slate-200 hidden sm:inline">Logistics Partner</span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+          </div>
+        </div>
+      </div>
+
+      {/* ─── 2. MAIN 3-COLUMN DASHBOARD (Matching media_1788877567294.jpg) ─── */}
+      <div className="max-w-[1600px] mx-auto w-full p-3 sm:p-4 lg:p-6 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          
+          {/* =========================================================================
+              COLUMN 1: LOGISTICS PLANNER (col-span-12 lg:col-span-3)
+             ========================================================================= */}
+          <div className="lg:col-span-3 bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-4">
+            {/* Planner Header */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <Truck className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-black text-white">Logistics Planner</h2>
+                <p className="text-[11px] text-slate-400">Plan, optimize and track your deliveries</p>
+              </div>
+            </div>
+
+            {/* Sub-Tabs: New Plan | Live Tracking | History */}
+            <div className="flex bg-[#070D1A] p-1 rounded-xl border border-slate-800/80 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setPlannerTab('new_plan')}
+                className={`flex-1 py-1.5 rounded-lg transition text-center cursor-pointer ${
+                  plannerTab === 'new_plan'
+                    ? 'bg-[#EAB308] text-slate-950 font-black shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                New Plan
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlannerTab('live_tracking')}
+                className={`flex-1 py-1.5 rounded-lg transition text-center cursor-pointer ${
+                  plannerTab === 'live_tracking'
+                    ? 'bg-[#EAB308] text-slate-950 font-black shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Live Tracking
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlannerTab('history')}
+                className={`flex-1 py-1.5 rounded-lg transition text-center cursor-pointer ${
+                  plannerTab === 'history'
+                    ? 'bg-[#EAB308] text-slate-950 font-black shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                History
+              </button>
+            </div>
+
+            {/* Delivery Details 3-Metric Boxes */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider">Delivery Details</h3>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {/* Total Parcels */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-2.5 flex flex-col justify-center">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center justify-center gap-1">
+                    <Package className="w-3 h-3 text-amber-400" />
+                    <span>Total Parcels</span>
                   </div>
-                  <div>
-                    <h2 className="text-sm font-black tracking-wider text-white">MUSAFIR</h2>
-                    <p className="text-[10px] text-slate-400 font-medium">Move Smarter • Deliver Greener</p>
+                  <div className="text-base font-black text-white mt-1">
+                    {totalParcelsCount > 0 ? totalParcelsCount : '0'}
+                  </div>
+                </div>
+
+                {/* Total Weight */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-2.5 flex flex-col justify-center">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center justify-center gap-1">
+                    <Scale className="w-3 h-3 text-blue-400" />
+                    <span>Total Weight</span>
+                  </div>
+                  <div className="text-base font-black text-white mt-1">
+                    {totalWeightKg > 0 ? `${totalWeightKg.toFixed(0)} kg` : '0 kg'}
+                  </div>
+                </div>
+
+                {/* Total Volume */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-2.5 flex flex-col justify-center">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center justify-center gap-1">
+                    <Boxes className="w-3 h-3 text-emerald-400" />
+                    <span>Total Volume</span>
+                  </div>
+                  <div className="text-base font-black text-white mt-1">
+                    {totalWeightKg > 0 ? `${totalVolumeM3} m³` : '0 m³'}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Title */}
-            <div className="flex items-center gap-2 text-emerald-400">
-              <Plus className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
-              <h1 className="text-xs font-black uppercase tracking-wider text-slate-200">
-                ADD DELIVERY WAYPOINT
-              </h1>
+            {/* Parcel Type Chips + Custom Other Input (USER REQUIREMENT 5) */}
+            <div className="space-y-2 pt-1">
+              <label className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-amber-400" />
+                <span>Parcel Type</span>
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {(['Documents', 'Electronics', 'Clothing', 'Food', 'Other'] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setParcelType(type)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      parcelType === type
+                        ? 'bg-[#EAB308] text-slate-950 shadow-md font-black'
+                        : 'bg-[#10182E] text-slate-400 border border-slate-800 hover:text-slate-200'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+
+              {/* USER REQUIREMENT 5: "logistics optimizer ,mein others mein aana chahiye user likh sakta hey" */}
+              {parcelType === 'Other' && (
+                <div className="pt-1.5 animate-in fade-in">
+                  <input
+                    type="text"
+                    value={customParcelType}
+                    onChange={(e) => setCustomParcelType(e.target.value)}
+                    placeholder="Enter custom parcel type (e.g. Medical, Glass, Gifts...)"
+                    className="w-full bg-[#10182E] border border-amber-500/60 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-amber-400 transition placeholder:text-slate-500"
+                  />
+                </div>
+              )}
             </div>
 
-            <form onSubmit={handleAddWaypoint} className="space-y-4">
-              {/* Recipient Name */}
-              <div className="space-y-1.5">
-                <label className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Recipient Name</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-3 text-slate-500">
-                    <User className="w-4 h-4" />
+            {/* Delivery Locations Search & Stop List */}
+            <div className="space-y-2.5 pt-1">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider">Delivery Locations</h3>
+                {waypoints.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllStops}
+                    className="text-[10px] text-rose-400 hover:text-rose-300 font-bold hover:underline cursor-pointer"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              {/* Search or Add Address Input */}
+              <div className="relative">
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-slate-500">
+                    <Search className="w-3.5 h-3.5" />
                   </span>
                   <input
                     type="text"
-                    value={recipientName}
-                    onChange={(e) => setRecipientName(e.target.value)}
-                    placeholder="e.g. Anweshi Mohanty"
-                    className="w-full bg-[#111B2E] border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-600"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Recipient Phone Number */}
-              <div className="space-y-1.5">
-                <label className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Recipient Phone Number</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-3 text-slate-500">
-                    <Phone className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="tel"
-                    value={recipientPhone}
-                    onChange={(e) => setRecipientPhone(e.target.value)}
-                    placeholder="e.g. +91 98765 43210"
-                    className="w-full bg-[#111B2E] border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition font-mono placeholder:text-slate-600"
-                  />
-                </div>
-              </div>
-
-              {/* Delivery Address / Stop */}
-              <div className="space-y-1.5 relative">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Delivery Address / Stop</span>
-                  </label>
-                  <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
-                    <span>Google Maps Verified</span>
-                  </span>
-                </div>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-3 text-slate-500">
-                    <MapPin className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="text"
-                    value={deliveryAddress}
-                    onFocus={() => setIsAddressFocused(true)}
+                    value={searchAddress}
+                    onFocus={() => setIsSearchFocused(true)}
                     onChange={(e) => {
-                      setDeliveryAddress(e.target.value);
-                      setIsAddressFocused(true);
+                      setSearchAddress(e.target.value);
+                      setIsSearchFocused(true);
                     }}
-                    placeholder="e.g. Mani Tribhuban, Patia, Infocity"
-                    className="w-full bg-[#111B2E] border border-slate-800 rounded-xl pl-10 pr-8 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-600"
-                    required
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddStop();
+                      }
+                    }}
+                    placeholder="Search or add address"
+                    className="w-full bg-[#10182E] border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs font-semibold text-white focus:outline-none focus:border-amber-500 transition placeholder:text-slate-500"
                   />
-                  {deliveryAddress && (
+                  {searchAddress ? (
                     <button
                       type="button"
-                      onClick={() => setDeliveryAddress('')}
-                      className="absolute right-3 top-3 text-slate-500 hover:text-slate-300"
+                      onClick={() => setSearchAddress('')}
+                      className="absolute right-2.5 text-slate-400 hover:text-white p-0.5"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleAddStop()}
+                      className="absolute right-2 text-amber-400 hover:text-amber-300 p-0.5"
+                      title="Add Stop"
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                    </button>
                   )}
                 </div>
-
-                {/* Quick Selection Chips */}
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {[
-                    { label: '📍 Mani Tribhuban', val: 'Mani Tribhuban, Nandankanan Road, Patia' },
-                    { label: '🏢 Royal Lagoon', val: 'Royal Lagoon Apartments, Raghunathpur' },
-                    { label: '🎓 KIIT Square', val: 'KIIT Square, Patia, Bhubaneswar' },
-                    { label: '💻 Infocity DLF', val: 'Infocity DLF Cybercity, Patia' },
-                  ].map((item) => (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={() => {
-                        setDeliveryAddress(item.val);
-                        setIsAddressFocused(false);
-                      }}
-                      className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800/80 hover:bg-emerald-950/40 hover:text-emerald-300 text-slate-400 border border-slate-700/50 transition cursor-pointer"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Live Google Maps Resolved Verification Card */}
-                {deliveryAddress.trim() && (() => {
-                  const resolved = resolveLogisticsCoordinates(deliveryAddress);
-                  return (
-                    <div className="p-2.5 rounded-xl bg-[#091120] border border-emerald-500/40 flex items-center justify-between gap-2 text-xs animate-in fade-in">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
-                          <MapPin className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-white text-[11px] truncate">
-                            {resolved.formatted}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            Google Maps GPS: <span className="text-emerald-400 font-bold">{resolved.lat.toFixed(4)}, {resolved.lng.toFixed(4)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${resolved.lat},${resolved.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-2 py-1 rounded bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 text-[10px] font-bold whitespace-nowrap flex items-center gap-1"
-                      >
-                        <span>Maps</span>
-                        <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    </div>
-                  );
-                })()}
 
                 {/* Autocomplete Dropdown */}
-                {isAddressFocused && (
-                  <div className="absolute left-0 right-0 top-[70px] z-50 bg-[#0B1220] border border-slate-700/90 rounded-xl shadow-2xl p-1.5 space-y-1 max-h-56 overflow-y-auto">
-                    {[
-                      {
-                        name: 'Mani Tribhuban / Mani Tribhuvan',
-                        address: 'Nandankanan Road, Raghunathpur, Patia, Bhubaneswar (PIN 751024)',
-                        coords: '20.3688, 85.8242',
-                      },
-                      {
-                        name: 'Royal Lagoon Apartments',
-                        address: 'Nandankanan Road, Raghunathpur, Patia, Bhubaneswar',
-                        coords: '20.3664, 85.8235',
-                      },
-                      {
-                        name: 'KIIT Square & Campus',
-                        address: 'Patia / KIIT Road, Bhubaneswar',
-                        coords: '20.3541, 85.8175',
-                      },
-                      {
-                        name: 'InfoCity Tech Park & DLF Cybercity',
-                        address: 'Patia IT Corridor, Bhubaneswar',
-                        coords: '20.3602, 85.8035',
-                      },
-                      {
-                        name: 'Jayadev Vihar Square',
-                        address: 'NH-16 Junction, Bhubaneswar',
-                        coords: '20.3039, 85.8188',
-                      },
-                    ]
-                      .filter(
-                        (item) =>
-                          !deliveryAddress.trim() ||
-                          item.name.toLowerCase().includes(deliveryAddress.toLowerCase()) ||
-                          item.address.toLowerCase().includes(deliveryAddress.toLowerCase()) ||
-                          deliveryAddress.toLowerCase().includes('mani') ||
-                          deliveryAddress.toLowerCase().includes('tribh')
-                      )
-                      .slice(0, 4)
-                      .map((item) => (
-                        <div
-                          key={item.name}
-                          onMouseDown={() => {
-                            setDeliveryAddress(`${item.name}, ${item.address.split(',')[0]}`);
-                            setIsAddressFocused(false);
-                          }}
-                          className="p-2 rounded-lg hover:bg-emerald-950/30 border border-transparent hover:border-emerald-500/30 cursor-pointer transition flex items-start justify-between gap-2 text-left"
-                        >
-                          <div>
-                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                              <MapPin className="w-3 h-3 text-emerald-400" />
-                              <span>{item.name}</span>
-                            </div>
-                            <div className="text-[10px] text-slate-400">{item.address}</div>
-                          </div>
-                          <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 whitespace-nowrap">
-                            {item.coords}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Parcel Type Chips */}
-              <div className="space-y-2">
-                <label className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-                  <Package className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Parcel Type</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {(['Documents', 'Electronics', 'Clothing', 'Food', 'Other'] as const).map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setParcelType(type)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-                        parcelType === type
-                          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30'
-                          : 'bg-[#111B2E] text-slate-400 border border-slate-800 hover:text-slate-200'
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Parcel Weight (Kg) */}
-              <div className="space-y-2">
-                <label className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Parcel Weight (Kg)</span>
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {['0.5', '1.0', '2.5', '5.0', '10.0', '20.0', '35.0'].map((w) => (
-                    <button
-                      key={w}
-                      type="button"
-                      onClick={() => setParcelWeight(w)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                        parcelWeight === w
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-[#111B2E] text-slate-400 border border-slate-800 hover:text-slate-200'
-                      }`}
-                    >
-                      {w}
-                    </button>
-                  ))}
-                </div>
-                <div className="relative mt-2">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    max="50"
-                    value={parcelWeight}
-                    onChange={(e) => setParcelWeight(e.target.value)}
-                    className="w-full bg-[#111B2E] border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 font-mono"
-                  />
-                  <span className="absolute right-3.5 top-3 text-[10px] text-slate-500 font-bold uppercase">
-                    KG
-                  </span>
-                </div>
-              </div>
-
-              {/* Delivery Priority */}
-              <div className="space-y-2">
-                <label className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Delivery Priority</span>
-                </label>
-                <div className="flex gap-2">
-                  {(['Standard', 'Express', 'Urgent'] as const).map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setDeliveryPriority(p)}
-                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${
-                        deliveryPriority === p
-                          ? 'bg-emerald-600 text-white shadow-md'
-                          : 'bg-[#111B2E] text-slate-400 border border-slate-800 hover:text-slate-200'
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Packaging Option */}
-              <div className="space-y-2 pt-1">
-                <label className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-                  <Leaf className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Packaging</span>
-                </label>
-                <div className="flex items-center justify-between bg-[#111B2E] border border-slate-800 p-3 rounded-xl">
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={ecoPackaging}
-                      onChange={(e) => setEcoPackaging(e.target.checked)}
-                      className="w-4 h-4 rounded text-emerald-600 bg-slate-900 border-slate-700 focus:ring-0 focus:ring-offset-0 accent-emerald-600 cursor-pointer"
-                    />
-                    <span className="text-xs font-semibold text-slate-200">
-                      Use eco-friendly / recyclable packaging
-                    </span>
-                  </label>
-                  <Info className="w-3.5 h-3.5 text-slate-500" />
-                </div>
-              </div>
-
-              {/* More Details (Optional) Accordion */}
-              <div className="border border-slate-800 bg-[#111B2E]/70 rounded-2xl overflow-hidden transition">
-                <button
-                  type="button"
-                  onClick={() => setIsMoreDetailsOpen(!isMoreDetailsOpen)}
-                  className="w-full flex items-center justify-between p-3.5 text-left text-xs font-bold text-slate-300 hover:text-white transition"
-                >
-                  <span>More Details (Optional)</span>
-                  {isMoreDetailsOpen ? (
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
-                  )}
-                </button>
-
-                {isMoreDetailsOpen && (
-                  <div className="p-3.5 pt-0 space-y-3.5 border-t border-slate-800/60">
-                    {/* Parcel Dimensions */}
-                    <div className="space-y-2">
-                      <div className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
-                        <Package className="w-3 h-3 text-slate-400" />
-                        <span>Parcel Dimensions (cm)</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="flex items-center bg-[#0B111E] border border-slate-800 rounded-lg px-2 py-1.5 text-xs">
-                          <span className="text-[10px] text-slate-500 mr-1.5">Length</span>
-                          <input
-                            type="number"
-                            value={dimLength}
-                            onChange={(e) => setDimLength(e.target.value)}
-                            className="w-full bg-transparent text-white font-mono text-xs focus:outline-none"
-                          />
-                        </div>
-                        <div className="flex items-center bg-[#0B111E] border border-slate-800 rounded-lg px-2 py-1.5 text-xs">
-                          <span className="text-[10px] text-slate-500 mr-1.5">Width</span>
-                          <input
-                            type="number"
-                            value={dimWidth}
-                            onChange={(e) => setDimWidth(e.target.value)}
-                            className="w-full bg-transparent text-white font-mono text-xs focus:outline-none"
-                          />
-                        </div>
-                        <div className="flex items-center bg-[#0B111E] border border-slate-800 rounded-lg px-2 py-1.5 text-xs">
-                          <span className="text-[10px] text-slate-500 mr-1.5">Height</span>
-                          <input
-                            type="number"
-                            value={dimHeight}
-                            onChange={(e) => setDimHeight(e.target.value)}
-                            className="w-full bg-transparent text-white font-mono text-xs focus:outline-none"
-                          />
-                        </div>
-                      </div>
+                {isSearchFocused && (
+                  <div className="absolute left-0 right-0 top-[38px] z-50 bg-[#0B1220] border border-slate-700/90 rounded-2xl shadow-2xl p-2 space-y-1 max-h-56 overflow-y-auto">
+                    <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
+                      Popular Locations
                     </div>
-
-                    {/* Special Handling */}
-                    <div className="space-y-2">
-                      <div className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
-                        <AlertTriangle className="w-3 h-3 text-amber-400" />
-                        <span>Special Handling</span>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-slate-300">
-                          <input
-                            type="checkbox"
-                            checked={isFragile}
-                            onChange={(e) => setIsFragile(e.target.checked)}
-                            className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 accent-emerald-600"
-                          />
-                          <span>Fragile</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-slate-300">
-                          <input
-                            type="checkbox"
-                            checked={isKeepUpright}
-                            onChange={(e) => setIsKeepUpright(e.target.checked)}
-                            className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 accent-emerald-600"
-                          />
-                          <span>Keep Upright</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-slate-300">
-                          <input
-                            type="checkbox"
-                            checked={isTempSensitive}
-                            onChange={(e) => setIsTempSensitive(e.target.checked)}
-                            className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 accent-emerald-600"
-                          />
-                          <span>Temperature Sensitive</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Submit Button (Bright Emerald Green Pill Button) */}
-              <button
-                type="submit"
-                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-slate-950 font-black text-xs md:text-sm rounded-full shadow-lg shadow-emerald-500/25 transition flex items-center justify-center gap-2 uppercase tracking-wide cursor-pointer"
-              >
-                <Plus className="w-4 h-4 stroke-[3]" />
-                <span>Add Waypoint & Re-Optimize</span>
-              </button>
-            </form>
-          </div>
-
-          {/* =========================================================================
-              RIGHT PANEL: OPTIMIZED ROUTE & STATS (MATCHES RIGHT SCREEN OF MOCKUP)
-             ========================================================================= */}
-          <div
-            className={`bg-[#0C1322] border border-slate-800/90 rounded-[28px] p-5 md:p-6 shadow-2xl shadow-black/40 space-y-5 ${
-              activeMobileView === 'form' ? 'hidden lg:block' : 'block'
-            }`}
-          >
-            {/* Top Bar */}
-            <div className="flex items-center justify-between border-b border-slate-800/70 pb-4">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={onNavigateToMap}
-                  className="w-8 h-8 rounded-full bg-slate-800/60 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition"
-                  title="Go Back"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                    <Package className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-black tracking-wider text-white">MUSAFIR</h2>
-                    <p className="text-[10px] text-slate-400 font-medium">Move Smarter • Deliver Greener</p>
-                  </div>
-                </div>
-              </div>
-              <button className="text-slate-400 hover:text-white p-1">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Success Banner matching Mockup */}
-            <div className="p-3.5 md:p-4 rounded-2xl bg-[#112423] border border-emerald-500/30 flex items-center justify-between shadow-inner">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-slate-950 flex-shrink-0">
-                  <Check className="w-4 h-4 stroke-[3]" />
-                </div>
-                <div>
-                  <h3 className="font-black text-sm text-white">Route Re-Optimized!</h3>
-                  <p className="text-[11px] text-emerald-300/80 font-medium">New waypoint added successfully.</p>
-                </div>
-              </div>
-              <Leaf className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-            </div>
-
-            {/* 8-Stat Grid (Matching user image 2 columns x 4 rows) */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* 1. Total Delivery Stops */}
-              <div className="bg-[#111B2E] border border-slate-800/90 rounded-2xl p-3.5 flex flex-col justify-between">
-                <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Total Delivery Stops</span>
-                </div>
-                <div className="mt-2 flex items-baseline gap-2">
-                  <span className="text-xl font-black text-white">{plan.sequencedWaypoints.length}</span>
-                  <span className="text-[11px] font-bold text-emerald-400">(+1 new)</span>
-                </div>
-              </div>
-
-              {/* 2. Vehicle Capacity */}
-              <div className="bg-[#111B2E] border border-slate-800/90 rounded-2xl p-3.5 flex flex-col justify-between">
-                <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                  <Truck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Vehicle Capacity</span>
-                </div>
-                <div className="mt-1">
-                  <div className="text-sm font-black text-white">
-                    {plan.payloadStability.currentPayloadKg} kg / {plan.payloadStability.maxAllowableCapacityKg} kg
-                  </div>
-                  {/* Progress bar */}
-                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1.5">
-                    <div
-                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${Math.min(100, (plan.payloadStability.currentPayloadKg / plan.payloadStability.maxAllowableCapacityKg) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 3. Total Load */}
-              <div className="bg-[#111B2E] border border-slate-800/90 rounded-2xl p-3.5 flex flex-col justify-between">
-                <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                  <Package className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Total Load</span>
-                </div>
-                <div className="mt-2 text-xl font-black text-white">
-                  {plan.payloadStability.currentPayloadKg} kg
-                </div>
-              </div>
-
-              {/* 4. Estimated Delivery Time */}
-              <div className="bg-[#111B2E] border border-slate-800/90 rounded-2xl p-3.5 flex flex-col justify-between">
-                <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                  <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Estimated Delivery Time</span>
-                </div>
-                <div className="mt-2 text-xl font-black text-white">
-                  {Math.floor(plan.totalDurationMinutes / 60)}h {plan.totalDurationMinutes % 60}m
-                </div>
-              </div>
-
-              {/* 5. Estimated Cost */}
-              <div className="bg-[#111B2E] border border-slate-800/90 rounded-2xl p-3.5 flex flex-col justify-between">
-                <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                  <Coins className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Estimated Cost</span>
-                </div>
-                <div className="mt-2 text-xl font-black text-white">
-                  ₹{plan.estimatedCostInr}
-                </div>
-              </div>
-
-              {/* 6. Fuel Saving */}
-              <div className="bg-[#111B2E] border border-slate-800/90 rounded-2xl p-3.5 flex flex-col justify-between">
-                <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                  <Fuel className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Fuel Saving</span>
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-xl font-black text-white">{plan.fuelOrEnergySavedPercent}%</span>
-                  <Leaf className="w-4 h-4 text-emerald-400" />
-                </div>
-              </div>
-
-              {/* 7. CO2 Reduction */}
-              <div className="bg-[#111B2E] border border-slate-800/90 rounded-2xl p-3.5 flex flex-col justify-between">
-                <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                  <Leaf className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>CO₂ Reduction</span>
-                </div>
-                <div className="mt-2">
-                  <span className="text-xl font-black text-white">{plan.co2ReductionPercent}%</span>
-                  <div className="text-[10px] text-slate-400 font-medium">(~ {plan.co2SavedKg} kg CO₂)</div>
-                </div>
-              </div>
-
-              {/* 8. Greener Deliveries Banner Card */}
-              <div className="bg-[#0B251F] border border-emerald-600/30 rounded-2xl p-3.5 flex flex-col justify-center text-left">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-1">
-                  <Leaf className="w-4 h-4" />
-                </div>
-                <div className="text-xs font-black text-white">Greener Deliveries</div>
-                <div className="text-[10px] text-emerald-300 font-medium">A Cleaner Tomorrow</div>
-              </div>
-            </div>
-
-            {/* ─── OPTIMIZED ROUTE SECTION (REAL-TIME LIVE MAP & TIMELINE) ─── */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-black text-white flex items-center gap-1.5">
-                    <span>Optimized Route Corridor</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-600/20 text-blue-400 border border-blue-500/30 font-bold">Google Maps</span>
-                  </h3>
-                  <p className="text-[11px] text-slate-400">Live Multi-Drop Road GPS Tracking (Zero API Key Required)</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsMapExpanded(true)}
-                  className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111B2E] border border-slate-700 hover:border-emerald-500/40 transition cursor-pointer"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  <span>Expand Map</span>
-                </button>
-              </div>
-
-              {/* Real-time Interactive Google Maps Preview with Multi-Stop Polyline */}
-              <div className="relative h-64 sm:h-72 rounded-2xl overflow-hidden bg-[#0A111E] border border-slate-800">
-                <MapContainer
-                  center={sanitizeLatLng([originHub?.lat, originHub?.lng], [20.2818, 85.7938])}
-                  zoom={12}
-                  className="w-full h-full z-0"
-                  zoomControl={false}
-                >
-                  <MapBoundsUpdater
-                    coords={[
-                      [originHub.lat, originHub.lng],
-                      ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
-                    ]}
-                  />
-
-                  {/* Google Maps Real-Time Tile Layer (Zero API Key Required) */}
-                  <TileLayer
-                    url={
-                      logisticsMapLayer === 'google-traffic'
-                        ? 'https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}'
-                        : logisticsMapLayer === 'google-hybrid'
-                        ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
-                        : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
-                    }
-                    attribution='&copy; <a href="https://maps.google.com">Google Maps</a>'
-                    maxZoom={20}
-                  />
-
-                  {/* Warehouse Origin Pin */}
-                  {isValidLatLng([originHub.lat, originHub.lng]) && (
-                    <Marker position={[originHub.lat, originHub.lng]} icon={createLogisticsWarehouseIcon()}>
-                      <Popup>
-                        <div className="text-xs font-bold text-slate-900 p-1">
-                          <span className="text-blue-600 font-extrabold block">🏭 Dispatch Warehouse</span>
-                          <span className="text-slate-800 block">{originHub.name}</span>
-                          <span className="text-[10px] text-slate-500 font-mono block mt-0.5">
-                            GPS: {originHub.lat.toFixed(4)}, {originHub.lng.toFixed(4)}
-                          </span>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  )}
-
-                  {/* Connected Dispatch Corridor Polyline */}
-                  <Polyline
-                    positions={filterValidLatLngs([
-                      [originHub.lat, originHub.lng],
-                      ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
-                    ])}
-                    pathOptions={{ color: '#10b981', weight: 4, opacity: 0.9 }}
-                  />
-
-                  {/* Waypoint Pins */}
-                  {waypoints.filter((wp) => isValidLatLng([wp.lat, wp.lng])).map((wp, idx) => {
-                    const isLast = idx === waypoints.length - 1;
-                    return (
-                      <Marker
-                        key={wp.id}
-                        position={[wp.lat, wp.lng]}
-                        icon={createLogisticsStopIcon(idx + 1, isLast)}
+                    {filteredSuggestions.slice(0, 5).map((item) => (
+                      <div
+                        key={item.name}
+                        onMouseDown={() => handleAddStop(`${item.name}, ${item.address}`)}
+                        className="p-2 rounded-xl hover:bg-amber-500/10 border border-transparent hover:border-amber-500/30 cursor-pointer transition flex items-center justify-between text-left"
                       >
-                        <Popup>
-                          <div className="text-xs font-bold text-slate-900 p-1 min-w-[190px]">
-                            <div className="flex items-center justify-between pb-1 border-b border-slate-200">
-                              <span className="text-emerald-600 font-extrabold">Stop #{idx + 1}</span>
-                              <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono">
-                                {wp.packageWeightKg} kg
-                              </span>
-                            </div>
-                            <div className="text-xs font-black text-slate-900 mt-1 capitalize">{wp.recipientName}</div>
-                            <div className="text-[11px] text-slate-600 mt-0.5">{wp.address}</div>
-                            <div className="text-[10px] text-slate-500 font-mono mt-1">
-                              Google Maps: {wp.lat.toFixed(4)}, {wp.lng.toFixed(4)}
-                            </div>
-                            <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${wp.lat},${wp.lng}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:underline font-bold mt-1.5"
-                            >
-                              <span>📍 Verify on Google Maps</span>
-                              <ExternalLink className="w-2.5 h-2.5" />
-                            </a>
+                        <div>
+                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <MapPin className="w-3 h-3 text-amber-400" />
+                            <span>{item.name}</span>
                           </div>
-                        </Popup>
-                      </Marker>
-                    );
-                  })}
-                </MapContainer>
-
-                {/* Live Floating Badge on Map */}
-                <div className="absolute top-2.5 left-2.5 z-[1000] bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-800 text-[11px] text-white flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="font-bold">Google Maps Live: {waypoints.length} Stops Active</span>
-                </div>
-
-                {/* Google Maps Layer Selector (Zero API Key) */}
-                <div className="absolute bottom-2.5 right-2.5 z-[1000] flex gap-1 bg-slate-950/90 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[10px]">
-                  <button
-                    type="button"
-                    onClick={() => setLogisticsMapLayer('google-traffic')}
-                    className={`px-2 py-0.5 rounded-lg font-bold transition cursor-pointer ${
-                      logisticsMapLayer === 'google-traffic'
-                        ? 'bg-emerald-600 text-white'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    🚦 Traffic
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLogisticsMapLayer('google-roadmap')}
-                    className={`px-2 py-0.5 rounded-lg font-bold transition cursor-pointer ${
-                      logisticsMapLayer === 'google-roadmap'
-                        ? 'bg-emerald-600 text-white'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    🗺️ Roads
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLogisticsMapLayer('google-hybrid')}
-                    className={`px-2 py-0.5 rounded-lg font-bold transition cursor-pointer ${
-                      logisticsMapLayer === 'google-hybrid'
-                        ? 'bg-emerald-600 text-white'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    🛰️ Satellite
-                  </button>
-                </div>
+                          <div className="text-[10px] text-slate-400 truncate max-w-[200px]">{item.address}</div>
+                        </div>
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-lg">
+                          + Add
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Waypoint Timeline Stops */}
-              <div className="space-y-2 bg-[#111B2E] border border-slate-800/90 rounded-2xl p-3.5">
-                {/* 0: Start */}
-                <div className="flex items-center justify-between py-1 border-b border-slate-800/50 text-xs">
+              {/* Stop Sequence List */}
+              <div className="space-y-2 pt-1 max-h-60 overflow-y-auto pr-1">
+                {/* Origin: Warehouse (Start) */}
+                <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#10182E] border border-slate-800/80">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-5 h-5 rounded-full bg-blue-500/20 border border-blue-500 flex items-center justify-center text-blue-400">
-                      <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center font-black text-xs text-amber-400">
+                      W
                     </div>
                     <div>
-                      <span className="font-bold text-slate-300">Start (Baramunda Logistics Base)</span>
-                      <span className="text-[10px] text-slate-500 block font-mono">20.2818, 85.7938</span>
+                      <div className="text-xs font-bold text-white">Warehouse (Start)</div>
+                      <div className="text-[10px] text-slate-400">Bhubaneswar</div>
                     </div>
                   </div>
-                  <span className="font-mono text-slate-400 text-[11px]">09:00 AM</span>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">
+                    Base
+                  </span>
                 </div>
 
-                {/* Waypoints */}
-                {plan.sequencedWaypoints.map((wp, idx) => {
-                  const isLast = idx === plan.sequencedWaypoints.length - 1;
-                  const times = ['09:25 AM', '10:05 AM', '10:45 AM', '11:15 AM', '11:45 AM'];
-                  const estTime = wp.estimatedArrival || times[idx] || '11:00 AM';
+                {/* USER REQUIREMENT 1: Dynamic User Waypoint List (Empty by default) */}
+                {waypoints.length === 0 ? (
+                  <div className="p-4 rounded-2xl bg-[#10182E]/50 border border-dashed border-slate-800 text-center space-y-2">
+                    <Package className="w-6 h-6 text-slate-500 mx-auto" />
+                    <p className="text-xs font-bold text-slate-300">No delivery stops added yet</p>
+                    <p className="text-[11px] text-slate-500">
+                      Type any address above to add your first delivery location.
+                    </p>
 
-                  return (
-                    <div
-                      key={wp.id}
-                      className="flex items-center justify-between py-2 border-b border-slate-800/40 text-xs last:border-0"
-                    >
-                      <div className="flex items-start gap-2.5 min-w-0 pr-2">
-                        <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] text-white mt-0.5 flex-shrink-0 ${
-                            isLast ? 'bg-rose-500' : 'bg-emerald-500'
-                          }`}
+                    {/* Quick suggestion chips */}
+                    <div className="flex flex-wrap gap-1 justify-center pt-1">
+                      {['Trident Academy', 'KIIT Square', 'Unit 2', 'Rasulgarh'].map((loc) => (
+                        <button
+                          key={loc}
+                          type="button"
+                          onClick={() => handleAddStop(loc)}
+                          className="text-[10px] px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer font-semibold"
                         >
-                          {idx + 1}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-white capitalize truncate">{wp.recipientName}</span>
-                            <span className="text-[10px] text-slate-400 font-mono flex-shrink-0">({wp.packageWeightKg} kg)</span>
+                          + {loc}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={handleLoadSampleStops}
+                        className="text-[11px] text-amber-400 hover:text-amber-300 underline font-bold cursor-pointer"
+                      >
+                        Load Sample Bhubaneswar Stops
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  waypoints.map((wp, idx) => {
+                    const pinColor = STOP_PIN_COLORS[idx % STOP_PIN_COLORS.length];
+                    const distKm = (2.5 + idx * 2.1).toFixed(1);
+                    const parcels = Math.round(wp.packageWeightKg || 3);
+
+                    return (
+                      <div
+                        key={wp.id}
+                        className="flex items-center justify-between p-2.5 rounded-2xl bg-[#10182E] border border-slate-800/80 hover:border-slate-700 transition"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                          <div
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: pinColor }}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-white truncate">
+                              Stop {idx + 1} - {wp.recipientName}
+                            </div>
+                            <div className="text-[10px] text-slate-400 truncate">
+                              {distKm} km • {parcels} {parcels === 1 ? 'parcel' : 'parcels'}
+                            </div>
                           </div>
-                          <div className="text-[10px] text-slate-400 truncate">{wp.address}</div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 whitespace-nowrap">
-                              📍 {wp.lat.toFixed(4)}, {wp.lng.toFixed(4)}
-                            </span>
-                            <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${wp.lat},${wp.lng}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[9px] text-sky-400 hover:text-sky-300 underline font-semibold flex items-center gap-0.5 whitespace-nowrap"
-                            >
-                              <span>Google Maps</span>
-                              <ExternalLink className="w-2.5 h-2.5" />
-                            </a>
-                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="font-mono text-slate-300 text-[11px]">{estTime}</span>
+
                         <button
                           type="button"
                           onClick={() => handleRemoveStop(wp.id)}
-                          className="text-slate-500 hover:text-rose-400 p-0.5 transition cursor-pointer"
+                          className="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition cursor-pointer shrink-0"
                           title="Remove Stop"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Bottom Action Buttons */}
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsMapExpanded(true)}
-                className="flex-1 py-3.5 rounded-full border border-slate-700 bg-[#111B2E] hover:bg-slate-800 text-white font-black text-xs md:text-sm flex items-center justify-center gap-2 transition cursor-pointer"
-              >
-                <Layers className="w-4 h-4" />
-                <span>View Optimized Route</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsPaymentOpen(true)}
-                className="flex-1 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs md:text-sm shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition cursor-pointer active:scale-95"
-              >
-                <Send className="w-4 h-4 stroke-[2.5]" />
-                <span>Dispatch Parcel</span>
-              </button>
-            </div>
-
-            {/* Footer Quote matching user mockup */}
-            <div className="text-center pt-2 text-slate-500 text-[11px] font-medium italic">
-              "Optimized today, a better tomorrow." — Musafir
-            </div>
-          </div>
-        </div>
-
-        {/* ─── EXTRA UTILITIES ACCORDION: DRIVER SAFETY & STAY HUBS ─── */}
-        <div className="bg-[#0C1322] border border-slate-800/90 rounded-3xl p-5 space-y-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                <ShieldAlert className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-sm text-white">
-                  Driver En-Route Readiness & Safety Hubs (लाइव ट्रैफिक & स्टे)
-                </h3>
-                <p className="text-[11px] text-slate-400">
-                  Live arterial traffic conditions, driver rest pods, and instant mishap insurance claims.
-                </p>
-              </div>
-            </div>
-
-            {/* Tab Selector */}
-            <div className="flex items-center bg-[#111B2E] p-1 rounded-xl border border-slate-800">
-              <button
-                onClick={() => setActiveDriverTab('traffic')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
-                  activeDriverTab === 'traffic'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                🚦 Live Traffic
-              </button>
-              <button
-                onClick={() => setActiveDriverTab('stay')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
-                  activeDriverTab === 'stay'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                🛏️ Aas-Paas Stay Hubs
-              </button>
-            </div>
-          </div>
-
-          {/* Traffic Tab */}
-          {activeDriverTab === 'traffic' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {LIVE_CORRIDOR_TRAFFIC.map((tf, idx) => (
-                <div key={idx} className={`p-3 rounded-2xl border ${tf.color} space-y-1`}>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-black truncate max-w-[200px]">{tf.corridor}</span>
-                    <span className="font-extrabold text-[10px] px-2 py-0.5 rounded-full bg-slate-900/80">
-                      {tf.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-300">
-                    <span>Avg Speed: {tf.speed}</span>
-                    <span className="font-mono">{tf.delay}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Stay Hubs Tab */}
-          {activeDriverTab === 'stay' && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {DRIVER_STAY_HUBS.map((stay) => (
-                <div
-                  key={stay.id}
-                  className="p-3.5 rounded-2xl bg-[#111B2E] border border-slate-800 space-y-2"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="font-black text-xs text-white leading-tight">{stay.name}</div>
-                    <span className="text-[10px] font-bold text-amber-400">{stay.safetyRating}</span>
-                  </div>
-                  <div className="text-[10px] font-bold text-blue-400">📍 {stay.distance}</div>
-                  <div className="flex flex-wrap gap-1">
-                    {stay.amenities.map((am, i) => (
-                      <span
-                        key={i}
-                        className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-medium text-slate-300"
-                      >
-                        {am}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="pt-1 flex items-center justify-between text-[10px] border-t border-slate-800">
-                    <span className="text-slate-400 font-mono">{stay.phone}</span>
-                    <a
-                      href={`tel:${stay.phone}`}
-                      className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold"
-                    >
-                      Call Hub
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ─── DISPATCH PAYMENT MODAL (OPENED ON "DISPATCH PARCEL") ─── */}
-      <PaymentGatewayModal
-        isOpen={isPaymentOpen}
-        onClose={() => setIsPaymentOpen(false)}
-        amount={plan.estimatedCostInr}
-        purpose={`Musafir 3D Levitation Dispatch - ${plan.sequencedWaypoints.length} Drops (₹${plan.estimatedCostInr})`}
-        customerName={recipientName}
-        customerPhone={recipientPhone}
-        onPaymentSuccess={handlePaymentSuccess}
-      />
-
-      {/* ─── LIVE DISPATCH CONFIRMATION RECEIPT MODAL ─── */}
-      {dispatchReceipt && (
-        <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-[#0C1322] border border-emerald-500/40 rounded-3xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl shadow-emerald-500/10">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 mx-auto animate-bounce">
-              <Check className="w-8 h-8 stroke-[3]" />
-            </div>
-
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                Payment Verified & Dispatched
-              </span>
-              <h2 className="text-xl font-black text-white mt-2">Flight Clearance Granted! 🚀</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Vehicle assigned to Urban Skyway Lane ({altitudeMeters}m AGL). Auto-docking precision lock ready.
-              </p>
-            </div>
-
-            <div className="bg-[#111B2E] border border-slate-800 rounded-2xl p-4 text-left space-y-2 font-mono text-xs">
-              <div className="flex justify-between text-slate-400">
-                <span>Tracking ID:</span>
-                <span className="font-black text-emerald-400">{dispatchReceipt.trackingId}</span>
-              </div>
-              <div className="flex justify-between text-slate-400">
-                <span>Total Amount Paid:</span>
-                <span className="font-black text-white">₹{dispatchReceipt.amount}</span>
-              </div>
-              <div className="flex justify-between text-slate-400">
-                <span>Waypoint Drops:</span>
-                <span className="text-white">{dispatchReceipt.waypointCount} stops</span>
-              </div>
-              <div className="flex justify-between text-slate-400">
-                <span>Docking Precision:</span>
-                <span className="text-emerald-400">±8 cm (ALIGNED_LOCKED)</span>
-              </div>
-              <div className="flex justify-between text-slate-400">
-                <span>Time Dispatched:</span>
-                <span className="text-white">{dispatchReceipt.timestamp}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setDispatchReceipt(null)}
-              className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-full text-xs uppercase tracking-wide transition cursor-pointer"
-            >
-              Track Live Fleet on Radar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ─── MISHAP REPORTING MODAL ─── */}
-      {reportingWaypoint && (
-        <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 animate-in fade-in">
-          <div className="bg-[#0C1322] border border-rose-800 rounded-3xl w-full max-w-lg p-5 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-800 text-rose-400">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
-                <h3 className="font-black text-sm text-white">Report Road Mishap & Damage (हादसा)</h3>
-              </div>
-              <button
-                onClick={() => setReportingWaypoint(null)}
-                className="p-1.5 rounded-full bg-slate-800 text-slate-400 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="text-xs text-slate-300 space-y-1">
-              <div><strong>Affected Parcel Drop:</strong> {reportingWaypoint.recipientName}</div>
-              <div><strong>Delivery Address:</strong> {reportingWaypoint.address}</div>
-            </div>
-
-            {/* Mishap Type Selector */}
-            <div>
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                Incident Type *
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'traffic_accident', label: '💥 Road Traffic Accident' },
-                  { id: 'weather_flood', label: '🌧️ Waterlogging / Flood' },
-                  { id: 'vehicle_breakdown', label: '🚚 Vehicle Breakdown' },
-                  { id: 'cargo_damage', label: '📦 Parcel Physical Damage' },
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setMishapType(t.id as any)}
-                    className={`p-2.5 rounded-xl border text-xs font-bold text-left transition ${
-                      mishapType === t.id
-                        ? 'bg-rose-950/60 border-rose-500 text-rose-300'
-                        : 'bg-[#111B2E] border-slate-800 text-slate-300'
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Incident Location */}
-            <div>
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Mishap Location *
-              </label>
-              <input
-                type="text"
-                value={mishapLocation}
-                onChange={(e) => setMishapLocation(e.target.value)}
-                className="w-full bg-[#111B2E] border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-rose-500 text-white"
-              />
-            </div>
-
-            {/* Photo Evidence */}
-            <div>
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Photo Proof of Damage (फोटो प्रमाण) *
-              </label>
-              <label className="cursor-pointer block border-2 border-dashed border-rose-800 hover:border-rose-600 rounded-2xl p-3 text-center bg-rose-950/20 transition">
-                <input type="file" accept="image/*" onChange={handleMishapPhotoChange} className="hidden" />
-                {isPhotoCompressing ? (
-                  <div className="flex items-center justify-center gap-2 text-rose-400 text-xs font-bold py-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Compressing Evidence Photo...</span>
-                  </div>
-                ) : mishapPhotoUrl ? (
-                  <div className="space-y-2">
-                    <img
-                      src={mishapPhotoUrl}
-                      alt="Mishap Proof"
-                      className="max-h-40 rounded-xl mx-auto object-cover border border-rose-500"
-                    />
-                    <span className="text-[11px] font-bold text-emerald-400 block">
-                      ✓ Photo Proof Attached. Tap to change.
-                    </span>
-                  </div>
-                ) : (
-                  <div className="py-2 space-y-1">
-                    <Camera className="w-6 h-6 text-rose-400 mx-auto" />
-                    <span className="text-xs font-bold text-slate-200 block">
-                      Click to Take / Upload Photo of Damage
-                    </span>
-                  </div>
+                    );
+                  })
                 )}
-              </label>
-            </div>
+              </div>
 
-            {/* Actions */}
-            <div className="pt-2 flex gap-2">
+              {/* Big Gold Button: ✨ Optimize Routes (Matching Screenshot) */}
               <button
                 type="button"
-                onClick={() => setReportingWaypoint(null)}
-                className="w-1/3 py-2.5 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl"
+                onClick={handleOptimizeRoutes}
+                className="w-full py-3 rounded-2xl bg-[#F59E0B] hover:bg-[#D97706] text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 mt-2"
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSendMishapAlert}
-                className="w-2/3 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 transition"
-              >
-                <Send className="w-4 h-4" />
-                <span>Dispatch Alert & Photo</span>
+                <Sparkles className="w-4 h-4 fill-slate-950" />
+                <span>Optimize Routes</span>
               </button>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Full-Screen Google Maps Logistics Corridor Modal (Zero API Key) */}
-      {isMapExpanded && (
-        <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex flex-col p-3 sm:p-6 animate-in fade-in">
-          <div className="bg-[#0C1322] border border-slate-800 rounded-3xl flex-1 flex flex-col overflow-hidden shadow-2xl">
-            {/* Modal Header */}
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
-              <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
-                <div>
-                  <h3 className="text-sm font-black text-white flex items-center gap-2">
-                    <span>Google Maps Logistics Corridor</span>
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono">
-                      Zero API Key Required
-                    </span>
-                  </h3>
-                  <p className="text-[11px] text-slate-400 font-mono">
-                    Warehouse + {waypoints.length} Dispatch Stops Active
-                  </p>
-                </div>
-              </div>
+          {/* =========================================================================
+              COLUMN 2: INTERACTIVE ROUTE MAP (col-span-12 lg:col-span-6)
+             ========================================================================= */}
+          <div className="lg:col-span-6 bg-[#0B1222] border border-slate-800/90 rounded-3xl overflow-hidden shadow-2xl relative h-[480px] sm:h-[540px] flex flex-col">
+            {/* Top Floating Filter Pills: [✨ Optimized Routes] [All Locations] */}
+            <div className="absolute top-3.5 left-3.5 z-[1000] flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveMapPill('optimized')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 backdrop-blur-md shadow-lg ${
+                  activeMapPill === 'optimized'
+                    ? 'bg-[#121A2B]/95 text-amber-400 border border-amber-500/60 shadow-amber-500/20'
+                    : 'bg-[#121A2B]/80 text-slate-400 border border-slate-700 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 fill-amber-400" />
+                <span>Optimized Routes</span>
+              </button>
 
-              <div className="flex items-center gap-2">
-                {/* Layer switch */}
-                <div className="flex gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => setLogisticsMapLayer('google-traffic')}
-                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
-                      logisticsMapLayer === 'google-traffic'
-                        ? 'bg-emerald-600 text-white'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    🚦 Live Traffic
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLogisticsMapLayer('google-roadmap')}
-                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
-                      logisticsMapLayer === 'google-roadmap'
-                        ? 'bg-emerald-600 text-white'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    🗺️ Roads
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLogisticsMapLayer('google-hybrid')}
-                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
-                      logisticsMapLayer === 'google-hybrid'
-                        ? 'bg-emerald-600 text-white'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    🛰️ Satellite
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsMapExpanded(false)}
-                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
-                  title="Close Map"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setActiveMapPill('all')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 backdrop-blur-md shadow-lg ${
+                  activeMapPill === 'all'
+                    ? 'bg-[#121A2B]/95 text-amber-400 border border-amber-500/60 shadow-amber-500/20'
+                    : 'bg-[#121A2B]/80 text-slate-400 border border-slate-700 hover:text-white'
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span>All Locations</span>
+              </button>
             </div>
 
-            {/* Modal Map */}
-            <div className="flex-1 w-full h-full relative">
+            {/* Map Container */}
+            <div className="w-full h-full relative z-0">
               <MapContainer
-                center={sanitizeLatLng([originHub?.lat, originHub?.lng], [20.2818, 85.7938])}
-                zoom={13}
+                center={[20.2961, 85.8245]}
+                zoom={12}
                 className="w-full h-full z-0"
-                zoomControl={true}
+                zoomControl={false}
               >
                 <MapBoundsUpdater
                   coords={[
@@ -1711,78 +867,71 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                     ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
                   ]}
                 />
+
                 <TileLayer
-                  url={
-                    logisticsMapLayer === 'google-traffic'
-                      ? 'https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}'
-                      : logisticsMapLayer === 'google-hybrid'
-                      ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
-                      : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
-                  }
-                  attribution='&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps</a>'
-                  maxZoom={20}
+                  url="https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}"
+                  attribution='&copy; <a href="https://maps.google.com">Google Maps</a>'
+                  maxZoom={19}
                 />
 
-                {/* Warehouse Origin Marker */}
-                {isValidLatLng([originHub.lat, originHub.lng]) && (
-                  <Marker
-                    position={[originHub.lat, originHub.lng]}
-                    icon={createLogisticsWarehouseIcon()}
-                  >
-                    <Popup>
-                      <div className="text-xs font-bold text-slate-900 p-1">
-                        <div className="text-emerald-700 font-extrabold flex items-center gap-1">
-                          <span>🏭 Logistics Base Hub</span>
-                        </div>
-                        <div className="text-slate-800 font-bold mt-1">{originHub.name}</div>
-                        <div className="text-[10px] text-slate-500 font-mono mt-1">
-                          Google Maps: {originHub.lat.toFixed(4)}, {originHub.lng.toFixed(4)}
-                        </div>
-                      </div>
-                    </Popup>
-                  </Marker>
+                {/* Warehouse Origin Pin */}
+                <Marker position={[originHub.lat, originHub.lng]} icon={createLogisticsWarehouseIcon()}>
+                  <Popup>
+                    <div className="text-xs font-bold text-slate-900 p-1">
+                      <span className="text-amber-600 font-extrabold block">🏠 Dispatch Warehouse</span>
+                      <span>Baramunda Hub, Bhubaneswar</span>
+                    </div>
+                  </Popup>
+                </Marker>
+
+                {/* Van 1 Polyline Route (Blue) */}
+                {van1Stops.length > 0 && (
+                  <Polyline
+                    positions={filterValidLatLngs([
+                      [originHub.lat, originHub.lng],
+                      ...van1Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                    ])}
+                    pathOptions={{ color: '#3B82F6', weight: 4.5, opacity: 0.95 }}
+                  />
                 )}
 
-                {/* Route Path */}
-                <Polyline
-                  positions={filterValidLatLngs([
-                    [originHub.lat, originHub.lng],
-                    ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
-                  ])}
-                  pathOptions={{ color: '#10b981', weight: 5, opacity: 0.9 }}
-                />
+                {/* Van 2 Polyline Route (Green) */}
+                {van2Stops.length > 0 && (
+                  <Polyline
+                    positions={filterValidLatLngs([
+                      [originHub.lat, originHub.lng],
+                      ...van2Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                    ])}
+                    pathOptions={{ color: '#10B981', weight: 4.5, opacity: 0.95 }}
+                  />
+                )}
 
-                {/* Waypoints */}
+                {/* Van 3 Polyline Route (Orange) */}
+                {van3Stops.length > 0 && (
+                  <Polyline
+                    positions={filterValidLatLngs([
+                      [originHub.lat, originHub.lng],
+                      ...van3Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                    ])}
+                    pathOptions={{ color: '#F97316', weight: 4.5, opacity: 0.95 }}
+                  />
+                )}
+
+                {/* Waypoint Numbered Markers */}
                 {waypoints.filter((wp) => isValidLatLng([wp.lat, wp.lng])).map((wp, idx) => {
-                  const isLast = idx === waypoints.length - 1;
                   return (
                     <Marker
                       key={wp.id}
                       position={[wp.lat, wp.lng]}
-                      icon={createLogisticsStopIcon(idx + 1, isLast)}
+                      icon={createNumberedPinIcon(idx + 1, wp.recipientName)}
                     >
                       <Popup>
-                        <div className="text-xs font-bold text-slate-900 p-1 min-w-[200px]">
-                          <div className="flex items-center justify-between pb-1 border-b border-slate-200">
-                            <span className="text-emerald-600 font-extrabold">Stop #{idx + 1}</span>
-                            <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono">
-                              {wp.packageWeightKg} kg
-                            </span>
-                          </div>
-                          <div className="text-xs font-black text-slate-900 mt-1 capitalize">{wp.recipientName}</div>
+                        <div className="text-xs font-bold text-slate-900 p-1">
+                          <div className="font-black text-slate-950">Stop {idx + 1}: {wp.recipientName}</div>
                           <div className="text-[11px] text-slate-600 mt-0.5">{wp.address}</div>
-                          <div className="text-[10px] text-slate-500 font-mono mt-1">
-                            Google Maps: {wp.lat.toFixed(4)}, {wp.lng.toFixed(4)}
+                          <div className="text-[10px] text-emerald-600 font-mono mt-1 font-extrabold">
+                            GPS: {wp.lat.toFixed(4)}, {wp.lng.toFixed(4)}
                           </div>
-                          <a
-                            href={`https://www.google.com/maps/search/?api=1&query=${wp.lat},${wp.lng}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:underline font-bold mt-1.5"
-                          >
-                            <span>📍 Verify on Google Maps</span>
-                            <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
                         </div>
                       </Popup>
                     </Marker>
@@ -1790,8 +939,453 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
                 })}
               </MapContainer>
             </div>
+
+            {/* Bottom-Left Floating Vehicles Card (Matching Screenshot) */}
+            <div className="absolute left-3.5 bottom-3.5 z-[1000] bg-[#0C1425]/92 border border-slate-800/90 backdrop-blur-md rounded-2xl p-3 shadow-2xl space-y-2 min-w-[170px]">
+              <h4 className="font-extrabold text-slate-400 text-[11px] uppercase tracking-wider">Vehicles</h4>
+              <div className="space-y-1.5 text-xs font-bold">
+                <div className="flex items-center gap-2 text-white">
+                  <span className="w-3 h-1 bg-blue-500 rounded-full inline-block" />
+                  <span>Van 1</span>
+                  <span className="text-slate-400 text-[11px] font-normal">({van1Parcels} parcels)</span>
+                </div>
+                <div className="flex items-center gap-2 text-white">
+                  <span className="w-3 h-1 bg-emerald-500 rounded-full inline-block" />
+                  <span>Van 2</span>
+                  <span className="text-slate-400 text-[11px] font-normal">({van2Parcels} parcels)</span>
+                </div>
+                <div className="flex items-center gap-2 text-white">
+                  <span className="w-3 h-1 bg-amber-500 rounded-full inline-block" />
+                  <span>Van 3</span>
+                  <span className="text-slate-400 text-[11px] font-normal">({van3Parcels} parcels)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom-Right Floating Compass & Zoom Controls */}
+            <div className="absolute right-3.5 bottom-3.5 z-[1000] flex flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsMapExpanded(true)}
+                className="w-8 h-8 rounded-xl bg-[#0C1425]/90 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center backdrop-blur-md cursor-pointer"
+                title="Fullscreen Map"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* =========================================================================
+              COLUMN 3: OPTIMIZED ROUTE SUMMARY & TRACKING (col-span-12 lg:col-span-3)
+             ========================================================================= */}
+          <div className="lg:col-span-3 space-y-4">
+            
+            {/* Card 1: Optimized Route Summary (Matching Screenshot) */}
+            <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
+              <div className="flex items-center gap-2 text-white">
+                <Sparkles className="w-4 h-4 text-amber-400 fill-amber-400" />
+                <h3 className="text-sm font-black">Optimized Route Summary</h3>
+              </div>
+
+              {/* 4 Stat Cards */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Total Distance */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    <span>Total Distance</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="text-base font-black text-white">
+                      {waypoints.length > 0 ? `${(18 + waypoints.length * 2.1).toFixed(1)} km` : '28.4 km'}
+                    </div>
+                    <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                      <TrendingDown className="w-3 h-3" />
+                      <span>32%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Estimated Time */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    <span>Estimated Time</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="text-base font-black text-white">
+                      {waypoints.length > 0 ? `${Math.floor(plan.totalDurationMinutes / 60)}h ${plan.totalDurationMinutes % 60}m` : '1h 45m'}
+                    </div>
+                    <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                      <TrendingDown className="w-3 h-3" />
+                      <span>40%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fuel Consumption */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                    <Fuel className="w-3 h-3 text-slate-400" />
+                    <span>Fuel Consumption</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="text-base font-black text-white">
+                      {waypoints.length > 0 ? `${((plan.totalDistanceKm || 28.4) * 0.28).toFixed(1)} L` : '8.2 L'}
+                    </div>
+                    <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                      <TrendingDown className="w-3 h-3" />
+                      <span>35%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CO2 Emission */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                    <Leaf className="w-3 h-3 text-emerald-400" />
+                    <span>CO₂ Emission</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="text-base font-black text-white">
+                      {waypoints.length > 0 ? `${(plan.co2SavedKg * 1.8).toFixed(1)} kg` : '19.6 kg'}
+                    </div>
+                    <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                      <TrendingDown className="w-3 h-3" />
+                      <span>36%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Vehicle Assignment (Matching Screenshot) */}
+            <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-white">
+                  <Truck className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-black">Vehicle Assignment</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMapExpanded(true)}
+                  className="text-xs font-bold text-slate-400 hover:text-white cursor-pointer"
+                >
+                  View All →
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {/* Van 1 */}
+                <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#10182E] border border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white">Van 1</div>
+                      <div className="text-[10px] text-slate-400">{van1Parcels} parcels | 92 kg</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsMapExpanded(true)}
+                    className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-[11px] font-bold text-slate-200 transition cursor-pointer"
+                  >
+                    View Route
+                  </button>
+                </div>
+
+                {/* Van 2 */}
+                <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#10182E] border border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white">Van 2</div>
+                      <div className="text-[10px] text-slate-400">{van2Parcels} parcels | 78 kg</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsMapExpanded(true)}
+                    className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-[11px] font-bold text-slate-200 transition cursor-pointer"
+                  >
+                    View Route
+                  </button>
+                </div>
+
+                {/* Van 3 */}
+                <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#10182E] border border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-600/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white">Van 3</div>
+                      <div className="text-[10px] text-slate-400">{van3Parcels} parcels | 66 kg</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsMapExpanded(true)}
+                    className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-[11px] font-bold text-slate-200 transition cursor-pointer"
+                  >
+                    View Route
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Real-Time Tracking (Matching Screenshot) */}
+            <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-white">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-black">Real-Time Tracking</h3>
+                </div>
+                <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Live</span>
+                </span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                {/* Van 1 */}
+                <div className="flex items-center justify-between py-1 border-b border-slate-800/60">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="font-bold text-white">Van 1</span>
+                    <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                      On Time
+                    </span>
+                  </div>
+                  <span className="text-slate-400 font-mono text-[11px]">12 min</span>
+                </div>
+
+                {/* Van 2 */}
+                <div className="flex items-center justify-between py-1 border-b border-slate-800/60">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="font-bold text-white">Van 2</span>
+                    <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                      On Time
+                    </span>
+                  </div>
+                  <span className="text-slate-400 font-mono text-[11px]">18 min</span>
+                </div>
+
+                {/* Van 3 */}
+                <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="font-bold text-white">Van 3</span>
+                    <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                      On Time
+                    </span>
+                  </div>
+                  <span className="text-slate-400 font-mono text-[11px]">24 min</span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
+
+        {/* ─── 3. BOTTOM SECTION: KEY FEATURES IN LOGISTICS (Matching media_1788877567294.jpg) ─── */}
+        <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
+          <div className="flex items-center gap-2 text-white">
+            <Sparkles className="w-4 h-4 text-amber-400 fill-amber-400" />
+            <h3 className="text-sm font-black">Key Features in Logistics</h3>
+          </div>
+
+          {/* 8 Feature Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+            {[
+              {
+                title: 'Smart Delivery Routing',
+                desc: 'Shortest + fastest routes for multiple deliveries.',
+                icon: MapPin,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Vehicle Capacity Matching',
+                desc: 'Assigns the right vehicle based on parcel size/weight.',
+                icon: Truck,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Multi-Stop Optimization',
+                desc: 'Arranges delivery points in the best order.',
+                icon: Package,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Parcel Pooling & Consolidation',
+                desc: 'Combines nearby parcels to reduce trips & fuel.',
+                icon: Boxes,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Real-Time Re-Routing',
+                desc: 'Adjusts to traffic, accidents, roadblocks or weather.',
+                icon: RotateCcw,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Eco Route',
+                desc: 'Suggests low fuel / low CO₂ routes.',
+                icon: Leaf,
+                color: 'text-emerald-400',
+              },
+              {
+                title: 'Return Trip Optimization',
+                desc: 'Assigns nearby pickups for backhaul.',
+                icon: RotateCcw,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Load Balancing',
+                desc: 'Distributes parcels across available vehicles.',
+                icon: Scale,
+                color: 'text-amber-400',
+              },
+            ].map((feat, i) => {
+              const Icon = feat.icon;
+              return (
+                <div
+                  key={i}
+                  className="p-3.5 rounded-2xl bg-[#10182E] border border-slate-800/80 hover:border-slate-700 transition flex flex-col items-center text-center justify-between min-h-[140px]"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center mb-2">
+                    <Icon className={`w-4 h-4 ${feat.color}`} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-white leading-tight">{feat.title}</h4>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">{feat.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Eco Banner Footer matching screenshot */}
+          <div className="w-full py-3 px-4 rounded-2xl bg-[#18392B] border border-emerald-600/40 text-emerald-200 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-inner">
+            <Leaf className="w-4 h-4 text-emerald-400 fill-emerald-400" />
+            <span>Smarter logistics today for a more connected and sustainable tomorrow.</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ─── FULLSCREEN MAP MODAL ─── */}
+      {isMapExpanded && (
+        <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex flex-col animate-in fade-in">
+          <div className="flex items-center justify-between p-4 bg-[#0B1220] border-b border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                <Truck className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white">Full City Logistics Corridor</h3>
+                <p className="text-[11px] text-slate-400">{waypoints.length} Active Delivery Stops</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsMapExpanded(false)}
+              className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 w-full h-full relative">
+            <MapContainer
+              center={[20.2961, 85.8245]}
+              zoom={13}
+              className="w-full h-full z-0"
+              zoomControl={true}
+            >
+              <TileLayer
+                url="https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}"
+                attribution='&copy; <a href="https://maps.google.com">Google Maps</a>'
+                maxZoom={19}
+              />
+
+              <Marker position={[originHub.lat, originHub.lng]} icon={createLogisticsWarehouseIcon()}>
+                <Popup>
+                  <div className="text-xs font-bold text-slate-900 p-1">
+                    <span className="text-amber-600 font-extrabold block">🏠 Dispatch Warehouse</span>
+                    <span>Baramunda Logistics Hub, Bhubaneswar</span>
+                  </div>
+                </Popup>
+              </Marker>
+
+              {/* Polyline Routes */}
+              {van1Stops.length > 0 && (
+                <Polyline
+                  positions={filterValidLatLngs([
+                    [originHub.lat, originHub.lng],
+                    ...van1Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                  ])}
+                  pathOptions={{ color: '#3B82F6', weight: 5, opacity: 0.95 }}
+                />
+              )}
+              {van2Stops.length > 0 && (
+                <Polyline
+                  positions={filterValidLatLngs([
+                    [originHub.lat, originHub.lng],
+                    ...van2Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                  ])}
+                  pathOptions={{ color: '#10B981', weight: 5, opacity: 0.95 }}
+                />
+              )}
+              {van3Stops.length > 0 && (
+                <Polyline
+                  positions={filterValidLatLngs([
+                    [originHub.lat, originHub.lng],
+                    ...van3Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                  ])}
+                  pathOptions={{ color: '#F97316', weight: 5, opacity: 0.95 }}
+                />
+              )}
+
+              {/* Waypoints */}
+              {waypoints.filter((wp) => isValidLatLng([wp.lat, wp.lng])).map((wp, idx) => (
+                <Marker
+                  key={wp.id}
+                  position={[wp.lat, wp.lng]}
+                  icon={createNumberedPinIcon(idx + 1, wp.recipientName)}
+                >
+                  <Popup>
+                    <div className="text-xs font-bold text-slate-900 p-1">
+                      <div className="font-black text-slate-950">Stop {idx + 1}: {wp.recipientName}</div>
+                      <div className="text-[11px] text-slate-600 mt-0.5">{wp.address}</div>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Gateway Modal */}
+      {isPaymentOpen && (
+        <PaymentGatewayModal
+          isOpen={isPaymentOpen}
+          onClose={() => setIsPaymentOpen(false)}
+          amount={Math.round(plan.estimatedCostInr || 240)}
+          purpose="Logistics Corridor Dispatch"
+          onPaymentSuccess={() => {
+            setIsPaymentOpen(false);
+            setToastMessage('✅ Dispatch payment completed successfully!');
+            setTimeout(() => setToastMessage(null), 4000);
+          }}
+        />
       )}
     </div>
   );

@@ -96,7 +96,7 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
 
   const savedPlaces = [
     { name: 'Home', subtitle: 'Jayadev Vihar', icon: Home, color: 'text-blue-600' },
-    { name: 'College', subtitle: 'KIIT University', icon: GraduationCap, color: 'text-purple-600' },
+    { name: 'College', subtitle: 'Trident Academy of Technology', icon: GraduationCap, color: 'text-purple-600' },
     { name: 'Work', subtitle: 'Infocity, Patia', icon: Briefcase, color: 'text-indigo-600' },
     { name: 'KIIT Square', subtitle: 'Bhubaneswar', icon: Star, color: 'text-amber-500' },
   ];

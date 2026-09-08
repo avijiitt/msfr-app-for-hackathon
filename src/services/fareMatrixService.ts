@@ -1,4 +1,7 @@
 import { BHUBANESWAR_LOCALITIES, BHUBANESWAR_STATIONS } from '../data/cities/bhubaneswar';
+import { STOP_COORDINATES_MAP } from '../data/busRoutesData';
+import { POPULAR_INDIAN_LOCATIONS } from './indiaGeocodingService';
+import { findShortestRoute } from './shortestRouteService';
 
 export interface TransitModeFare {
   mode: 'bus' | 'metro' | 'train' | 'auto' | 'cab' | 'bike' | 'ferry';
@@ -27,6 +30,7 @@ export const BHUBANESWAR_LANDMARK_COORDS: { [key: string]: [number, number] } = 
   'trident': [20.3542, 85.8078],
   'trident college': [20.3542, 85.8078],
   'trident academy': [20.3542, 85.8078],
+  'trident academy of technology': [20.3542, 85.8078],
   'kiit': [20.3533, 85.8175],
   'kiit university': [20.3533, 85.8175],
   'kiit square': [20.3533, 85.8175],
@@ -116,31 +120,45 @@ export const BHUBANESWAR_LANDMARK_COORDS: { [key: string]: [number, number] } = 
 
 function resolvePlaceCoords(query: string): [number, number] | null {
   if (!query) return null;
-  const q = query.toLowerCase().trim();
+  const raw = query.toLowerCase().trim();
+  const q = raw.split(',')[0].trim();
 
   // 1. Direct key match in landmark dictionary
-  if (BHUBANESWAR_LANDMARK_COORDS[q]) {
-    return BHUBANESWAR_LANDMARK_COORDS[q];
-  }
+  if (BHUBANESWAR_LANDMARK_COORDS[raw]) return BHUBANESWAR_LANDMARK_COORDS[raw];
+  if (BHUBANESWAR_LANDMARK_COORDS[q]) return BHUBANESWAR_LANDMARK_COORDS[q];
 
   // 2. Partial key match in landmark dictionary
   for (const [key, coords] of Object.entries(BHUBANESWAR_LANDMARK_COORDS)) {
-    if (q.includes(key) || key.includes(q)) {
+    if (q.includes(key) || key.includes(q) || raw.includes(key)) {
       return coords;
     }
   }
 
-  // 3. Match in localities
+  // 3. Match in surveyed STOP_COORDINATES_MAP
+  for (const [stopName, coords] of Object.entries(STOP_COORDINATES_MAP)) {
+    const s = stopName.toLowerCase();
+    if (s === q || s.includes(q) || q.includes(s) || raw.includes(s)) {
+      return coords;
+    }
+  }
+
+  // 4. Match in localities
   const loc = BHUBANESWAR_LOCALITIES.find(
-    (l) => q.includes(l.id) || l.name.toLowerCase().includes(q) || q.includes(l.name.toLowerCase().split('/')[0].trim())
+    (l) => q.includes(l.id) || l.name.toLowerCase().includes(q) || q.includes(l.name.toLowerCase().split('/')[0].trim()) || raw.includes(l.name.toLowerCase())
   );
   if (loc) return [loc.lat, loc.lng];
 
-  // 4. Match in stations
+  // 5. Match in stations
   const st = BHUBANESWAR_STATIONS.find(
-    (s) => s.name.toLowerCase().includes(q) || q.includes(s.name.toLowerCase())
+    (s) => s.name.toLowerCase().includes(q) || q.includes(s.name.toLowerCase()) || raw.includes(s.name.toLowerCase())
   );
   if (st) return [st.lat, st.lng];
+
+  // 6. Match in POPULAR_INDIAN_LOCATIONS
+  const pop = POPULAR_INDIAN_LOCATIONS.find(
+    (p) => q.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(q) || raw.includes(p.name.toLowerCase())
+  );
+  if (pop && pop.lat && pop.lng) return [pop.lat, pop.lng];
 
   return null;
 }
@@ -157,13 +175,27 @@ export function calculateDistanceBetweenLocations(
   let [lat1, lon1] = originCoords || [undefined, undefined];
   let [lat2, lon2] = destCoords || [undefined, undefined];
 
-  const normOrig = (originQuery || '').toLowerCase().trim();
-  const normDest = (destQuery || '').toLowerCase().trim();
+  const normOrig = (originQuery || '').trim();
+  const normDest = (destQuery || '').trim();
 
   if (!normOrig && !normDest) return 5.0;
-  if (normOrig && normDest && normOrig === normDest) return 0.5;
+  if (normOrig && normDest && normOrig.toLowerCase() === normDest.toLowerCase()) return 0.5;
 
-  // 1. Resolve coordinates from landmarks, localities & stations
+  // 1. Try real Dijkstra transit network search first
+  if (normOrig && normDest) {
+    try {
+      const cleanO = normOrig.split(',')[0].trim();
+      const cleanD = normDest.split(',')[0].trim();
+      const shortest = findShortestRoute(cleanO, cleanD);
+      if (shortest.found && shortest.totalDistanceKm > 0) {
+        return Math.round(shortest.totalDistanceKm * 10) / 10;
+      }
+    } catch {
+      // Fall through to coordinate calculation
+    }
+  }
+
+  // 2. Resolve coordinates from landmarks, localities, stops & stations
   if (lat1 === undefined || lon1 === undefined) {
     const resolved = resolvePlaceCoords(normOrig);
     if (resolved) {
@@ -180,7 +212,7 @@ export function calculateDistanceBetweenLocations(
     }
   }
 
-  // 2. If both coordinates are resolved, calculate real driving road distance matching Google Maps
+  // 3. If both coordinates are resolved, calculate real driving road distance
   if (lat1 !== undefined && lon1 !== undefined && lat2 !== undefined && lon2 !== undefined) {
     const R = 6371; // Earth radius in km
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -194,10 +226,9 @@ export function calculateDistanceBetweenLocations(
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const directKm = R * c;
 
+    if (directKm < 0.1) return 0.5;
+
     // Real-world road network curvature in Bhubaneswar:
-    // Direct < 3 km: 1.38x
-    // Direct 3 - 12 km: 1.32x (arterial corridor via Nandankanan Rd / Janpath)
-    // Direct > 12 km: 1.28x
     let roadFactor = 1.32;
     if (directKm < 3) roadFactor = 1.40;
     else if (directKm > 15) roadFactor = 1.26;
@@ -206,12 +237,12 @@ export function calculateDistanceBetweenLocations(
     return Math.max(0.8, Math.min(85, roadKm));
   }
 
-  // 3. Dynamic distance estimation based on distance from city center if one place is known
+  // 4. Dynamic distance estimation based on distance from city center if one place is known
   if (lat1 !== undefined || lat2 !== undefined) {
     return 11.2;
   }
 
-  return 9.0;
+  return 8.5;
 }
 
 /**
