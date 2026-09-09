@@ -10,6 +10,7 @@
 </p>
 
 [![Live Production App](https://img.shields.io/badge/⚡_Live_App-msfr--app--for--hackathon.vercel.app-2563EB?style=for-the-badge&logo=vercel&logoColor=white)](https://msfr-app-for-hackathon.vercel.app/)
+[![System Workflow](https://img.shields.io/badge/🔄_System_Workflow-WORKFLOW.md-10B981?style=for-the-badge&logo=mermaid&logoColor=white)](./WORKFLOW.md)
 [![GitHub Repository](https://img.shields.io/badge/⭐_GitHub_Repo-avijiitt%2Fmsfr--app--for--hackathon-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/avijiitt/msfr-app-for-hackathon)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
@@ -32,6 +33,7 @@
 
 ## 📑 **Table of Contents**
 - [🌟 Problem Statement & Solution](#-problem-statement--the-musafir-solution)
+- [🔄 Full System Architecture & Workflow Diagrams (WORKFLOW.md)](./WORKFLOW.md)
 - [✨ Key Innovations & Core Features](#-key-innovations--core-features)
   - [1. 3D Floating HUD & Live Fleet Telemetry](#1-3d-floating-hud--live-gps-fleet-simulator)
   - [2. 82+ CRUT Ama Bus Network & Full Route 10](#2-82-crut-ama-bus-network--60-stop-route-10)
