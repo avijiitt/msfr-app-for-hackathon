@@ -92,13 +92,13 @@ sequenceDiagram
 
     Commuter->>UI: Selects Origin & Destination (e.g., Airport to CDA Cuttack)
     UI->>Geo: Calculate Great-Circle Distance (Haversine Formula)
-    Geo-->>UI: Returns Direct Geodesic Distance ($D_{km}$)
+    Geo-->>UI: Returns Direct Geodesic Distance (km)
 
     par Parallel Route Resolution
         UI->>Routes: Find Direct & Transfer Bus Corridors (Route 10, 11, etc.)
         Routes-->>UI: Matched Intermediate Stoppages & Segments
     and Multi-Modal Options
-        UI->>Fare: Calculate Tier Tariffs (Bus ₹5-30, Auto ₹12/km, Cab ₹18/km, EV ₹8/km)
+        UI->>Fare: Calculate Tier Tariffs (Bus Rs 5-30, Auto Rs 12/km, Cab Rs 18/km, EV Rs 8/km)
         Fare-->>UI: Mode-Wise Fare Breakdown
     end
 
@@ -122,42 +122,13 @@ sequenceDiagram
 This diagram depicts how freight managers and logistics coordinators plan multi-drop distribution manifests, calculate optimal delivery sequences (Traveling Salesperson Problem), track real-time EV telemetry, and compute operational efficiency metrics.
 
 ```mermaid
-stateDiagram-v2
-    [*] --> ManifestCreation : User enters Parcel Details & Stop List
-    
-    state ManifestCreation {
-        InputParcels : Input Parcels Count, Weight (kg), Volume (m³)
-        SelectType : Choose Cargo Type (E-Commerce, FMCG, Pharma, Custom)
-        AddStops : Add Custom Delivery Stops / Load Sample Corridor
-    }
-
-    ManifestCreation --> RouteOptimization : Click "Optimize Dispatch Route"
-    
-    state RouteOptimization {
-        CalculateDistances : Build Node Distance Matrix
-        SolveTSP : Run Nearest-Neighbor Heuristic Sequence
-        SimulateTraffic : Apply City Traffic Delays
-        EVImpact : Compute Battery Consumption & CO₂ Avoidance
-    }
-
-    RouteOptimization --> VehicleAssignment : Assign to Active Fleet (EV Vans 1-3)
-    
-    state VehicleAssignment {
-        CheckCapacity : Verify Payload vs Van Max Capacity (800kg)
-        AssignDriver : Allocate Driver (e.g., Rajesh Kumar)
-        GenerateManifest : Create Digital Manifest (MF-XXXXX)
-    }
-
-    VehicleAssignment --> LiveDispatchTracking : Dispatch Vehicles
-    
-    state LiveDispatchTracking {
-        GPSBroadcast : Stream 1-sec Simulated GPS Coordinates
-        BatteryMonitoring : Live SOC Telemetry (e.g., 78% -> 76%)
-        StopProgress : Mark Completed Drops & Next Target Stop
-    }
-
-    LiveDispatchTracking --> DispatchHistory : Manifest Completed
-    DispatchHistory --> [*] : Download Official Delivery Slip (PDF/Text)
+graph TD
+    A["📦 Input Parcel Cargo Details<br/>(Parcels, Weight kg, Volume m³, Category)"] --> B["📍 Add Delivery Stops / Load Route Corridor"]
+    B --> C["⚡ Solve Multi-Stop TSP Sequence<br/>(Nearest-Neighbor Geodesic Matrix)"]
+    C --> D["🔋 Calculate EV Van Telemetry & Battery Consumption"]
+    D --> E["🚛 Assign Available EV Fleet<br/>(Van 1 / Van 2 / Van 3 - 800kg Cap)"]
+    E --> F["🛰️ Real-Time GPS Tracking & Speed Simulation"]
+    F --> G["📄 Completed Run History & Official Manifest Slip"]
 ```
 
 ---
@@ -168,27 +139,27 @@ When a mid-journey accident, trauma event, or women safety alert is triggered, M
 
 ```mermaid
 flowchart TD
-    START([🚨 Emergency Trigger Initiated]) --> AUTH_CHECK{Trigger Method}
+    START["🚨 Emergency Trigger Initiated"] --> AUTH_CHECK{"Trigger Method"}
     
-    AUTH_CHECK -->|1-Tap Medical SOS| MED[Medical Trauma Emergency 🚑]
-    AUTH_CHECK -->|1-Tap Police SOS| POL[Police Emergency 112 🚓]
-    AUTH_CHECK -->|Women Safety Alert| SAF[Safe-Corridor Auto-Beacon 🛡️]
+    AUTH_CHECK -->|"1-Tap Medical SOS"| MED["Medical Trauma Emergency 🚑"]
+    AUTH_CHECK -->|"1-Tap Police SOS"| POL["Police Emergency 112 🚓"]
+    AUTH_CHECK -->|"Women Safety Alert"| SAF["Safe-Corridor Auto-Beacon 🛡️"]
 
-    MED --> GPS_LOC[Acquire High-Precision GPS Coordinates]
+    MED --> GPS_LOC["Acquire High-Precision GPS Coordinates"]
     POL --> GPS_LOC
     SAF --> GPS_LOC
 
-    GPS_LOC --> QUERY_HOSPITALS[Scan Nearest Verified Trauma Centers\nAIIMS, Apollo, Kalinga, SUM, SCB]
+    GPS_LOC --> QUERY_HOSPITALS["Scan Nearest Verified Trauma Centers<br/>(AIIMS, Apollo, Kalinga, SUM, SCB)"]
     
-    QUERY_HOSPITALS --> DISPATCH_PAYLOAD[Build Emergency Telemetry Payload\n- User Lat/Lng & Location Name\n- Timestamp & Battery Level\n- Nearest Hospital (Distance & ETA)]
+    QUERY_HOSPITALS --> DISPATCH_PAYLOAD["Build Emergency Telemetry Payload<br/>• User Lat/Lng & Location Name<br/>• Timestamp & Battery Level<br/>• Nearest Hospital & Distance"]
 
-    DISPATCH_PAYLOAD --> CALL_108[Direct Emergency Dialing: 108 / 112]
-    DISPATCH_PAYLOAD --> BROADCAST_CORRIDOR[Activate Leaflet Red-Pulse HUD Alert]
-    DISPATCH_PAYLOAD --> SYNC_SERVER[Log SOS Event in Backend / Supabase]
+    DISPATCH_PAYLOAD --> CALL_108["Direct Emergency Dialing (108 / 112)"]
+    DISPATCH_PAYLOAD --> BROADCAST_CORRIDOR["Activate Leaflet Red-Pulse HUD Alert"]
+    DISPATCH_PAYLOAD --> SYNC_SERVER["Log SOS Event in Backend / Supabase"]
 
-    BROADCAST_CORRIDOR --> AMBULANCE_ETA[Calculate Shortest Green-Corridor Route to Trauma Center]
-    AMBULANCE_ETA --> SHOW_GUIDANCE[Display CPR & First Aid Protocol on HUD]
-    SHOW_GUIDANCE --> RESOLVE([🏥 Commuter Handover / Emergency Resolved])
+    BROADCAST_CORRIDOR --> AMBULANCE_ETA["Calculate Shortest Green-Corridor Route to Hospital"]
+    AMBULANCE_ETA --> SHOW_GUIDANCE["Display CPR & First Aid Protocol on HUD"]
+    SHOW_GUIDANCE --> RESOLVE["🏥 Commuter Handover / Emergency Resolved"]
 ```
 
 ---
