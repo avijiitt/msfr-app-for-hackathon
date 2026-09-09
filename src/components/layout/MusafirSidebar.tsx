@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Navigation2, 
   MapPin, 
   Clock, 
   Bookmark, 
@@ -22,10 +21,12 @@ import {
   Zap,
   Truck,
   Users,
-  Sparkles
+  Plus
 } from 'lucide-react';
 
 import { TranslationDictionary } from '../../types/i18n';
+import { sosService } from '../../services/sosService';
+import { SavedLocation } from '../../types/transit';
 
 export type MusafirSidebarTab = 
   | 'plan' 
@@ -53,6 +54,7 @@ interface MusafirSidebarProps {
   onOpenStudent: () => void;
   onOpenBusRoutes?: () => void;
   onOpenAI?: () => void;
+  onOpenSavedPlaces?: () => void;
   onSelectSavedPlace: (name: string) => void;
   t?: TranslationDictionary;
 }
@@ -66,9 +68,16 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
   onOpenStudent,
   onOpenBusRoutes,
   onOpenAI,
+  onOpenSavedPlaces,
   onSelectSavedPlace,
   t,
 }) => {
+  const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
+
+  useEffect(() => {
+    setSavedLocations(sosService.getSavedLocations());
+  }, [activeTab]);
+
   const mainNav = [
     { id: 'plan' as MusafirSidebarTab, label: 'Live Map & Trip Plan', icon: MapPin },
     { id: 'transportation' as MusafirSidebarTab, label: 'Transit Hub', icon: Zap, badge: 'Smart' },
@@ -94,15 +103,58 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
     { label: t?.emergencySOS || 'SOS', icon: ShieldAlert, color: 'text-red-500', action: onOpenSOS },
   ];
 
-  const savedPlaces = [
-    { name: 'Home', subtitle: 'Jayadev Vihar', icon: Home, color: 'text-blue-600' },
-    { name: 'College', subtitle: 'Trident Academy of Technology', icon: GraduationCap, color: 'text-purple-600' },
-    { name: 'Work', subtitle: 'Infocity, Patia', icon: Briefcase, color: 'text-indigo-600' },
-    { name: 'KIIT Square', subtitle: 'Bhubaneswar', icon: Star, color: 'text-amber-500' },
-  ];
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'home':
+        return <Home className="w-4 h-4 text-blue-600" />;
+      case 'work':
+        return <Briefcase className="w-4 h-4 text-indigo-600" />;
+      case 'college':
+        return <GraduationCap className="w-4 h-4 text-purple-600" />;
+      default:
+        return <Star className="w-4 h-4 text-amber-500" />;
+    }
+  };
+
+  const handleOpenSavedModal = () => {
+    if (onOpenSavedPlaces) {
+      onOpenSavedPlaces();
+    } else {
+      onTabChange('saved');
+    }
+  };
 
   return (
     <aside className="w-full lg:w-64 flex-shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-130px)] lg:sticky lg:top-24 shadow-sm">
+      
+      {/* Musafir App Logo Banner */}
+      <div className="flex items-center gap-3 px-2 py-1.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+        <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-md border border-blue-200 dark:border-blue-900 flex-shrink-0 bg-white flex items-center justify-center">
+          <img 
+            src="/musafir-logo.png" 
+            alt="Musafir Logo" 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // fallback if png fails
+              (e.currentTarget as HTMLElement).style.display = 'none';
+            }}
+          />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-base font-black tracking-tight text-slate-900 dark:text-white">
+              Musafir
+            </span>
+            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+              PRO
+            </span>
+          </div>
+          <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+            Smart Transit & Logistics
+          </p>
+        </div>
+      </div>
+
       {/* 1. Main Navigation Items */}
       <nav className="space-y-1">
         {mainNav.map((item) => {
@@ -162,43 +214,50 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
         </div>
       </div>
 
-      {/* 3. Saved Places Section */}
+      {/* 3. Saved Places Section (Dynamic & Editable) */}
       <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
         <div className="flex items-center justify-between px-3">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Saved Places
           </span>
           <button
-            onClick={() => alert('Edit saved locations in your profile.')}
-            className="text-[11px] font-bold text-blue-600 hover:underline"
+            onClick={handleOpenSavedModal}
+            className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1"
           >
-            Edit
+            <span>Edit</span>
           </button>
         </div>
 
         <div className="space-y-1">
-          {savedPlaces.map((sp, i) => {
-            const Icon = sp.icon;
+          {savedLocations.slice(0, 4).map((loc) => {
             return (
               <button
-                key={i}
-                onClick={() => onSelectSavedPlace(sp.subtitle)}
+                key={loc.id}
+                onClick={() => onSelectSavedPlace(loc.address || loc.name)}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 transition group"
               >
-                <div className={`w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center ${sp.color} flex-shrink-0`}>
-                  <Icon className="w-4 h-4" />
+                <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+                  {getCategoryIcon(loc.category)}
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 transition truncate">
-                    {sp.name}
+                    {loc.name}
                   </div>
                   <div className="text-[10px] text-slate-400 truncate">
-                    {sp.subtitle}
+                    {loc.address}
                   </div>
                 </div>
               </button>
             );
           })}
+
+          <button
+            onClick={handleOpenSavedModal}
+            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Manage All Places</span>
+          </button>
         </div>
       </div>
     </aside>

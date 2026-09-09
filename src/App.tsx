@@ -25,6 +25,7 @@ import { AIActionType } from './services/aiAssistantService';
 
 // Modals
 import { FareCalculatorModal } from './components/fare/FareCalculatorModal';
+import { SavedPlacesModal } from './components/places/SavedPlacesModal';
 import { RewardsModal } from './components/rewards/RewardsModal';
 import { TripAssuranceModal } from './components/refunds/TripAssuranceModal';
 import { RideFeedbackModal } from './components/feedback/RideFeedbackModal';
@@ -100,6 +101,7 @@ export const App: React.FC = () => {
 
   // Modals
   const [isFareCalcOpen, setIsFareCalcOpen] = useState(false);
+  const [isSavedPlacesOpen, setIsSavedPlacesOpen] = useState(false);
   const [isRewardsOpen, setIsRewardsOpen] = useState(false);
   const [isTripAssuranceOpen, setIsTripAssuranceOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -131,6 +133,7 @@ export const App: React.FC = () => {
     isMobileMenuOpen ||
     isBusRoutesOpen ||
     isFareCalcOpen ||
+    isSavedPlacesOpen ||
     isRewardsOpen ||
     isTripAssuranceOpen ||
     isFeedbackOpen ||
@@ -295,6 +298,8 @@ export const App: React.FC = () => {
     setActiveTab(tab);
     if (tab === 'fare_calc') {
       setIsFareCalcOpen(true);
+    } else if (tab === 'saved') {
+      setIsSavedPlacesOpen(true);
     } else if (tab === 'rewards') {
       setIsRewardsOpen(true);
     } else if (tab === 'refunds') {
@@ -538,7 +543,11 @@ export const App: React.FC = () => {
               onOpenSOS={() => setIsSosOpen(true)}
               onOpenStudent={() => setIsStudentOpen(true)}
               onOpenBusRoutes={() => setIsBusRoutesOpen(true)}
-              onSelectSavedPlace={(place) => setDestQuery(place)}
+              onOpenSavedPlaces={() => setIsSavedPlacesOpen(true)}
+              onSelectSavedPlace={(place) => {
+                setDestQuery(place);
+                handleSearch(originQuery || 'Jayadev Vihar', place);
+              }}
               t={t}
             />
           </div>
@@ -652,6 +661,18 @@ export const App: React.FC = () => {
         onClose={() => setIsFareCalcOpen(false)}
         originName={originQuery}
         destName={destQuery}
+      />
+
+      <SavedPlacesModal
+        isOpen={isSavedPlacesOpen}
+        onClose={() => setIsSavedPlacesOpen(false)}
+        onSelectPlace={(place) => {
+          setDestQuery(place);
+          handleSearch(originQuery || 'Jayadev Vihar', place);
+        }}
+        onLocationsUpdated={() => {
+          setUserProfile(sosService.getProfile());
+        }}
       />
 
       <RewardsModal

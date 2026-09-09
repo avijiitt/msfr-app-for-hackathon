@@ -108,30 +108,17 @@ export const MusafirLogisticsLogo: React.FC<{ className?: string; size?: number 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       <div
-        className="relative flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-amber-500 p-0.5 shadow-lg shadow-blue-500/25"
+        className="relative flex items-center justify-center rounded-2xl bg-white p-0.5 shadow-lg shadow-blue-500/25 border border-blue-500/40 overflow-hidden"
         style={{ width: size, height: size }}
       >
-        <div className="w-full h-full bg-[#0B1120] rounded-[14px] flex items-center justify-center overflow-hidden relative">
-          {/* Hexagon & Fleet Grid Pattern */}
-          <svg viewBox="0 0 40 40" className="w-full h-full text-blue-400 p-1.5" fill="none" stroke="currentColor">
-            <path
-              d="M20 4L34 12V28L20 36L6 28V12L20 4Z"
-              strokeWidth="2"
-              strokeLinejoin="round"
-              className="text-blue-500/60"
-            />
-            <path
-              d="M20 4V36M6 12L34 28M34 12L6 28"
-              strokeWidth="1"
-              strokeDasharray="2 2"
-              className="text-indigo-400/40"
-            />
-            <circle cx="20" cy="20" r="4.5" fill="#3B82F6" className="animate-pulse" />
-            <circle cx="20" cy="20" r="2" fill="#FFFFFF" />
-            <circle cx="34" cy="12" r="2" fill="#F59E0B" />
-            <circle cx="6" cy="28" r="2" fill="#10B981" />
-          </svg>
-        </div>
+        <img 
+          src="/musafir-logo.png" 
+          alt="Musafir" 
+          className="w-full h-full object-cover rounded-[14px]"
+          onError={(e) => {
+            (e.currentTarget as HTMLElement).style.display = 'none';
+          }}
+        />
       </div>
       <div className="flex flex-col">
         <div className="flex items-center gap-1.5">
