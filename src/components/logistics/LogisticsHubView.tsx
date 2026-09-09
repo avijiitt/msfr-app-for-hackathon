@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Package,
   Truck,
@@ -8,223 +8,164 @@ import {
   Plus,
   Trash2,
   CheckCircle2,
+  TrendingDown,
   Navigation,
   ArrowRight,
+  ShieldCheck,
+  Fuel,
   Sparkles,
   Layers,
   Send,
   AlertTriangle,
   Camera,
+  Coffee,
+  Bed,
   Check,
   X,
   PhoneCall,
+  ShieldAlert,
   Loader2,
+  ExternalLink,
   ChevronDown,
   ChevronUp,
   User,
   Phone,
+  Coins,
+  Leaf,
+  Sliders,
+  Compass,
+  Anchor,
+  Activity,
   ArrowLeft,
+  MoreVertical,
+  Info,
+  Maximize2,
+  Minimize2,
   Search,
   Bell,
   RotateCcw,
-  Calendar,
-  FileCheck,
-  Share2,
-  Copy,
-  ChevronRight,
-  Shield,
-  Leaf,
-  Info,
-  Building,
-  BarChart3,
-  Cpu,
-  Compass,
-  Radio,
-  Sliders,
-  CloudRain,
-  Activity,
-  SlidersHorizontal,
-  Flame,
-  BatteryCharging,
-  Gauge,
-  HelpCircle,
-  TrendingDown,
-  RefreshCw,
-  Eye,
-  CheckCircle,
-  ExternalLink,
-  ShieldCheck,
-  AlertCircle,
+  Scale,
+  Boxes,
 } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import {
-  DeliveryWaypoint,
-  VehicleOption,
-  VEHICLE_FLEET_OPTIONS,
-  DRIVER_ROSTER,
   SAMPLE_DELIVERY_STOPS,
-  optimizeSmartDeliveryRoute,
-  OptimizationGoal,
-  LIVE_TRAFFIC_CORRIDORS,
-  predictStopETAWithAI,
-  BHUBANESWAR_MFC_NETWORK,
-  BHUBANESWAR_ZEZ_ZONES,
-  BBSR_EV_CHARGERS,
-  runUCCSimulation,
-  UCCSimulationScenario,
-  BHUBANESWAR_MAPPLS_PINS,
-  resolveMapplsEloc,
-  MONSOON_HAZARDS_BBSR,
-  BBSR_SMART_SIGNALS,
-  LIVE_CONTROL_TOWER_EXCEPTIONS,
-  GOVT_INTEGRATIONS_REGISTRY,
+  RESTRICTED_NO_FLY_ZONES,
+  DeliveryWaypoint,
+  AntiGravityRoutePlan,
+  computeAntiGravityRoute,
 } from '../../services/logisticsOptimizerService';
 import { POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
 import { BHUBANESWAR_LOCALITIES } from '../../data/cities/bhubaneswar';
 import { STOP_COORDINATES_MAP } from '../../data/busRoutesData';
-import { ProofOfDeliveryModal } from './ProofOfDeliveryModal';
-import { isValidLatLng } from '../../utils/latLngValidator';
+import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
+import { PaymentVerificationResult } from '../../services/paymentService';
+import { isValidLatLng, sanitizeLatLng, filterValidLatLngs } from '../../utils/latLngValidator';
 
-// ─── Map bounds auto-fitter ──────────────────────────────────────────────────
-const MapBoundsAutoFit: React.FC<{ coords: [number, number][] }> = ({ coords }) => {
-  const map = useMap();
-  useEffect(() => {
-    const valid = coords.filter(isValidLatLng);
-    if (valid.length > 0) {
-      try {
-        const bounds = L.latLngBounds(valid);
-        map.fitBounds(bounds, { padding: [35, 35], maxZoom: 14, animate: true });
-      } catch (e) {
-        console.warn('Map fit bounds error:', e);
-      }
-    }
-  }, [coords, map]);
-  return null;
-};
+// Verified Driver Rest & Stay Hubs near Delivery Corridors
+const DRIVER_STAY_HUBS = [
+  {
+    id: 'stay-1',
+    name: 'CRUT Baramunda Driver Dormitory & Rest Lounge',
+    distance: '0.4 km from Baramunda Hub',
+    amenities: ['🛏️ Resting Beds', '🚿 Clean Showers', '☕ ₹30 Thali', '⚡ 60kW EV Fast Charger', '🅿️ Night Parking'],
+    safetyRating: '4.9 ★',
+    phone: '+91 674 235 4890',
+  },
+  {
+    id: 'stay-2',
+    name: 'Patia Logistics Rest Pods & Highway Dhaba',
+    distance: '1.2 km from Patia / Infocity',
+    amenities: ['🛏️ AC Sleep Pods', '☕ 24/7 Hot Chai & Food', '🚿 Sanitized Washroom', '⚡ Battery Swap Station'],
+    safetyRating: '4.8 ★',
+    phone: '+91 94370 88219',
+  },
+  {
+    id: 'stay-3',
+    name: 'Vani Vihar Transit Shelter & Refreshment Center',
+    distance: '0.8 km from Janpath',
+    amenities: ['🚿 Clean Restrooms', '🚰 RO Water Refill', '☕ Beverages & Snacks', '📶 Free Wi-Fi'],
+    safetyRating: '4.7 ★',
+    phone: '+91 674 254 1120',
+  },
+];
 
-// ─── Custom Logistics Brand Logo ──────────────────────────────────────────────
-export const MusafirLogisticsLogo: React.FC<{ className?: string; size?: number }> = ({ className = '', size = 36 }) => {
-  return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <div
-        className="relative flex items-center justify-center rounded-2xl bg-white p-0.5 shadow-lg shadow-blue-500/25 border border-blue-500/40 overflow-hidden"
-        style={{ width: size, height: size }}
-      >
-        <img 
-          src="/musafir-logo.png" 
-          alt="Musafir" 
-          className="w-full h-full object-cover rounded-[14px]"
-          onError={(e) => {
-            (e.currentTarget as HTMLElement).style.display = 'none';
-          }}
-        />
-      </div>
-      <div className="flex flex-col">
-        <div className="flex items-center gap-1.5">
-          <span className="text-base font-black tracking-tight text-white font-mono">MUSAFIR</span>
-          <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 uppercase tracking-widest">
-            LOGISTICS
-          </span>
-        </div>
-        <span className="text-[10px] text-slate-400 font-medium tracking-wide">
-          Urban Freight & VRP Platform · SIH26215
-        </span>
-      </div>
-    </div>
-  );
-};
+// Live Corridor Traffic Flow
+const LIVE_CORRIDOR_TRAFFIC = [
+  {
+    corridor: 'Janpath Arterial (Master Canteen ➔ Vani Vihar)',
+    status: '🟢 Smooth Flow',
+    speed: '28 km/h',
+    delay: '0 mins delay',
+    color: 'border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400',
+  },
+  {
+    corridor: 'Nandankanan Rd (Jayadev Vihar ➔ Patia KIIT)',
+    status: '🟡 Moderate Flow',
+    speed: '19 km/h',
+    delay: '+6 mins (Damana Square signal)',
+    color: 'border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400',
+  },
+  {
+    corridor: 'Rasulgarh Flyover / NH-16 Junction',
+    status: '🔴 Heavy Congestion',
+    speed: '8 km/h',
+    delay: '+14 mins (Take service road bypass)',
+    color: 'border-rose-500/40 bg-rose-50/50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400',
+  },
+  {
+    corridor: 'Cuttack-Puri Bypass Expressway',
+    status: '🟢 Fast Flow',
+    speed: '44 km/h',
+    delay: '0 mins delay',
+    color: 'border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400',
+  },
+];
 
-// ─── Coordinate Resolver ──────────────────────────────────────────────────────
-export function resolveLogisticsCoordinates(inputAddress: string): { lat: number; lng: number; formatted: string } {
-  const clean = (inputAddress || '').toLowerCase().trim();
+const STOP_PIN_COLORS = ['#3B82F6', '#10B981', '#F97316', '#8B5CF6', '#EC4899', '#06B6D4', '#EAB308'];
 
-  // 1. Mappls PIN match
-  const elocMatch = resolveMapplsEloc(clean);
-  if (elocMatch) {
-    return { lat: elocMatch.lat, lng: elocMatch.lng, formatted: `${elocMatch.placeName} [eLoc: ${elocMatch.elocPin}], ${elocMatch.fullAddress}` };
-  }
-
-  // 2. Trident Academy
-  if (clean.includes('trident') || clean.includes('tat')) {
-    return { lat: 20.3542, lng: 85.8078, formatted: 'Trident Academy of Technology, Chandaka Industrial Estate, Patia, Bhubaneswar' };
-  }
-
-  // 3. Mani Tribhuban
-  const normalized = clean.replace(/[\s\-_]+/g, '');
-  if (clean.includes('mani') || clean.includes('tribhuban') || normalized.includes('manitribhuban')) {
-    return { lat: 20.3688, lng: 85.8242, formatted: 'Mani Tribhuban, Nandankanan Road, Raghunathpur, Patia, Bhubaneswar (751024)' };
-  }
-
-  // 4. Popular Locations
-  const popMatch = POPULAR_INDIAN_LOCATIONS.find(
-    (loc) => clean.includes(loc.name.toLowerCase()) || loc.name.toLowerCase().includes(clean) || loc.formattedAddress.toLowerCase().includes(clean)
-  );
-  if (popMatch?.lat && popMatch?.lng) {
-    return { lat: popMatch.lat, lng: popMatch.lng, formatted: popMatch.formattedAddress || popMatch.name };
-  }
-
-  // 5. Bhubaneswar Localities
-  const locMatch = BHUBANESWAR_LOCALITIES.find(
-    (loc) => clean.includes(loc.name.toLowerCase()) || loc.name.toLowerCase().includes(clean)
-  );
-  if (locMatch) return { lat: locMatch.lat, lng: locMatch.lng, formatted: `${locMatch.name}, Bhubaneswar` };
-
-  // 6. Stop Coordinates Map
-  for (const [key, coords] of Object.entries(STOP_COORDINATES_MAP)) {
-    if (clean.includes(key) || key.includes(clean)) {
-      return { lat: coords[0], lng: coords[1], formatted: `${key.toUpperCase()}, Bhubaneswar` };
-    }
-  }
-
-  // Landmark fallbacks
-  if (clean.includes('kiit')) return { lat: 20.3541, lng: 85.8175, formatted: 'KIIT Square, Patia, Bhubaneswar' };
-  if (clean.includes('unit 2') || clean.includes('unit-2')) return { lat: 20.2721, lng: 85.8341, formatted: 'Unit 2, Market Building, Bhubaneswar' };
-  if (clean.includes('lingaraj')) return { lat: 20.2382, lng: 85.8338, formatted: 'Lingaraj Temple, Old Town, Bhubaneswar' };
-  if (clean.includes('vani vihar')) return { lat: 20.3015, lng: 85.8458, formatted: 'Vani Vihar Square, Bhubaneswar' };
-  if (clean.includes('rasulgarh')) return { lat: 20.2974, lng: 85.8647, formatted: 'Rasulgarh Square, NH-16, Bhubaneswar' };
-  if (clean.includes('master canteen')) return { lat: 20.2667, lng: 85.8436, formatted: 'Master Canteen Square, Railway Station' };
-  if (clean.includes('baramunda')) return { lat: 20.2818, lng: 85.7938, formatted: 'Baramunda ISBT Hub, Bhubaneswar' };
-
-  const hash = clean.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return { lat: 20.315 + ((hash % 100) / 100 - 0.5) * 0.05, lng: 85.82 + (((hash >> 2) % 100) / 100 - 0.5) * 0.05, formatted: inputAddress };
-}
-
-// ─── Leaflet Marker Helpers ──────────────────────────────────────────────────
-const createPinIcon = (numberOrIcon: string | number, color: string, sublabel?: string) => {
+const createNumberedPinIcon = (num: number, label?: string, color?: string) => {
+  const pinColor = color || STOP_PIN_COLORS[(num - 1) % STOP_PIN_COLORS.length];
   return L.divIcon({
-    className: 'custom-fleet-pin',
+    className: 'logistics-numbered-pin',
     html: `
-      <div style="display:flex;align-items:center;gap:4px;transform:translate(-14px,-14px);">
+      <div style="display: flex; align-items: center; gap: 6px; transform: translate(-14px, -14px);">
         <div style="
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          background: ${color};
+          background: ${pinColor};
           color: #ffffff;
-          font-weight: 800;
-          font-size: 11px;
+          font-weight: 900;
+          font-size: 13px;
           display: flex;
           align-items: center;
           justify-content: center;
           border: 2px solid #ffffff;
-          box-shadow: 0 3px 10px rgba(0,0,0,0.6);
+          box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+          flex-shrink: 0;
         ">
-          ${numberOrIcon}
+          ${num}
         </div>
         ${
-          sublabel
-            ? `<div style="
-                background: rgba(12, 18, 33, 0.95);
-                color: #f1f5f9;
-                border: 1px solid rgba(255,255,255,0.25);
-                font-weight: 700;
-                font-size: 10px;
-                padding: 1px 6px;
-                border-radius: 5px;
-                white-space: nowrap;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-              ">${sublabel}</div>`
+          label
+            ? `
+          <div style="
+            background: rgba(12, 20, 37, 0.92);
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.25);
+            backdrop-filter: blur(4px);
+            font-weight: 700;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 8px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+          ">
+            ${label}
+          </div>
+        `
             : ''
         }
       </div>
@@ -234,1243 +175,1217 @@ const createPinIcon = (numberOrIcon: string | number, color: string, sublabel?: 
   });
 };
 
+const createLogisticsWarehouseIcon = () => {
+  return L.divIcon({
+    className: 'logistics-hub-pin',
+    html: `
+      <div style="display: flex; align-items: center; gap: 6px; transform: translate(-17px, -17px);">
+        <div style="
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: #F59E0B;
+          color: #000000;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid #ffffff;
+          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.7);
+          flex-shrink: 0;
+        ">
+          🏠
+        </div>
+        <div style="
+          background: rgba(12, 20, 37, 0.92);
+          color: #F59E0B;
+          border: 1px solid rgba(245, 158, 11, 0.5);
+          font-weight: 800;
+          font-size: 11px;
+          padding: 2px 8px;
+          border-radius: 8px;
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        ">
+          Warehouse
+        </div>
+      </div>
+    `,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+  });
+};
+
+const MapBoundsUpdater: React.FC<{ coords: [number, number][] }> = ({ coords }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    const validCoords = (coords || []).filter(isValidLatLng);
+    if (validCoords.length > 0) {
+      try {
+        const bounds = L.latLngBounds(validCoords);
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14, animate: true });
+      } catch (err) {
+        console.warn('MapBoundsUpdater fitBounds error:', err);
+      }
+    }
+  }, [coords, map]);
+  return null;
+};
+
+export function resolveLogisticsCoordinates(inputAddress: string): { lat: number; lng: number; formatted: string } {
+  const clean = (inputAddress || '').toLowerCase().trim();
+
+  // 1. Trident Academy of Technology
+  if (clean.includes('trident') || clean.includes('tat')) {
+    return {
+      lat: 20.3542,
+      lng: 85.8078,
+      formatted: 'Trident Academy of Technology, Chandaka Industrial Estate, Patia, Bhubaneswar',
+    };
+  }
+
+  // 2. Exact match for Mani Tribhuban / Mani Tribhuvan
+  const normalized = clean.replace(/[\s\-_]+/g, '');
+  if (
+    clean.includes('mani') ||
+    clean.includes('tribhuban') ||
+    clean.includes('tribhuvan') ||
+    clean.includes('trubhuban') ||
+    clean.includes('manitri') ||
+    normalized.includes('manitribhuban') ||
+    normalized.includes('manitribhuvan') ||
+    normalized.includes('manitrubhuban')
+  ) {
+    return {
+      lat: 20.3688,
+      lng: 85.8242,
+      formatted: 'Mani Tribhuban, Nandankanan Road, Raghunathpur, Patia, Bhubaneswar (751024)',
+    };
+  }
+
+  // 3. Search POPULAR_INDIAN_LOCATIONS
+  const popMatch = POPULAR_INDIAN_LOCATIONS.find(
+    (loc) =>
+      clean.includes(loc.name.toLowerCase()) ||
+      loc.name.toLowerCase().includes(clean) ||
+      loc.formattedAddress.toLowerCase().includes(clean)
+  );
+  if (popMatch && popMatch.lat && popMatch.lng) {
+    return { lat: popMatch.lat, lng: popMatch.lng, formatted: popMatch.formattedAddress || popMatch.name };
+  }
+
+  // 4. Search BHUBANESWAR_LOCALITIES
+  const locMatch = BHUBANESWAR_LOCALITIES.find(
+    (loc) => clean.includes(loc.name.toLowerCase()) || loc.name.toLowerCase().includes(clean)
+  );
+  if (locMatch) {
+    return { lat: locMatch.lat, lng: locMatch.lng, formatted: `${locMatch.name}, Bhubaneswar` };
+  }
+
+  // 5. Search STOP_COORDINATES_MAP
+  for (const [key, coords] of Object.entries(STOP_COORDINATES_MAP)) {
+    if (clean.includes(key) || key.includes(clean)) {
+      return { lat: coords[0], lng: coords[1], formatted: `${key.toUpperCase()}, Bhubaneswar` };
+    }
+  }
+
+  // 6. Common Bhubaneswar Landmark matches
+  if (clean.includes('kiit')) return { lat: 20.3541, lng: 85.8175, formatted: 'KIIT Square, Patia, Bhubaneswar' };
+  if (clean.includes('unit 2') || clean.includes('unit-2')) return { lat: 20.2721, lng: 85.8341, formatted: 'Unit 2, Market Building, Bhubaneswar' };
+  if (clean.includes('lingaraj')) return { lat: 20.2382, lng: 85.8338, formatted: 'Lingaraj Temple, Old Town, Bhubaneswar' };
+  if (clean.includes('vani vihar')) return { lat: 20.3015, lng: 85.8458, formatted: 'Vani Vihar Square, Bhubaneswar' };
+  if (clean.includes('rasulgarh')) return { lat: 20.2974, lng: 85.8647, formatted: 'Rasulgarh Square, NH-16, Bhubaneswar' };
+  if (clean.includes('master canteen')) return { lat: 20.2667, lng: 85.8436, formatted: 'Master Canteen Square, Railway Station' };
+  if (clean.includes('baramunda')) return { lat: 20.2818, lng: 85.7938, formatted: 'Baramunda ISBT Hub, Bhubaneswar' };
+
+  // 7. Default fallback with deterministic offset
+  const hash = clean.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const latOffset = ((hash % 100) / 100 - 0.5) * 0.05;
+  const lngOffset = (((hash >> 2) % 100) / 100 - 0.5) * 0.05;
+  return { lat: 20.315 + latOffset, lng: 85.82 + lngOffset, formatted: inputAddress };
+}
+
 interface LogisticsHubProps {
   onNavigateToMap?: () => void;
   waypoints?: DeliveryWaypoint[];
   onWaypointsChange?: (waypoints: DeliveryWaypoint[]) => void;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN LOGISTICS OPTIMIZATION PLATFORM COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
   onNavigateToMap,
   waypoints: externalWaypoints,
   onWaypointsChange,
 }) => {
-  // Navigation Tabs
-  type ModuleTab =
-    | 'dynamic_router'
-    | 'control_tower'
-    | 'ai_eta_ml'
-    | 'mfc_isochrone'
-    | 'ev_zez_routing'
-    | 'ucc_simulator'
-    | 'govt_apis'
-    | 'shipments';
+  const originHub = { name: 'Warehouse', lat: 20.2818, lng: 85.7938 };
 
-  const [activeTab, setActiveTab] = useState<ModuleTab>('dynamic_router');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Initialize with empty delivery queue; stops are populated on user input
+  const [internalWaypoints, setInternalWaypoints] = useState<DeliveryWaypoint[]>([]);
 
-  // Delivery Stops State
-  const [internalWaypoints, setInternalWaypoints] = useState<DeliveryWaypoint[]>(SAMPLE_DELIVERY_STOPS);
   const waypoints = externalWaypoints ?? internalWaypoints;
-
   const setWaypoints = (newWps: DeliveryWaypoint[] | ((prev: DeliveryWaypoint[]) => DeliveryWaypoint[])) => {
     const updated = typeof newWps === 'function' ? newWps(waypoints) : newWps;
     setInternalWaypoints(updated);
     onWaypointsChange?.(updated);
   };
 
-  const originHub = { name: 'Central Warehouse Depot (Baramunda)', lat: 20.2818, lng: 85.7938 };
+  // Planner Tab: 'New Plan' | 'Live Tracking' | 'History'
+  const [plannerTab, setPlannerTab] = useState<'new_plan' | 'live_tracking' | 'history'>('new_plan');
 
-  // Feature 1: Dynamic Router & VRP State
-  const [optimizationGoal, setOptimizationGoal] = useState<OptimizationGoal>('balanced');
-  const [selectedVehicleId, setSelectedVehicleId] = useState<'2_wheeler_ev' | 'e_van' | '14ft_e_truck' | 'mo_bus_cargo'>('e_van');
-  const [selectedDriverId, setSelectedDriverId] = useState<string>(DRIVER_ROSTER[0].id);
-  const [isMonsoonMode, setIsMonsoonMode] = useState<boolean>(false);
-  const [isDynamicRerouteActive, setIsDynamicRerouteActive] = useState<boolean>(false);
-  const [newStopInput, setNewStopInput] = useState<string>('');
-  const [mapplsPinInput, setMapplsPinInput] = useState<string>('');
+  // Form & Search Inputs
+  const [searchAddress, setSearchAddress] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  // Feature 2: AI ETA ML Prediction State
-  const [selectedStopForAI, setSelectedStopForAI] = useState<DeliveryWaypoint | null>(waypoints[0] || null);
+  // Custom parcel type specification
+  const [parcelType, setParcelType] = useState<'Documents' | 'Electronics' | 'Clothing' | 'Food' | 'Other'>('Documents');
+  const [customParcelType, setCustomParcelType] = useState('');
+  const [parcelWeight, setParcelWeight] = useState('4.5');
 
-  // Feature 3: Micro-Fulfillment & Isochrone State
-  const [selectedMFCId, setSelectedMFCId] = useState<string>(BHUBANESWAR_MFC_NETWORK[0].id);
-  const [showIsochroneRings, setShowIsochroneRings] = useState<boolean>(true);
+  // Toast message
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Feature 4: EV & ZEZ Routing State
-  const [enforceZEZCompliance, setEnforceZEZCompliance] = useState<boolean>(true);
-  const [currentBatterySOC, setCurrentBatterySOC] = useState<number>(76);
+  // Active Map Overlay Pill: 'optimized' | 'all'
+  const [activeMapPill, setActiveMapPill] = useState<'optimized' | 'all'>('optimized');
 
-  // Feature 5: UCC Simulator State
-  const [uccScenario, setUccScenario] = useState<UCCSimulationScenario>({
-    consolidationLevelPercent: 65,
-    fleetElectrificationPercent: 70,
-    crossCarrierCollaboration: true,
-    activeParcelVolumeDaily: 4500,
-  });
+  // Payment & Modal States
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [activeDriverTab, setActiveDriverTab] = useState<'traffic' | 'stay'>('traffic');
 
-  // Proof of Delivery Modal State
-  const [podModalStop, setPodModalStop] = useState<{ waypoint: DeliveryWaypoint; index: number } | null>(null);
+  // Compute Anti-Gravity / Multi-Objective Route Plan
+  const plan: AntiGravityRoutePlan = useMemo(() => {
+    return computeAntiGravityRoute(originHub, waypoints, 45, 'anti_gravity_evtol');
+  }, [waypoints]);
 
-  const showToast = (msg: string, ms = 3200) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), ms);
-  };
+  // Derived Totals
+  const totalParcelsCount = waypoints.length > 0 ? waypoints.reduce((acc, w) => acc + Math.round(w.packageWeightKg || 3), 0) : 0;
+  const totalWeightKg = waypoints.length > 0 ? waypoints.reduce((acc, w) => acc + (w.packageWeightKg || 5), 0) : 0;
+  const totalVolumeM3 = (totalWeightKg * 0.0051).toFixed(1);
 
-  // Active Vehicle Spec
-  const activeVehicle = useMemo(() => {
-    return VEHICLE_FLEET_OPTIONS.find((v) => v.id === selectedVehicleId) || VEHICLE_FLEET_OPTIONS[1];
-  }, [selectedVehicleId]);
+  // Split waypoints among 3 Vans
+  const van1Stops = waypoints.slice(0, Math.ceil(waypoints.length / 3));
+  const van2Stops = waypoints.slice(Math.ceil(waypoints.length / 3), Math.ceil((waypoints.length * 2) / 3));
+  const van3Stops = waypoints.slice(Math.ceil((waypoints.length * 2) / 3));
 
-  // Active Driver Spec
-  const activeDriver = useMemo(() => {
-    return DRIVER_ROSTER.find((d) => d.id === selectedDriverId) || DRIVER_ROSTER[0];
-  }, [selectedDriverId]);
+  const van1Parcels = van1Stops.reduce((sum, s) => sum + Math.round(s.packageWeightKg || 3), 0) || (waypoints.length > 0 ? 8 : 0);
+  const van2Parcels = van2Stops.reduce((sum, s) => sum + Math.round(s.packageWeightKg || 3), 0) || (waypoints.length > 0 ? 6 : 0);
+  const van3Parcels = van3Stops.reduce((sum, s) => sum + Math.round(s.packageWeightKg || 3), 0) || (waypoints.length > 0 ? 4 : 0);
 
-  // Smart Optimization computation (OR-Tools heuristic + 2-Opt)
-  const smartOptimization = useMemo(() => {
-    const effectiveDisruption = isDynamicRerouteActive ? 'disrupt-1' : isMonsoonMode ? 'hz-1' : null;
-    return optimizeSmartDeliveryRoute(originHub, waypoints, selectedVehicleId, optimizationGoal, effectiveDisruption);
-  }, [originHub, waypoints, selectedVehicleId, optimizationGoal, isDynamicRerouteActive, isMonsoonMode]);
-
-  // AI ETA Prediction for selected stop
-  const aiEtaResult = useMemo(() => {
-    if (!selectedStopForAI) return null;
-    const distanceKm = Math.hypot(selectedStopForAI.lat - originHub.lat, selectedStopForAI.lng - originHub.lng) * 111 * 1.25;
-    return predictStopETAWithAI(selectedStopForAI, distanceKm, isDynamicRerouteActive ? 'heavy' : 'moderate', isMonsoonMode);
-  }, [selectedStopForAI, originHub, isDynamicRerouteActive, isMonsoonMode]);
-
-  // UCC Simulation output
-  const uccResult = useMemo(() => {
-    return runUCCSimulation(uccScenario);
-  }, [uccScenario]);
-
-  // Map Coordinates for polyline
-  const mapPolylinePoints = useMemo(() => {
-    const points: [number, number][] = [[originHub.lat, originHub.lng]];
-    for (const s of smartOptimization.optimizedStops) {
-      if (isValidLatLng([s.lat, s.lng])) points.push([s.lat, s.lng]);
-    }
-    return points;
-  }, [originHub, smartOptimization]);
-
-  // Add Stop Handler
+  // Handle Add Stop from input
   const handleAddStop = (addressToAdd?: string) => {
-    const target = addressToAdd || newStopInput;
-    if (!target.trim()) return;
+    const rawAddress = addressToAdd || searchAddress;
+    if (!rawAddress.trim()) return;
 
-    const resolved = resolveLogisticsCoordinates(target);
+    const resolved = resolveLogisticsCoordinates(rawAddress);
+    const effectiveType = parcelType === 'Other' && customParcelType.trim() ? customParcelType.trim() : parcelType;
+
     const newStop: DeliveryWaypoint = {
       id: `stop-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      recipientName: target.split(',')[0].trim(),
-      phone: '+91 94370 ' + Math.floor(10000 + Math.random() * 90000),
+      recipientName: rawAddress.split(',')[0].trim(),
+      phone: '+91 94370 00000',
       address: resolved.formatted,
       lat: resolved.lat,
       lng: resolved.lng,
       altitudeMeters: 45,
-      packageWeightKg: 4.5,
-      parcelCount: 1,
-      parcelType: 'Standard',
+      packageWeightKg: parseFloat(parcelWeight) || 3.5,
+      parcelType: effectiveType as any,
       priority: 'Standard',
       status: 'pending',
       ecoPackaging: true,
       dockingStatus: 'ALIGNED_LOCKED',
-      dockingToleranceCm: 6.5,
-      assignedDriverId: selectedDriverId,
+      dockingToleranceCm: 7.5,
     };
 
     setWaypoints([...waypoints, newStop]);
-    setNewStopInput('');
-    showToast(`✅ Added delivery stop: "${newStop.recipientName}"`);
+    setSearchAddress('');
+    setIsSearchFocused(false);
+    setToastMessage(`✅ Stop "${newStop.recipientName}" added! Route optimized.`);
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const handleMapplsPinSearch = () => {
-    if (!mapplsPinInput.trim()) return;
-    const match = resolveMapplsEloc(mapplsPinInput);
-    if (match) {
-      handleAddStop(match.fullAddress);
-      setMapplsPinInput('');
-      showToast(`📍 Found Mappls eLoc [${match.elocPin}]: ${match.placeName}`);
-    } else {
-      showToast(`⚠️ No eLoc PIN found for "${mapplsPinInput}". Try "BBS001", "KIIT09", "ISBT77"`);
+  const handleRemoveStop = (id: string) => {
+    setWaypoints(waypoints.filter((w) => w.id !== id));
+  };
+
+  const handleLoadSampleStops = () => {
+    setWaypoints(SAMPLE_DELIVERY_STOPS);
+    setToastMessage('✅ Loaded sample Bhubaneswar delivery routes!');
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleClearAllStops = () => {
+    setWaypoints([]);
+    setToastMessage('🗑️ Cleared all delivery stops.');
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleOptimizeRoutes = () => {
+    if (waypoints.length === 0) {
+      setToastMessage('ℹ️ Add at least 1 delivery stop to calculate optimal routes.');
+      setTimeout(() => setToastMessage(null), 3000);
+      return;
     }
+    setToastMessage('✨ Routes re-optimized across 3 delivery vans with zero carbon waste!');
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // Proof of Delivery Handler
-  const handleCompletePOD = (
-    waypointId: string,
-    podData: { receiverName: string; signature: string; otp: string; photoUrl?: string; notes: string; deliveredAt: string }
-  ) => {
-    const updated = waypoints.map((w) => (w.id === waypointId ? { ...w, status: 'delivered' as const, pod: podData } : w));
-    setWaypoints(updated);
-    setPodModalStop(null);
-    showToast(`🎉 e-POD confirmed for ${podData.receiverName}!`);
-  };
+  // Autocomplete Suggestions
+  const SUGGESTIONS = [
+    { name: 'Trident Academy of Technology', address: 'Chandaka Industrial Estate, Patia, Bhubaneswar' },
+    { name: 'KIIT Square', address: 'KIIT Road, Patia, Bhubaneswar' },
+    { name: 'Unit 2', address: 'Market Building, Ashok Nagar, Bhubaneswar' },
+    { name: 'Lingaraj Temple', address: 'Old Town, Bhubaneswar' },
+    { name: 'Vani Vihar', address: 'Utkal University, Janpath, Bhubaneswar' },
+    { name: 'Rasulgarh', address: 'NH-16 Junction, Bhubaneswar' },
+    { name: 'Mani Tribhuban', address: 'Nandankanan Road, Patia, Bhubaneswar' },
+    { name: 'Master Canteen', address: 'Railway Station Square, Bhubaneswar' },
+  ];
+
+  const filteredSuggestions = SUGGESTIONS.filter(
+    (s) => !searchAddress.trim() || s.name.toLowerCase().includes(searchAddress.toLowerCase()) || s.address.toLowerCase().includes(searchAddress.toLowerCase())
+  );
 
   return (
-    <div className="flex flex-col h-full bg-[#070B14] text-white select-none overflow-hidden">
-      {/* ─── TOAST NOTIFICATION ────────────────────────────────────────────── */}
+    <div className="flex-1 flex flex-col h-full bg-[#070B14] text-slate-100 overflow-y-auto pb-20 font-sans">
+      {/* Toast Notification */}
       {toastMessage && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[9999] bg-[#0F172A] border border-blue-500/40 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 pointer-events-none">
-          <Sparkles size={14} className="text-amber-400 shrink-0" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-4 right-4 z-[99999] p-3.5 rounded-2xl bg-amber-500 text-slate-950 text-xs font-black shadow-2xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 border border-amber-300">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 flex-shrink-0 fill-slate-950" />
+            <span>{toastMessage}</span>
+          </div>
+          <button onClick={() => setToastMessage(null)} className="p-1 hover:bg-amber-600 rounded-lg">
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
-      {/* ─── PROOF OF DELIVERY MODAL ────────────────────────────────────────── */}
-      {podModalStop && (
-        <ProofOfDeliveryModal
-          isOpen={true}
-          waypoint={podModalStop.waypoint}
-          stopIndex={podModalStop.index}
-          onCompletePOD={handleCompletePOD}
-          onClose={() => setPodModalStop(null)}
-        />
-      )}
+      {/* Header & Status Bar */}
+      <div className="flex items-center justify-between border-b border-slate-800/80 px-4 sm:px-6 py-3.5 bg-[#090E1B] shrink-0 sticky top-0 z-20">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <Navigation className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-400" />
+            </div>
+            <span className="font-black text-lg sm:text-xl tracking-wider text-white">MUSAFIR</span>
+          </div>
 
-      {/* ─── TOP PLATFORM HEADER & LOGISTICS LOGO ───────────────────────────── */}
-      <div className="bg-[#0A0F1D] border-b border-white/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
-        <MusafirLogisticsLogo />
+          <div className="h-6 w-px bg-slate-800 mx-1 sm:mx-2 hidden sm:block" />
 
-        {/* Live System Badges */}
-        <div className="flex items-center gap-2">
-          {/* Monsoon Mode Quick Switch */}
+          <div>
+            <h1 className="text-xs sm:text-sm font-black text-white leading-none">Smart Logistics Optimizer</h1>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Smarter routes. Greener cities. Happier deliveries.</p>
+          </div>
+        </div>
+
+        {/* Right Controls */}
+        <div className="flex items-center gap-2.5 sm:gap-4">
           <button
-            onClick={() => {
-              setIsMonsoonMode(!isMonsoonMode);
-              showToast(isMonsoonMode ? '☀️ Monsoon Mode Deactivated.' : '🌧️ Monsoon Mode Engaged: Waterlogged roads avoided!');
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-              isMonsoonMode
-                ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-md shadow-amber-500/10'
-                : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
-            }`}
+            type="button"
+            className="relative p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800 cursor-pointer"
+            title="Notifications"
           >
-            <CloudRain size={13} className={isMonsoonMode ? 'text-amber-400 animate-pulse' : ''} />
-            <span>Monsoon Hazard Mode</span>
-            <span className={`w-2 h-2 rounded-full ${isMonsoonMode ? 'bg-amber-400' : 'bg-slate-600'}`} />
+            <Bell className="w-4 h-4" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500" />
           </button>
 
-          {/* Dynamic Reroute Toggle */}
-          <button
-            onClick={() => {
-              setIsDynamicRerouteActive(!isDynamicRerouteActive);
-              showToast(
-                !isDynamicRerouteActive
-                  ? '⚡ Live Re-route Engaged! Rasulgarh congestion bypassed via Expressway.'
-                  : '🔄 Standard route restored.'
-              );
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-              isDynamicRerouteActive
-                ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/25'
-                : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
-            }`}
-          >
-            <Zap size={13} className={isDynamicRerouteActive ? 'text-yellow-300' : ''} />
-            <span>Dynamic Re-Routing</span>
-          </button>
+          <div className="flex items-center gap-2 bg-[#10182E] border border-slate-800 px-3 py-1.5 rounded-xl cursor-pointer hover:border-slate-700">
+            <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 text-xs">
+              <User className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-xs font-bold text-slate-200 hidden sm:inline">Logistics Partner</span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+          </div>
         </div>
       </div>
 
-      {/* ─── MODULE NAVIGATION TABS ─────────────────────────────────────────── */}
-      <div className="bg-[#0C1222] border-b border-white/5 px-3 flex items-center gap-1 overflow-x-auto scrollbar-none py-1.5 shrink-0">
-        {[
-          { id: 'dynamic_router', label: '1. Dynamic Router & VRP', icon: Compass },
-          { id: 'control_tower', label: '2. Control Tower', icon: Activity, badge: LIVE_CONTROL_TOWER_EXCEPTIONS.length },
-          { id: 'ai_eta_ml', label: '3. AI ETA (ML/GNN)', icon: Cpu },
-          { id: 'mfc_isochrone', label: '4. MFC & Isochrones', icon: Building },
-          { id: 'ev_zez_routing', label: '5. EV & ZEZ Routing', icon: BatteryCharging },
-          { id: 'ucc_simulator', label: '6. UCC "What-If" Simulator', icon: Sliders },
-          { id: 'govt_apis', label: '7. Govt APIs (VAHAN/GST)', icon: ShieldCheck },
-          { id: 'shipments', label: '8. Shipment Operations', icon: Package },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as ModuleTab)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                isActive
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/20'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Icon size={14} className={isActive ? 'text-white' : 'text-slate-500'} />
-              <span>{tab.label}</span>
-              {tab.badge && (
-                <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-[10px] font-black text-white">
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ─── MAIN CONTENT AREA ──────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* ══════════════════════════════════════════════════════════════════════
-            MODULE 1: DYNAMIC ROUTER & VRP SOLVER
-        ══════════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'dynamic_router' && (
-          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-            {/* Left Control Panel */}
-            <div className="w-full md:w-96 bg-[#090E1A] border-r border-white/5 flex flex-col overflow-y-auto p-4 gap-4 shrink-0">
-              {/* Optimization Goal Selector */}
+      {/* Main Dashboard Grid */}
+      <div className="max-w-[1600px] mx-auto w-full p-3 sm:p-4 lg:p-6 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          
+          {/* =========================================================================
+              COLUMN 1: LOGISTICS PLANNER (col-span-12 lg:col-span-3)
+             ========================================================================= */}
+          <div className="lg:col-span-3 bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-4">
+            {/* Planner Header */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <Truck className="w-5 h-5" />
+              </div>
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block flex items-center justify-between">
-                  <span>Optimization Objective</span>
-                  <span className="text-[10px] text-blue-400 font-normal">Multi-Objective VRP</span>
-                </label>
-                <div className="grid grid-cols-4 gap-1.5 bg-[#0D1424] p-1 rounded-xl border border-white/5">
-                  {(['balanced', 'speed', 'cost', 'eco'] as OptimizationGoal[]).map((goal) => (
-                    <button
-                      key={goal}
-                      onClick={() => setOptimizationGoal(goal)}
-                      className={`py-1.5 text-[11px] font-bold rounded-lg capitalize transition-all ${
-                        optimizationGoal === goal
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      {goal}
-                    </button>
-                  ))}
-                </div>
+                <h2 className="text-sm font-black text-white">Logistics Planner</h2>
+                <p className="text-[11px] text-slate-400">Plan, optimize and track your deliveries</p>
               </div>
+            </div>
 
-              {/* Mappls 6-Digit eLoc Pin Input */}
-              <div className="bg-[#0D1424] border border-blue-500/20 rounded-2xl p-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
-                    <MapPin size={13} /> Mappls 6-Char eLoc Pin
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-mono">India Digital Address</span>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    value={mapplsPinInput}
-                    onChange={(e) => setMapplsPinInput(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => e.key === 'Enter' && handleMapplsPinSearch()}
-                    placeholder="e.g. BBS001, KIIT09, ISBT77"
-                    maxLength={6}
-                    className="flex-1 bg-[#090E1A] border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white placeholder-slate-500 uppercase tracking-widest focus:outline-none focus:border-blue-500"
-                  />
-                  <button
-                    onClick={handleMapplsPinSearch}
-                    className="px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-colors"
-                  >
-                    Resolve
-                  </button>
-                </div>
-                <div className="flex gap-1.5 mt-2 overflow-x-auto">
-                  {BHUBANESWAR_MAPPLS_PINS.slice(0, 3).map((pin) => (
-                    <button
-                      key={pin.elocPin}
-                      onClick={() => {
-                        setMapplsPinInput(pin.elocPin);
-                        handleAddStop(pin.fullAddress);
-                      }}
-                      className="text-[10px] font-mono px-2 py-1 rounded-lg bg-white/5 hover:bg-blue-500/20 border border-white/10 text-slate-300 whitespace-nowrap"
-                    >
-                      {pin.elocPin} ({pin.placeName.split(' ')[0]})
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* Sub-Tabs: New Plan | Live Tracking | History */}
+            <div className="flex bg-[#070D1A] p-1 rounded-xl border border-slate-800/80 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setPlannerTab('new_plan')}
+                className={`flex-1 py-1.5 rounded-lg transition text-center cursor-pointer ${
+                  plannerTab === 'new_plan'
+                    ? 'bg-[#EAB308] text-slate-950 font-black shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                New Plan
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlannerTab('live_tracking')}
+                className={`flex-1 py-1.5 rounded-lg transition text-center cursor-pointer ${
+                  plannerTab === 'live_tracking'
+                    ? 'bg-[#EAB308] text-slate-950 font-black shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Live Tracking
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlannerTab('history')}
+                className={`flex-1 py-1.5 rounded-lg transition text-center cursor-pointer ${
+                  plannerTab === 'history'
+                    ? 'bg-[#EAB308] text-slate-950 font-black shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                History
+              </button>
+            </div>
 
-              {/* Add Custom Delivery Stop */}
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">
-                  Add Delivery Drop
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    value={newStopInput}
-                    onChange={(e) => setNewStopInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddStop()}
-                    placeholder="Search Bhubaneswar address or landmark..."
-                    className="flex-1 bg-[#0D1424] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                  />
-                  <button
-                    onClick={() => handleAddStop()}
-                    className="p-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-colors shrink-0"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Vehicle & Fleet Selector */}
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
-                  Assigned Fleet Vehicle
-                </label>
-                <div className="flex flex-col gap-1.5">
-                  {VEHICLE_FLEET_OPTIONS.map((veh) => (
-                    <button
-                      key={veh.id}
-                      onClick={() => setSelectedVehicleId(veh.id)}
-                      className={`flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${
-                        selectedVehicleId === veh.id
-                          ? 'bg-blue-600/15 border-blue-500/50 text-white'
-                          : 'bg-[#0D1424] border-white/5 text-slate-400 hover:border-white/15'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
-                          style={{ backgroundColor: `${veh.colorCode}20`, color: veh.colorCode }}
-                        >
-                          <Truck size={14} />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-white">{veh.typeLabel}</p>
-                          <p className="text-[10px] text-slate-400">
-                            Payload: {veh.maxPayloadKg} kg · {veh.batteryRangeKm} km range
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-bold font-mono text-slate-300">₹{veh.costPerKmInr}/km</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Waypoints Sequence List */}
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Stops ({waypoints.length})
-                  </span>
-                  <button
-                    onClick={() => {
-                      setWaypoints(SAMPLE_DELIVERY_STOPS);
-                      showToast('🔄 Benchmark stops reloaded.');
-                    }}
-                    className="text-[10px] text-blue-400 hover:underline"
-                  >
-                    Reset Defaults
-                  </button>
+            {/* Delivery Details 3-Metric Boxes */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider">Delivery Details</h3>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {/* Total Parcels */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-2.5 flex flex-col justify-center">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center justify-center gap-1">
+                    <Package className="w-3 h-3 text-amber-400" />
+                    <span>Total Parcels</span>
+                  </div>
+                  <div className="text-base font-black text-white mt-1">
+                    {totalParcelsCount > 0 ? totalParcelsCount : '0'}
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  {waypoints.map((wp, i) => (
-                    <div
-                      key={wp.id}
-                      className="bg-[#0D1424] border border-white/5 rounded-xl p-2.5 flex items-center justify-between gap-2"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 font-bold text-[10px] flex items-center justify-center shrink-0">
-                          {i + 1}
-                        </div>
-                        <div className="truncate">
-                          <p className="text-xs font-semibold text-white truncate">{wp.recipientName}</p>
-                          <p className="text-[10px] text-slate-400 truncate">{wp.address}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {wp.status === 'delivered' ? (
-                          <span className="text-[10px] text-green-400 font-bold px-1.5 py-0.5 rounded bg-green-500/10">
-                            ✓ Done
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => setPodModalStop({ waypoint: wp, index: i })}
-                            className="text-[10px] text-blue-400 hover:bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20 font-semibold"
-                          >
-                            e-POD
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setWaypoints(waypoints.filter((w) => w.id !== wp.id))}
-                          className="p-1 text-slate-500 hover:text-red-400"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                {/* Total Weight */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-2.5 flex flex-col justify-center">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center justify-center gap-1">
+                    <Scale className="w-3 h-3 text-blue-400" />
+                    <span>Total Weight</span>
+                  </div>
+                  <div className="text-base font-black text-white mt-1">
+                    {totalWeightKg > 0 ? `${totalWeightKg.toFixed(0)} kg` : '0 kg'}
+                  </div>
+                </div>
+
+                {/* Total Volume */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-2.5 flex flex-col justify-center">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center justify-center gap-1">
+                    <Boxes className="w-3 h-3 text-emerald-400" />
+                    <span>Total Volume</span>
+                  </div>
+                  <div className="text-base font-black text-white mt-1">
+                    {totalWeightKg > 0 ? `${totalVolumeM3} m³` : '0 m³'}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Map & Route Intelligence View */}
-            <div className="flex-1 flex flex-col relative h-full">
-              {/* Map Canvas */}
-              <div className="flex-1 relative">
-                <MapContainer
-                  center={[originHub.lat, originHub.lng]}
-                  zoom={12}
-                  style={{ height: '100%', width: '100%' }}
-                  zoomControl={false}
-                >
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <MapBoundsAutoFit coords={mapPolylinePoints} />
-
-                  {/* Origin Depot Pin */}
-                  <Marker
-                    position={[originHub.lat, originHub.lng]}
-                    icon={createPinIcon('🏠', '#F59E0B', 'Baramunda ISBT Hub')}
+            {/* Parcel Category Selection */}
+            <div className="space-y-2 pt-1">
+              <label className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-amber-400" />
+                <span>Parcel Type</span>
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {(['Documents', 'Electronics', 'Clothing', 'Food', 'Other'] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setParcelType(type)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      parcelType === type
+                        ? 'bg-[#EAB308] text-slate-950 shadow-md font-black'
+                        : 'bg-[#10182E] text-slate-400 border border-slate-800 hover:text-slate-200'
+                    }`}
                   >
-                    <Popup>
-                      <div className="p-1">
-                        <p className="font-bold text-xs">{originHub.name}</p>
-                        <p className="text-[10px] text-slate-600">Central Cross-Dock DC</p>
-                      </div>
-                    </Popup>
-                  </Marker>
+                    {type}
+                  </button>
+                ))}
+              </div>
 
-                  {/* Stops Pins */}
-                  {smartOptimization.optimizedStops.map((stop, i) => (
+              {/* Custom parcel description input */}
+              {parcelType === 'Other' && (
+                <div className="pt-1.5 animate-in fade-in">
+                  <input
+                    type="text"
+                    value={customParcelType}
+                    onChange={(e) => setCustomParcelType(e.target.value)}
+                    placeholder="Enter custom parcel type (e.g. Medical, Glass, Gifts...)"
+                    className="w-full bg-[#10182E] border border-amber-500/60 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-amber-400 transition placeholder:text-slate-500"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Delivery Locations Search & Stop List */}
+            <div className="space-y-2.5 pt-1">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider">Delivery Locations</h3>
+                {waypoints.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllStops}
+                    className="text-[10px] text-rose-400 hover:text-rose-300 font-bold hover:underline cursor-pointer"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              {/* Search or Add Address Input */}
+              <div className="relative">
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-slate-500">
+                    <Search className="w-3.5 h-3.5" />
+                  </span>
+                  <input
+                    type="text"
+                    value={searchAddress}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onChange={(e) => {
+                      setSearchAddress(e.target.value);
+                      setIsSearchFocused(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddStop();
+                      }
+                    }}
+                    placeholder="Search or add address"
+                    className="w-full bg-[#10182E] border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs font-semibold text-white focus:outline-none focus:border-amber-500 transition placeholder:text-slate-500"
+                  />
+                  {searchAddress ? (
+                    <button
+                      type="button"
+                      onClick={() => setSearchAddress('')}
+                      className="absolute right-2.5 text-slate-400 hover:text-white p-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleAddStop()}
+                      className="absolute right-2 text-amber-400 hover:text-amber-300 p-0.5"
+                      title="Add Stop"
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Autocomplete Dropdown */}
+                {isSearchFocused && (
+                  <div className="absolute left-0 right-0 top-[38px] z-50 bg-[#0B1220] border border-slate-700/90 rounded-2xl shadow-2xl p-2 space-y-1 max-h-56 overflow-y-auto">
+                    <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
+                      Popular Locations
+                    </div>
+                    {filteredSuggestions.slice(0, 5).map((item) => (
+                      <div
+                        key={item.name}
+                        onMouseDown={() => handleAddStop(`${item.name}, ${item.address}`)}
+                        className="p-2 rounded-xl hover:bg-amber-500/10 border border-transparent hover:border-amber-500/30 cursor-pointer transition flex items-center justify-between text-left"
+                      >
+                        <div>
+                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <MapPin className="w-3 h-3 text-amber-400" />
+                            <span>{item.name}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate max-w-[200px]">{item.address}</div>
+                        </div>
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-lg">
+                          + Add
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Stop Sequence List */}
+              <div className="space-y-2 pt-1 max-h-60 overflow-y-auto pr-1">
+                {/* Origin: Warehouse (Start) */}
+                <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#10182E] border border-slate-800/80">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center font-black text-xs text-amber-400">
+                      W
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white">Warehouse (Start)</div>
+                      <div className="text-[10px] text-slate-400">Bhubaneswar</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">
+                    Base
+                  </span>
+                </div>
+
+                {/* Active Waypoints Queue */}
+                {waypoints.length === 0 ? (
+                  <div className="p-4 rounded-2xl bg-[#10182E]/50 border border-dashed border-slate-800 text-center space-y-2">
+                    <Package className="w-6 h-6 text-slate-500 mx-auto" />
+                    <p className="text-xs font-bold text-slate-300">No delivery stops added yet</p>
+                    <p className="text-[11px] text-slate-500">
+                      Type any address above to add your first delivery location.
+                    </p>
+
+                    {/* Quick suggestion chips */}
+                    <div className="flex flex-wrap gap-1 justify-center pt-1">
+                      {['Trident Academy', 'KIIT Square', 'Unit 2', 'Rasulgarh'].map((loc) => (
+                        <button
+                          key={loc}
+                          type="button"
+                          onClick={() => handleAddStop(loc)}
+                          className="text-[10px] px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer font-semibold"
+                        >
+                          + {loc}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={handleLoadSampleStops}
+                        className="text-[11px] text-amber-400 hover:text-amber-300 underline font-bold cursor-pointer"
+                      >
+                        Load Sample Bhubaneswar Stops
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  waypoints.map((wp, idx) => {
+                    const pinColor = STOP_PIN_COLORS[idx % STOP_PIN_COLORS.length];
+                    const distKm = (2.5 + idx * 2.1).toFixed(1);
+                    const parcels = Math.round(wp.packageWeightKg || 3);
+
+                    return (
+                      <div
+                        key={wp.id}
+                        className="flex items-center justify-between p-2.5 rounded-2xl bg-[#10182E] border border-slate-800/80 hover:border-slate-700 transition"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                          <div
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: pinColor }}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-white truncate">
+                              Stop {idx + 1} - {wp.recipientName}
+                            </div>
+                            <div className="text-[10px] text-slate-400 truncate">
+                              {distKm} km • {parcels} {parcels === 1 ? 'parcel' : 'parcels'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveStop(wp.id)}
+                          className="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition cursor-pointer shrink-0"
+                          title="Remove Stop"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Optimize Multi-Stop Corridor */}
+              <button
+                type="button"
+                onClick={handleOptimizeRoutes}
+                className="w-full py-3 rounded-2xl bg-[#F59E0B] hover:bg-[#D97706] text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 mt-2"
+              >
+                <Sparkles className="w-4 h-4 fill-slate-950" />
+                <span>Optimize Routes</span>
+              </button>
+            </div>
+          </div>
+
+          {/* =========================================================================
+              COLUMN 2: INTERACTIVE ROUTE MAP (col-span-12 lg:col-span-6)
+             ========================================================================= */}
+          <div className="lg:col-span-6 bg-[#0B1222] border border-slate-800/90 rounded-3xl overflow-hidden shadow-2xl relative h-[480px] sm:h-[540px] flex flex-col">
+            {/* Top Floating Filter Pills: [✨ Optimized Routes] [All Locations] */}
+            <div className="absolute top-3.5 left-3.5 z-[1000] flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveMapPill('optimized')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 backdrop-blur-md shadow-lg ${
+                  activeMapPill === 'optimized'
+                    ? 'bg-[#121A2B]/95 text-amber-400 border border-amber-500/60 shadow-amber-500/20'
+                    : 'bg-[#121A2B]/80 text-slate-400 border border-slate-700 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 fill-amber-400" />
+                <span>Optimized Routes</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveMapPill('all')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 backdrop-blur-md shadow-lg ${
+                  activeMapPill === 'all'
+                    ? 'bg-[#121A2B]/95 text-amber-400 border border-amber-500/60 shadow-amber-500/20'
+                    : 'bg-[#121A2B]/80 text-slate-400 border border-slate-700 hover:text-white'
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span>All Locations</span>
+              </button>
+            </div>
+
+            {/* Map Container */}
+            <div className="w-full h-full relative z-0">
+              <MapContainer
+                center={[20.2961, 85.8245]}
+                zoom={12}
+                className="w-full h-full z-0"
+                zoomControl={false}
+              >
+                <MapBoundsUpdater
+                  coords={[
+                    [originHub.lat, originHub.lng],
+                    ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
+                  ]}
+                />
+
+                <TileLayer
+                  url="https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}"
+                  attribution='&copy; <a href="https://maps.google.com">Google Maps</a>'
+                  maxZoom={19}
+                />
+
+                {/* Warehouse Origin Pin */}
+                <Marker position={[originHub.lat, originHub.lng]} icon={createLogisticsWarehouseIcon()}>
+                  <Popup>
+                    <div className="text-xs font-bold text-slate-900 p-1">
+                      <span className="text-amber-600 font-extrabold block">🏠 Dispatch Warehouse</span>
+                      <span>Baramunda Hub, Bhubaneswar</span>
+                    </div>
+                  </Popup>
+                </Marker>
+
+                {/* Van 1 Polyline Route (Blue) */}
+                {van1Stops.length > 0 && (
+                  <Polyline
+                    positions={filterValidLatLngs([
+                      [originHub.lat, originHub.lng],
+                      ...van1Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                    ])}
+                    pathOptions={{ color: '#3B82F6', weight: 4.5, opacity: 0.95 }}
+                  />
+                )}
+
+                {/* Van 2 Polyline Route (Green) */}
+                {van2Stops.length > 0 && (
+                  <Polyline
+                    positions={filterValidLatLngs([
+                      [originHub.lat, originHub.lng],
+                      ...van2Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                    ])}
+                    pathOptions={{ color: '#10B981', weight: 4.5, opacity: 0.95 }}
+                  />
+                )}
+
+                {/* Van 3 Polyline Route (Orange) */}
+                {van3Stops.length > 0 && (
+                  <Polyline
+                    positions={filterValidLatLngs([
+                      [originHub.lat, originHub.lng],
+                      ...van3Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                    ])}
+                    pathOptions={{ color: '#F97316', weight: 4.5, opacity: 0.95 }}
+                  />
+                )}
+
+                {/* Waypoint Numbered Markers */}
+                {waypoints.filter((wp) => isValidLatLng([wp.lat, wp.lng])).map((wp, idx) => {
+                  return (
                     <Marker
-                      key={stop.id}
-                      position={[stop.lat, stop.lng]}
-                      icon={createPinIcon(
-                        stop.status === 'delivered' ? '✓' : i + 1,
-                        stop.status === 'delivered' ? '#10B981' : '#3B82F6',
-                        stop.recipientName
-                      )}
+                      key={wp.id}
+                      position={[wp.lat, wp.lng]}
+                      icon={createNumberedPinIcon(idx + 1, wp.recipientName)}
                     >
                       <Popup>
-                        <div className="p-1">
-                          <p className="font-bold text-xs">
-                            Stop #{i + 1}: {stop.recipientName}
-                          </p>
-                          <p className="text-[10px] text-slate-600">{stop.address}</p>
-                          <p className="text-[10px] font-bold text-blue-600 mt-1">
-                            Payload: {stop.packageWeightKg} kg · Status: {stop.status}
-                          </p>
+                        <div className="text-xs font-bold text-slate-900 p-1">
+                          <div className="font-black text-slate-950">Stop {idx + 1}: {wp.recipientName}</div>
+                          <div className="text-[11px] text-slate-600 mt-0.5">{wp.address}</div>
+                          <div className="text-[10px] text-emerald-600 font-mono mt-1 font-extrabold">
+                            GPS: {wp.lat.toFixed(4)}, {wp.lng.toFixed(4)}
+                          </div>
                         </div>
                       </Popup>
                     </Marker>
-                  ))}
+                  );
+                })}
+              </MapContainer>
+            </div>
 
-                  {/* Optimized Route Polyline */}
-                  {mapPolylinePoints.length >= 2 && (
-                    <Polyline
-                      positions={mapPolylinePoints}
-                      pathOptions={{
-                        color: isDynamicRerouteActive ? '#10B981' : isMonsoonMode ? '#F59E0B' : '#3B82F6',
-                        weight: 4,
-                        dashArray: isMonsoonMode ? '8 6' : undefined,
-                      }}
-                    />
-                  )}
-
-                  {/* ZEZ Protected Area Overlay */}
-                  {BHUBANESWAR_ZEZ_ZONES.map((zez) => (
-                    <Circle
-                      key={zez.id}
-                      center={[zez.centerLat, zez.centerLng]}
-                      radius={zez.radiusKm * 1000}
-                      pathOptions={{
-                        color: '#10B981',
-                        fillColor: '#10B981',
-                        fillOpacity: 0.12,
-                        weight: 2,
-                        dashArray: '4 4',
-                      }}
-                    >
-                      <Popup>
-                        <div className="p-1">
-                          <p className="font-bold text-xs text-green-700">🌿 {zez.name}</p>
-                          <p className="text-[10px] text-slate-600">{zez.description}</p>
-                        </div>
-                      </Popup>
-                    </Circle>
-                  ))}
-                </MapContainer>
-
-                {/* Floating Metrics Summary Bar */}
-                <div className="absolute top-3 right-3 z-[1000] bg-[#0A0F1D]/95 backdrop-blur-md border border-white/10 rounded-2xl p-3 shadow-2xl flex items-center gap-4 text-xs">
-                  <div>
-                    <span className="text-[10px] text-slate-400 block">Total Corridor</span>
-                    <span className="font-bold text-white text-sm font-mono">
-                      {smartOptimization.totalDistanceKm} km
-                    </span>
-                  </div>
-                  <div className="w-px h-8 bg-white/10" />
-                  <div>
-                    <span className="text-[10px] text-slate-400 block">Estimated SLA</span>
-                    <span className="font-bold text-blue-400 text-sm font-mono">
-                      {smartOptimization.estimatedMinutes} mins
-                    </span>
-                  </div>
-                  <div className="w-px h-8 bg-white/10" />
-                  <div>
-                    <span className="text-[10px] text-slate-400 block">Trip Cost</span>
-                    <span className="font-bold text-amber-400 text-sm font-mono">
-                      ₹{smartOptimization.costBreakdown.totalCostInr}
-                    </span>
-                  </div>
-                  <div className="w-px h-8 bg-white/10" />
-                  <div>
-                    <span className="text-[10px] text-slate-400 block">CO₂ Saved</span>
-                    <span className="font-bold text-green-400 text-sm font-mono">
-                      {smartOptimization.co2SavedKg} kg
-                    </span>
-                  </div>
+            {/* Vehicle Fleet Allocation Overview */}
+            <div className="absolute left-3.5 bottom-3.5 z-[1000] bg-[#0C1425]/92 border border-slate-800/90 backdrop-blur-md rounded-2xl p-3 shadow-2xl space-y-2 min-w-[170px]">
+              <h4 className="font-extrabold text-slate-400 text-[11px] uppercase tracking-wider">Vehicles</h4>
+              <div className="space-y-1.5 text-xs font-bold">
+                <div className="flex items-center gap-2 text-white">
+                  <span className="w-3 h-1 bg-blue-500 rounded-full inline-block" />
+                  <span>Van 1</span>
+                  <span className="text-slate-400 text-[11px] font-normal">({van1Parcels} parcels)</span>
                 </div>
-
-                {/* Traffic Signals Live Advisory */}
-                <div className="absolute bottom-3 left-3 z-[1000] bg-[#0A0F1D]/95 backdrop-blur-md border border-white/10 rounded-2xl p-3 shadow-xl max-w-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                      <Radio size={13} className="text-green-400 animate-pulse" /> ITMS Smart Signal Timers
-                    </span>
-                    <span className="text-[9px] text-slate-500 font-mono">GLOSA Advisory</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {BBSR_SMART_SIGNALS.slice(0, 2).map((sig) => (
-                      <div key={sig.junctionName} className="bg-white/5 p-2 rounded-xl border border-white/5">
-                        <p className="text-[10px] font-semibold text-slate-300 truncate">{sig.junctionName}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span
-                            className={`text-[10px] font-bold uppercase ${
-                              sig.currentPhase === 'green' ? 'text-green-400' : 'text-red-400'
-                            }`}
-                          >
-                            {sig.currentPhase} ({sig.countdownSeconds}s)
-                          </span>
-                          <span className="text-[10px] font-mono text-blue-400">{sig.optimizedGreenSpeedKmH} km/h</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <div className="flex items-center gap-2 text-white">
+                  <span className="w-3 h-1 bg-emerald-500 rounded-full inline-block" />
+                  <span>Van 2</span>
+                  <span className="text-slate-400 text-[11px] font-normal">({van2Parcels} parcels)</span>
+                </div>
+                <div className="flex items-center gap-2 text-white">
+                  <span className="w-3 h-1 bg-amber-500 rounded-full inline-block" />
+                  <span>Van 3</span>
+                  <span className="text-slate-400 text-[11px] font-normal">({van3Parcels} parcels)</span>
                 </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ══════════════════════════════════════════════════════════════════════
-            MODULE 2: CONTROL TOWER & REAL-TIME EXCEPTION WORKFLOWS
-        ══════════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'control_tower' && (
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Activity size={20} className="text-blue-400" /> Control Tower & Telemetry Visibility Layer
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Real-time driver geofence tracking, automated exception handling, and SLA breach mitigation.
-                </p>
-              </div>
-              <span className="px-3 py-1 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold font-mono">
-                ● Telemetry Stream Active (2s pings)
-              </span>
+            {/* Bottom-Right Floating Compass & Zoom Controls */}
+            <div className="absolute right-3.5 bottom-3.5 z-[1000] flex flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsMapExpanded(true)}
+                className="w-8 h-8 rounded-xl bg-[#0C1425]/90 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center backdrop-blur-md cursor-pointer"
+                title="Fullscreen Map"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
             </div>
+          </div>
 
-            {/* Live Exception Action Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {LIVE_CONTROL_TOWER_EXCEPTIONS.map((exc) => {
-                const isCrit = exc.severity === 'critical';
-                const isWarn = exc.severity === 'warning';
-                return (
-                  <div
-                    key={exc.id}
-                    className={`rounded-2xl p-4 border flex flex-col justify-between gap-3 ${
-                      isCrit
-                        ? 'bg-red-500/10 border-red-500/30'
-                        : isWarn
-                        ? 'bg-amber-500/10 border-amber-500/30'
-                        : 'bg-blue-500/10 border-blue-500/30'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                            isCrit
-                              ? 'bg-red-500/20 text-red-400'
-                              : isWarn
-                              ? 'bg-amber-500/20 text-amber-400'
-                              : 'bg-blue-500/20 text-blue-400'
-                          }`}
-                        >
-                          {exc.type.replace('_', ' ')}
-                        </span>
-                        <span className="text-[10px] text-slate-500 font-mono">{exc.timestamp}</span>
-                      </div>
-                      <p className="text-xs font-bold text-white mb-1">
-                        {exc.driverName} ({exc.vehicleNumber})
-                      </p>
-                      <p className="text-xs text-slate-300 leading-relaxed">{exc.message}</p>
+          {/* =========================================================================
+              COLUMN 3: OPTIMIZED ROUTE SUMMARY & TRACKING (col-span-12 lg:col-span-3)
+             ========================================================================= */}
+          <div className="lg:col-span-3 space-y-4">
+            
+            {/* Route Metrics & Optimization Summary */}
+            <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
+              <div className="flex items-center gap-2 text-white">
+                <Sparkles className="w-4 h-4 text-amber-400 fill-amber-400" />
+                <h3 className="text-sm font-black">Optimized Route Summary</h3>
+              </div>
+
+              {/* 4 Stat Cards */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Total Distance */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    <span>Total Distance</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="text-base font-black text-white">
+                      {waypoints.length > 0 ? `${(18 + waypoints.length * 2.1).toFixed(1)} km` : '28.4 km'}
                     </div>
-
-                    <div className="pt-2 border-t border-white/10">
-                      <p className="text-[10px] text-slate-400 mb-2">Recommended Mitigation:</p>
-                      <button
-                        onClick={() => showToast(`⚡ Mitigation action triggered: "${exc.recommendedAction}"`)}
-                        className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-white transition-colors flex items-center justify-center gap-1.5"
-                      >
-                        <Zap size={13} className="text-amber-400" />
-                        <span>{exc.recommendedAction}</span>
-                      </button>
+                    <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                      <TrendingDown className="w-3 h-3" />
+                      <span>32%</span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
 
-            {/* Driver Roster Live Telemetry Table */}
-            <div className="bg-[#0D1424] border border-white/5 rounded-2xl p-4">
-              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                <Truck size={16} className="text-blue-400" /> Active Fleet Dispatch & Driver Telemetry
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead>
-                    <tr className="border-b border-white/10 text-slate-500 uppercase text-[10px]">
-                      <th className="pb-2">Driver</th>
-                      <th className="pb-2">Vehicle</th>
-                      <th className="pb-2">Current Location</th>
-                      <th className="pb-2">Trips Done</th>
-                      <th className="pb-2">Rating</th>
-                      <th className="pb-2">Status</th>
-                      <th className="pb-2 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {DRIVER_ROSTER.map((drv) => (
-                      <tr key={drv.id} className="hover:bg-white/[0.02]">
-                        <td className="py-3 font-semibold text-white flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-blue-600/30 text-blue-400 font-bold text-[10px] flex items-center justify-center">
-                            {drv.avatarInitials}
-                          </div>
-                          <span>{drv.name}</span>
-                        </td>
-                        <td className="py-3 font-mono text-slate-400">{drv.vehicleNumber}</td>
-                        <td className="py-3 text-slate-300">{drv.currentLocation}</td>
-                        <td className="py-3 font-mono">{drv.totalTrips}</td>
-                        <td className="py-3 text-amber-400 font-bold">★ {drv.rating}</td>
-                        <td className="py-3">
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
-                              drv.status === 'available'
-                                ? 'bg-green-500/15 text-green-400'
-                                : 'bg-blue-500/15 text-blue-400'
-                            }`}
-                          >
-                            {drv.status}
-                          </span>
-                        </td>
-                        <td className="py-3 text-right">
-                          <button
-                            onClick={() => showToast(`📞 Calling ${drv.name} at ${drv.phone}...`)}
-                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300"
-                          >
-                            <PhoneCall size={13} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {/* Estimated Time */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    <span>Estimated Time</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="text-base font-black text-white">
+                      {waypoints.length > 0 ? `${Math.floor(plan.totalDurationMinutes / 60)}h ${plan.totalDurationMinutes % 60}m` : '1h 45m'}
+                    </div>
+                    <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                      <TrendingDown className="w-3 h-3" />
+                      <span>40%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fuel Consumption */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                    <Fuel className="w-3 h-3 text-slate-400" />
+                    <span>Fuel Consumption</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="text-base font-black text-white">
+                      {waypoints.length > 0 ? `${((plan.totalDistanceKm || 28.4) * 0.28).toFixed(1)} L` : '8.2 L'}
+                    </div>
+                    <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                      <TrendingDown className="w-3 h-3" />
+                      <span>35%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CO2 Emission */}
+                <div className="bg-[#10182E] border border-slate-800 rounded-2xl p-3 flex flex-col justify-between">
+                  <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                    <Leaf className="w-3 h-3 text-emerald-400" />
+                    <span>CO₂ Emission</span>
+                  </div>
+                  <div className="mt-1">
+                    <div className="text-base font-black text-white">
+                      {waypoints.length > 0 ? `${(plan.co2SavedKg * 1.8).toFixed(1)} kg` : '19.6 kg'}
+                    </div>
+                    <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                      <TrendingDown className="w-3 h-3" />
+                      <span>36%</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ══════════════════════════════════════════════════════════════════════
-            MODULE 3: AI ETA PREDICTION & DELAY FORECASTING (ML / GNN)
-        ══════════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'ai_eta_ml' && (
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Cpu size={20} className="text-indigo-400" /> AI ETA Prediction & Risk Forecasting (XGBoost + GNN)
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Spatio-Temporal Graph Neural Network predicting arrival confidence intervals and first-attempt failure probability.
-                </p>
-              </div>
-              <span className="text-xs font-mono text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-xl border border-indigo-500/20">
-                Model: GNN-BBS-v2.4 (94.2% Acc)
-              </span>
-            </div>
-
-            {/* Select Drop for AI Inference */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              {waypoints.map((stop, i) => (
+            {/* Fleet Vehicle Dispatch Assignment */}
+            <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-white">
+                  <Truck className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-black">Vehicle Assignment</h3>
+                </div>
                 <button
-                  key={stop.id}
-                  onClick={() => setSelectedStopForAI(stop)}
-                  className={`p-3 rounded-2xl border text-left transition-all ${
-                    selectedStopForAI?.id === stop.id
-                      ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-lg shadow-indigo-500/10'
-                      : 'bg-[#0D1424] border-white/5 text-slate-400 hover:border-white/15'
-                  }`}
+                  type="button"
+                  onClick={() => setIsMapExpanded(true)}
+                  className="text-xs font-bold text-slate-400 hover:text-white cursor-pointer"
                 >
-                  <p className="text-xs font-bold text-white truncate">
-                    Stop #{i + 1}: {stop.recipientName}
-                  </p>
-                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{stop.address}</p>
-                  <span className="text-[10px] font-mono text-indigo-400 mt-2 block">
-                    Weight: {stop.packageWeightKg} kg
-                  </span>
+                  View All →
                 </button>
-              ))}
-            </div>
-
-            {/* AI Inference Detail Breakdown */}
-            {aiEtaResult && selectedStopForAI && (
-              <div className="bg-[#0D1424] border border-white/10 rounded-2xl p-6 flex flex-col gap-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                    <span className="text-xs text-slate-400 block mb-1">Predicted Arrival</span>
-                    <span className="text-xl font-bold text-white font-mono">
-                      {aiEtaResult.predictedArrivalFormatted}
-                    </span>
-                    <span className="text-[10px] text-indigo-400 block mt-1">
-                      ± {aiEtaResult.confidenceIntervalMinutes} mins (95% CI)
-                    </span>
-                  </div>
-
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                    <span className="text-xs text-slate-400 block mb-1">Window Breach Risk</span>
-                    <span className="text-xl font-bold text-amber-400 font-mono">
-                      {aiEtaResult.timeWindowViolationRiskPercent}%
-                    </span>
-                    <span className="text-[10px] text-slate-400 block mt-1">SLA Target Risk</span>
-                  </div>
-
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                    <span className="text-xs text-slate-400 block mb-1">First-Attempt Failure Risk</span>
-                    <span className="text-xl font-bold text-red-400 font-mono">
-                      {aiEtaResult.firstAttemptFailureRiskPercent}%
-                    </span>
-                    <span className="text-[10px] text-slate-400 block mt-1">Gate / Customer Absence</span>
-                  </div>
-
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                    <span className="text-xs text-slate-400 block mb-1">Stop Dwell Service Time</span>
-                    <span className="text-xl font-bold text-green-400 font-mono">
-                      {aiEtaResult.stopServiceTimeMinutes} min
-                    </span>
-                    <span className="text-[10px] text-slate-400 block mt-1">Unload + e-POD OTP</span>
-                  </div>
-                </div>
-
-                {/* Feature Attribution (SHAP weights) */}
-                <div>
-                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">
-                    ML Feature Contribution Weights (SHAP Analysis)
-                  </h4>
-                  <div className="flex flex-col gap-2.5">
-                    {aiEtaResult.featureContributions.map((fc) => (
-                      <div key={fc.name} className="flex flex-col gap-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-300">{fc.name}</span>
-                          <span className="font-mono text-indigo-400 font-bold">{fc.weightPercent}% weight</span>
-                        </div>
-                        <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-                          <div
-                            className="bg-indigo-500 h-full rounded-full transition-all"
-                            style={{ width: `${fc.weightPercent}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
-            )}
-          </div>
-        )}
 
-        {/* ══════════════════════════════════════════════════════════════════════
-            MODULE 4: MICRO-FULFILLMENT CENTER (MFC) & ISOCHRONE NETWORK
-        ══════════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'mfc_isochrone' && (
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Building size={20} className="text-amber-400" /> Micro-Fulfillment Center (MFC) Network Planning
-                </h2>
-                <p className="text-xs text-slate-400">
-                  15 & 30-minute isochrone delivery zones, cross-docking hubs, and dark store inventory density in Bhubaneswar.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowIsochroneRings(!showIsochroneRings)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                  showIsochroneRings
-                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                    : 'bg-white/5 text-slate-400 border-white/10'
-                }`}
-              >
-                {showIsochroneRings ? 'Isochrones Active' : 'Show Isochrones'}
-              </button>
-            </div>
-
-            {/* MFC Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {BHUBANESWAR_MFC_NETWORK.map((mfc) => (
-                <div
-                  key={mfc.id}
-                  onClick={() => setSelectedMFCId(mfc.id)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    selectedMFCId === mfc.id
-                      ? 'bg-amber-500/10 border-amber-500/40 shadow-lg shadow-amber-500/10'
-                      : 'bg-[#0D1424] border-white/5 hover:border-white/15'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div>
-                      <span className="text-[10px] font-mono text-amber-400 font-bold px-2 py-0.5 rounded bg-amber-500/20">
-                        {mfc.code}
-                      </span>
-                      <h3 className="text-sm font-bold text-white mt-1">{mfc.name}</h3>
-                      <p className="text-xs text-slate-400">{mfc.zoneType}</p>
-                    </div>
-                    <span className="text-xs font-bold text-green-400 font-mono">
-                      {mfc.currentUtilizationPercent}% Capacity
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 my-3 text-center bg-white/5 p-2 rounded-xl">
-                    <div>
-                      <span className="text-[10px] text-slate-400 block">Daily Parcels</span>
-                      <span className="text-xs font-bold text-white font-mono">{mfc.dailyCapacityParcels}</span>
+              <div className="space-y-2">
+                {/* Van 1 */}
+                <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#10182E] border border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                      <Truck className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 block">15m Reach</span>
-                      <span className="text-xs font-bold text-amber-400 font-mono">{mfc.isochrone15MinRadiusKm} km</span>
+                      <div className="text-xs font-bold text-white">Van 1</div>
+                      <div className="text-[10px] text-slate-400">{van1Parcels} parcels | 92 kg</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsMapExpanded(true)}
+                    className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-[11px] font-bold text-slate-200 transition cursor-pointer"
+                  >
+                    View Route
+                  </button>
+                </div>
+
+                {/* Van 2 */}
+                <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#10182E] border border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                      <Truck className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 block">Cross-Dock</span>
-                      <span className="text-xs font-bold text-blue-400 font-mono">{mfc.crossDockingRatePercent}%</span>
+                      <div className="text-xs font-bold text-white">Van 2</div>
+                      <div className="text-[10px] text-slate-400">{van2Parcels} parcels | 78 kg</div>
                     </div>
                   </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-white/5">
-                    <span>Active Fleet: {mfc.activeFleetCount} Vehicles</span>
-                    <span className="text-slate-500">Connected: {mfc.connectedCarriers.join(', ')}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════════
-            MODULE 5: MULTI-MODAL & EV-AWARE / ZERO-EMISSION ZONE (ZEZ) ROUTING
-        ══════════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'ev_zez_routing' && (
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <BatteryCharging size={20} className="text-green-400" /> Multi-Modal & Zero-Emission Zone (ZEZ) Fleet
-                  Manager
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Battery state-of-charge constraints, fast charger waypoint reservation, and green heritage zone compliance.
-                </p>
-              </div>
-              <button
-                onClick={() => setEnforceZEZCompliance(!enforceZEZCompliance)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                  enforceZEZCompliance
-                    ? 'bg-green-500/20 text-green-400 border-green-500/40'
-                    : 'bg-white/5 text-slate-400 border-white/10'
-                }`}
-              >
-                {enforceZEZCompliance ? '🌿 ZEZ Enforced' : 'ZEZ Optional'}
-              </button>
-            </div>
-
-            {/* Battery State & Range Gauge */}
-            <div className="bg-[#0D1424] border border-white/5 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                  EV Fleet Battery SOC
-                </span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black font-mono text-green-400">{currentBatterySOC}%</span>
-                  <span className="text-xs text-slate-400">({Math.round((currentBatterySOC / 100) * 140)} km range)</span>
-                </div>
-                <input
-                  type="range"
-                  min={15}
-                  max={100}
-                  value={currentBatterySOC}
-                  onChange={(e) => setCurrentBatterySOC(Number(e.target.value))}
-                  className="w-full accent-green-500 mt-3"
-                />
-              </div>
-
-              <div className="md:col-span-2 flex flex-col justify-center">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                  Cost Efficiency vs Diesel Fleet
-                </span>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-white/5 p-3 rounded-xl">
-                    <span className="text-[10px] text-slate-400 block">EV Power Cost</span>
-                    <span className="text-sm font-bold text-green-400 font-mono">₹1.4 / km</span>
-                  </div>
-                  <div className="bg-white/5 p-3 rounded-xl">
-                    <span className="text-[10px] text-slate-400 block">Diesel Baseline</span>
-                    <span className="text-sm font-bold text-red-400 font-mono">₹7.8 / km</span>
-                  </div>
-                  <div className="bg-white/5 p-3 rounded-xl">
-                    <span className="text-[10px] text-slate-400 block">Total Savings</span>
-                    <span className="text-sm font-bold text-amber-400 font-mono">82% Lower</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Fast Charging Stations */}
-            <div>
-              <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                <Zap size={16} className="text-amber-400" /> Fast Charging Network in Bhubaneswar
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {BBSR_EV_CHARGERS.map((chg) => (
-                  <div key={chg.id} className="bg-[#0D1424] border border-white/5 rounded-2xl p-4">
-                    <p className="text-xs font-bold text-white">{chg.name}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{chg.operator}</p>
-                    <div className="flex items-center justify-between mt-3 text-xs">
-                      <span className="text-green-400 font-bold">{chg.fastChargersAvailable} Slots Free</span>
-                      <span className="font-mono text-slate-300">{chg.powerKw} kW DC</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════════
-            MODULE 6: URBAN CONSOLIDATION CENTRE (UCC) "WHAT-IF" SIMULATOR
-        ══════════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'ucc_simulator' && (
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6">
-            <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sliders size={20} className="text-purple-400" /> Urban Consolidation Centre (UCC) "What-If" Policy
-                Simulator
-              </h2>
-              <p className="text-xs text-slate-400">
-                Quantify the city-wide impact of freight consolidation, multi-carrier collaboration, and fleet electrification.
-              </p>
-            </div>
-
-            {/* Simulator Controls & Sliders */}
-            <div className="bg-[#0D1424] border border-white/10 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex flex-col gap-4">
-                <div>
-                  <div className="flex justify-between text-xs font-bold mb-1.5">
-                    <span className="text-slate-300">Centralized Consolidation Level</span>
-                    <span className="font-mono text-purple-400">{uccScenario.consolidationLevelPercent}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={uccScenario.consolidationLevelPercent}
-                    onChange={(e) =>
-                      setUccScenario({ ...uccScenario, consolidationLevelPercent: Number(e.target.value) })
-                    }
-                    className="w-full accent-purple-500"
-                  />
-                  <p className="text-[10px] text-slate-500 mt-1">Reduces fragmented carrier trips entering city center.</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsMapExpanded(true)}
+                    className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-[11px] font-bold text-slate-200 transition cursor-pointer"
+                  >
+                    View Route
+                  </button>
                 </div>
 
-                <div>
-                  <div className="flex justify-between text-xs font-bold mb-1.5">
-                    <span className="text-slate-300">Fleet Electrification Level</span>
-                    <span className="font-mono text-green-400">{uccScenario.fleetElectrificationPercent}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={uccScenario.fleetElectrificationPercent}
-                    onChange={(e) =>
-                      setUccScenario({ ...uccScenario, fleetElectrificationPercent: Number(e.target.value) })
-                    }
-                    className="w-full accent-green-500"
-                  />
-                  <p className="text-[10px] text-slate-500 mt-1">Replaces diesel LCVs with zero-emission electric vans.</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <div>
-                  <div className="flex justify-between text-xs font-bold mb-1.5">
-                    <span className="text-slate-300">Daily Urban Parcel Volume</span>
-                    <span className="font-mono text-blue-400">{uccScenario.activeParcelVolumeDaily} pkgs</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1000}
-                    max={15000}
-                    step={500}
-                    value={uccScenario.activeParcelVolumeDaily}
-                    onChange={(e) =>
-                      setUccScenario({ ...uccScenario, activeParcelVolumeDaily: Number(e.target.value) })
-                    }
-                    className="w-full accent-blue-500"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                  <div>
-                    <p className="text-xs font-bold text-white">Cross-Carrier Shared Routing</p>
-                    <p className="text-[10px] text-slate-400">Delhivery, BlueDart & Musafir joint last-mile drops</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={uccScenario.crossCarrierCollaboration}
-                    onChange={(e) =>
-                      setUccScenario({ ...uccScenario, crossCarrierCollaboration: e.target.checked })
-                    }
-                    className="w-4 h-4 accent-blue-600 rounded"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Simulation Results Dashboard */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-2xl">
-                <span className="text-xs text-purple-300 block mb-1">Vehicle-KM Reduction</span>
-                <span className="text-2xl font-black text-purple-400 font-mono">
-                  -{uccResult.vehicleKmReductionPercent}%
-                </span>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Saved {uccResult.baselineVehicleKmDaily - uccResult.optimizedVehicleKmDaily} km / day
-                </p>
-              </div>
-
-              <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-2xl">
-                <span className="text-xs text-green-300 block mb-1">CO₂ Emissions Saved</span>
-                <span className="text-2xl font-black text-green-400 font-mono">
-                  {uccResult.co2EmissionsSavedKgDaily} kg
-                </span>
-                <p className="text-[10px] text-slate-400 mt-1">-{uccResult.co2ReductionPercent}% total emissions</p>
-              </div>
-
-              <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-2xl">
-                <span className="text-xs text-blue-300 block mb-1">Daily Trips Saved</span>
-                <span className="text-2xl font-black text-blue-400 font-mono">
-                  {uccResult.totalTripsSavedDaily} trips
-                </span>
-                <p className="text-[10px] text-slate-400 mt-1">Fewer commercial vans in city core</p>
-              </div>
-
-              <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl">
-                <span className="text-xs text-amber-300 block mb-1">Cost / Parcel</span>
-                <span className="text-2xl font-black text-amber-400 font-mono">
-                  ₹{uccResult.averageDeliveryCostPerParcelInr}
-                </span>
-                <p className="text-[10px] text-slate-400 mt-1">Reduced from baseline ₹38.0</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════════
-            MODULE 7: GOVERNMENT & ENTERPRISE OPEN APIS
-        ══════════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'govt_apis' && (
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6">
-            <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShieldCheck size={20} className="text-blue-400" /> Government of India & Enterprise Open API Integrations
-              </h2>
-              <p className="text-xs text-slate-400">
-                Connected to National Logistics Portal, MoRTH VAHAN, GST E-Way Bill, and NPCI FASTag NETC.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {GOVT_INTEGRATIONS_REGISTRY.map((api) => (
-                <div key={api.serviceName} className="bg-[#0D1424] border border-white/10 rounded-2xl p-4 flex flex-col justify-between gap-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-white">{api.serviceName}</span>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                        {api.status}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-400">{api.category}</p>
-                    <p className="text-xs text-slate-200 mt-2 font-medium">{api.badgeText}</p>
-                  </div>
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-500">
-                    <span>Verified: {api.verifiedEntitiesCount} Records</span>
-                    <span>Sync: {api.lastSyncTime}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════════
-            MODULE 8: SHIPMENT OPERATIONS & TRACKING (END USER)
-        ══════════════════════════════════════════════════════════════════════ */}
-        {activeTab === 'shipments' && (
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Package size={20} className="text-blue-400" /> Active Shipment Operations
-                </h2>
-                <p className="text-xs text-slate-400">Manage, dispatch, and track live multi-drop consignments.</p>
-              </div>
-              <button
-                onClick={() => {
-                  handleAddStop('Trident Academy of Technology, Patia');
-                }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white flex items-center gap-1.5"
-              >
-                <Plus size={14} /> Create Fast Shipment
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {waypoints.map((wp, i) => (
-                <div
-                  key={wp.id}
-                  className="bg-[#0D1424] border border-white/5 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-sm shrink-0">
-                      {i + 1}
+                {/* Van 3 */}
+                <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#10182E] border border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-600/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                      <Truck className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-white">{wp.recipientName}</p>
-                      <p className="text-xs text-slate-400">{wp.address}</p>
-                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        Weight: {wp.packageWeightKg} kg · Phone: {wp.phone || '+91 94370 12345'}
-                      </p>
+                      <div className="text-xs font-bold text-white">Van 3</div>
+                      <div className="text-[10px] text-slate-400">{van3Parcels} parcels | 66 kg</div>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsMapExpanded(true)}
+                    className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-[11px] font-bold text-slate-200 transition cursor-pointer"
+                  >
+                    View Route
+                  </button>
+                </div>
+              </div>
+            </div>
 
+            {/* Real-Time Corridor Tracking */}
+            <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-white">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-black">Real-Time Tracking</h3>
+                </div>
+                <span className="text-[10px] font-black text-emerald-400 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Live</span>
+                </span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                {/* Van 1 */}
+                <div className="flex items-center justify-between py-1 border-b border-slate-800/60">
                   <div className="flex items-center gap-2">
-                    {wp.status === 'delivered' ? (
-                      <span className="px-3 py-1.5 rounded-xl bg-green-500/10 text-green-400 text-xs font-bold border border-green-500/20 flex items-center gap-1">
-                        <CheckCircle size={13} /> Delivered
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => setPodModalStop({ waypoint: wp, index: i })}
-                        className="px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-500/30 rounded-xl text-xs font-bold transition-colors"
-                      >
-                        Confirm e-POD
-                      </button>
-                    )}
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="font-bold text-white">Van 1</span>
+                    <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                      On Time
+                    </span>
+                  </div>
+                  <span className="text-slate-400 font-mono text-[11px]">12 min</span>
+                </div>
+
+                {/* Van 2 */}
+                <div className="flex items-center justify-between py-1 border-b border-slate-800/60">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="font-bold text-white">Van 2</span>
+                    <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                      On Time
+                    </span>
+                  </div>
+                  <span className="text-slate-400 font-mono text-[11px]">18 min</span>
+                </div>
+
+                {/* Van 3 */}
+                <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="font-bold text-white">Van 3</span>
+                    <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                      On Time
+                    </span>
+                  </div>
+                  <span className="text-slate-400 font-mono text-[11px]">24 min</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ─── 3. BOTTOM SECTION: KEY FEATURES IN LOGISTICS (Matching media_1788877567294.jpg) ─── */}
+        <div className="bg-[#0B1222] border border-slate-800/90 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
+          <div className="flex items-center gap-2 text-white">
+            <Sparkles className="w-4 h-4 text-amber-400 fill-amber-400" />
+            <h3 className="text-sm font-black">Key Features in Logistics</h3>
+          </div>
+
+          {/* 8 Feature Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+            {[
+              {
+                title: 'Smart Delivery Routing',
+                desc: 'Shortest + fastest routes for multiple deliveries.',
+                icon: MapPin,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Vehicle Capacity Matching',
+                desc: 'Assigns the right vehicle based on parcel size/weight.',
+                icon: Truck,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Multi-Stop Optimization',
+                desc: 'Arranges delivery points in the best order.',
+                icon: Package,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Parcel Pooling & Consolidation',
+                desc: 'Combines nearby parcels to reduce trips & fuel.',
+                icon: Boxes,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Real-Time Re-Routing',
+                desc: 'Adjusts to traffic, accidents, roadblocks or weather.',
+                icon: RotateCcw,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Eco Route',
+                desc: 'Suggests low fuel / low CO₂ routes.',
+                icon: Leaf,
+                color: 'text-emerald-400',
+              },
+              {
+                title: 'Return Trip Optimization',
+                desc: 'Assigns nearby pickups for backhaul.',
+                icon: RotateCcw,
+                color: 'text-amber-400',
+              },
+              {
+                title: 'Load Balancing',
+                desc: 'Distributes parcels across available vehicles.',
+                icon: Scale,
+                color: 'text-amber-400',
+              },
+            ].map((feat, i) => {
+              const Icon = feat.icon;
+              return (
+                <div
+                  key={i}
+                  className="p-3.5 rounded-2xl bg-[#10182E] border border-slate-800/80 hover:border-slate-700 transition flex flex-col items-center text-center justify-between min-h-[140px]"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center mb-2">
+                    <Icon className={`w-4 h-4 ${feat.color}`} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-white leading-tight">{feat.title}</h4>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">{feat.desc}</p>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
+
+          {/* Sustainability & Carbon Offset Banner */}
+          <div className="w-full py-3 px-4 rounded-2xl bg-[#18392B] border border-emerald-600/40 text-emerald-200 text-xs font-bold text-center flex items-center justify-center gap-2 shadow-inner">
+            <Leaf className="w-4 h-4 text-emerald-400 fill-emerald-400" />
+            <span>Smarter logistics today for a more connected and sustainable tomorrow.</span>
+          </div>
+        </div>
+
       </div>
+
+      {/* ─── FULLSCREEN MAP MODAL ─── */}
+      {isMapExpanded && (
+        <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex flex-col animate-in fade-in">
+          <div className="flex items-center justify-between p-4 bg-[#0B1220] border-b border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                <Truck className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white">Full City Logistics Corridor</h3>
+                <p className="text-[11px] text-slate-400">{waypoints.length} Active Delivery Stops</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsMapExpanded(false)}
+              className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 w-full h-full relative">
+            <MapContainer
+              center={[20.2961, 85.8245]}
+              zoom={13}
+              className="w-full h-full z-0"
+              zoomControl={true}
+            >
+              <TileLayer
+                url="https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}"
+                attribution='&copy; <a href="https://maps.google.com">Google Maps</a>'
+                maxZoom={19}
+              />
+
+              <Marker position={[originHub.lat, originHub.lng]} icon={createLogisticsWarehouseIcon()}>
+                <Popup>
+                  <div className="text-xs font-bold text-slate-900 p-1">
+                    <span className="text-amber-600 font-extrabold block">🏠 Dispatch Warehouse</span>
+                    <span>Baramunda Logistics Hub, Bhubaneswar</span>
+                  </div>
+                </Popup>
+              </Marker>
+
+              {/* Polyline Routes */}
+              {van1Stops.length > 0 && (
+                <Polyline
+                  positions={filterValidLatLngs([
+                    [originHub.lat, originHub.lng],
+                    ...van1Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                  ])}
+                  pathOptions={{ color: '#3B82F6', weight: 5, opacity: 0.95 }}
+                />
+              )}
+              {van2Stops.length > 0 && (
+                <Polyline
+                  positions={filterValidLatLngs([
+                    [originHub.lat, originHub.lng],
+                    ...van2Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                  ])}
+                  pathOptions={{ color: '#10B981', weight: 5, opacity: 0.95 }}
+                />
+              )}
+              {van3Stops.length > 0 && (
+                <Polyline
+                  positions={filterValidLatLngs([
+                    [originHub.lat, originHub.lng],
+                    ...van3Stops.map((w) => [w.lat, w.lng] as [number, number]),
+                  ])}
+                  pathOptions={{ color: '#F97316', weight: 5, opacity: 0.95 }}
+                />
+              )}
+
+              {/* Waypoints */}
+              {waypoints.filter((wp) => isValidLatLng([wp.lat, wp.lng])).map((wp, idx) => (
+                <Marker
+                  key={wp.id}
+                  position={[wp.lat, wp.lng]}
+                  icon={createNumberedPinIcon(idx + 1, wp.recipientName)}
+                >
+                  <Popup>
+                    <div className="text-xs font-bold text-slate-900 p-1">
+                      <div className="font-black text-slate-950">Stop {idx + 1}: {wp.recipientName}</div>
+                      <div className="text-[11px] text-slate-600 mt-0.5">{wp.address}</div>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Gateway Modal */}
+      {isPaymentOpen && (
+        <PaymentGatewayModal
+          isOpen={isPaymentOpen}
+          onClose={() => setIsPaymentOpen(false)}
+          amount={Math.round(plan.estimatedCostInr || 240)}
+          purpose="Logistics Corridor Dispatch"
+          onPaymentSuccess={() => {
+            setIsPaymentOpen(false);
+            setToastMessage('✅ Dispatch payment completed successfully!');
+            setTimeout(() => setToastMessage(null), 4000);
+          }}
+        />
+      )}
     </div>
   );
 };

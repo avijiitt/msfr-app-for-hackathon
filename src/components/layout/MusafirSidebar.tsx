@@ -126,35 +126,6 @@ export const MusafirSidebar: React.FC<MusafirSidebarProps> = ({
 
   return (
     <aside className="w-full lg:w-64 flex-shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-130px)] lg:sticky lg:top-24 shadow-sm">
-      
-      {/* Musafir App Logo Banner */}
-      <div className="flex items-center gap-3 px-2 py-1.5 border-b border-slate-100 dark:border-slate-800/80 pb-3">
-        <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-md border border-blue-200 dark:border-blue-900 flex-shrink-0 bg-white flex items-center justify-center">
-          <img 
-            src="/musafir-logo.png" 
-            alt="Musafir Logo" 
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              // fallback if png fails
-              (e.currentTarget as HTMLElement).style.display = 'none';
-            }}
-          />
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-base font-black tracking-tight text-slate-900 dark:text-white">
-              Musafir
-            </span>
-            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
-              PRO
-            </span>
-          </div>
-          <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
-            Smart Transit & Logistics
-          </p>
-        </div>
-      </div>
-
       {/* 1. Main Navigation Items */}
       <nav className="space-y-1">
         {mainNav.map((item) => {
