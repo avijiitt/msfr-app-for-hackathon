@@ -5,6 +5,7 @@ import { getNearbyLocationsAlongCorridor } from '../../data/cities/bhubaneswar';
 import { findMoBusRoutesDynamic } from '../../data/busRoutesData';
 import { TranslationDictionary } from '../../types/i18n';
 import { isBhubaneswarRegion, calculateAmaBusAcFare, calculateAmaBusNonAcFare } from '../../services/fareMatrixService';
+import { calculateDynamicETA, getEstimatedArrivalTime } from '../../services/etaService';
 
 
 export interface RouteCardOption {
@@ -62,13 +63,14 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Dynamic road/transit distance estimation
+  // Dynamic real road network distance calculation with curvature factor
   const distanceKm = React.useMemo(() => {
     if (originCoords && destCoords) {
       const latDiff = originCoords[0] - destCoords[0];
       const lngDiff = (originCoords[1] - destCoords[1]) * Math.cos((originCoords[0] * Math.PI) / 180);
-      const d = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111.32;
-      return Math.max(1.5, Math.round(d * 10) / 10);
+      const direct = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111.32;
+      const roadFactor = direct < 3 ? 1.40 : direct > 15 ? 1.25 : 1.32;
+      return Math.max(1.0, Math.round(direct * roadFactor * 10) / 10);
     }
     return 8.5;
   }, [originCoords, destCoords]);
@@ -122,6 +124,10 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
   const getRoutesForMode = (): RouteCardOption[] => {
     // ─── If Outside Bhubaneswar: Show Intercity Rail, Express Coach, and Air Transit ───
     if (!isBbsr) {
+      const etaRail = calculateDynamicETA({ distanceKm, mode: 'train', isIntercity: true });
+      const etaCoach = calculateDynamicETA({ distanceKm, mode: 'bus', isIntercity: true });
+      const etaSuperfast = calculateDynamicETA({ distanceKm, mode: 'train', isIntercity: true, hasPriorityLane: true });
+
       return [
         {
           id: 'route-rec',
@@ -132,11 +138,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: 'Indian Railways Express (Superfast / Vande Bharat)',
           routeNumber: 'IR Superfast Express',
           lineTitle: `Rail Express: ${cleanFrom} ➔ ${cleanTo}`,
-          durationMins: Math.max(90, Math.round(distanceKm * 1.1) + 20),
+          durationMins: etaRail.totalDurationMins,
           transfersCount: 0,
           fareInr: Math.max(120, Math.round(distanceKm * 0.95)),
           fareNote: 'Standard Reserved 3AC / Sleeper',
-          arrivalTime: getArrivalTime(Math.max(90, Math.round(distanceKm * 1.1) + 20)),
+          arrivalTime: etaRail.arrivalTimeStr,
           co2SavedGrams: Math.round(distanceKm * 65),
           safetyScore: 98,
         },
@@ -148,11 +154,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: 'Intercity State Transport Express (OSRTC / Volvo AC)',
           routeNumber: 'Highway Coach',
           lineTitle: `State Transport: ${cleanFrom} ➔ ${cleanTo}`,
-          durationMins: Math.max(110, Math.round(distanceKm * 1.3) + 30),
+          durationMins: etaCoach.totalDurationMins,
           transfersCount: 0,
           fareInr: Math.max(150, Math.round(distanceKm * 1.8)),
           fareNote: 'Highway Direct Non-Stop Service',
-          arrivalTime: getArrivalTime(Math.max(110, Math.round(distanceKm * 1.3) + 30)),
+          arrivalTime: etaCoach.arrivalTimeStr,
           co2SavedGrams: Math.round(distanceKm * 50),
           safetyScore: 94,
         },
@@ -164,11 +170,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: 'Indian Railways Connected Superfast / Vande Bharat Express',
           routeNumber: 'IRCTC Express',
           lineTitle: `Rail Transit: ${cleanFrom} ➔ ${cleanTo}`,
-          durationMins: Math.max(75, Math.round(distanceKm * 0.9)),
+          durationMins: Math.max(35, Math.round(etaSuperfast.totalDurationMins * 0.88)),
           transfersCount: 0,
           fareInr: Math.max(140, Math.round(distanceKm * 1.4)),
           fareNote: 'Fast Direct Intercity Rail Transit',
-          arrivalTime: getArrivalTime(Math.max(75, Math.round(distanceKm * 0.9))),
+          arrivalTime: getEstimatedArrivalTime(Math.max(35, Math.round(etaSuperfast.totalDurationMins * 0.88))),
           co2SavedGrams: Math.round(distanceKm * 70),
           safetyScore: 99,
         },
@@ -176,6 +182,10 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
     }
 
     if (activeFilterMode === 'senior') {
+      const etaLowFloor = calculateDynamicETA({ distanceKm, mode: 'bus', hasPriorityLane: true });
+      const etaAc = calculateDynamicETA({ distanceKm, mode: 'bus' });
+      const etaDoorstep = calculateDynamicETA({ distanceKm, mode: 'auto' });
+
       return [
         {
           id: 'route-senior-1',
@@ -186,11 +196,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: `Low-Floor Kneeling Ama Bus ${primaryBus.route} (CRUT)`,
           routeNumber: `Ama Bus ${primaryBus.route} (Low-Floor)`,
           lineTitle: `Ama Bus ${primaryBus.route} • ${primaryBus.path.split('–')[1] || primaryBus.path}`,
-          durationMins: Math.max(14, Math.round(distanceKm * 2.6)),
+          durationMins: etaLowFloor.totalDurationMins,
           transfersCount: 0,
           fareInr: 0,
           fareNote: 'Free with Senior Citizen Pass (or 50% Concession)',
-          arrivalTime: getArrivalTime(Math.max(14, Math.round(distanceKm * 2.6))),
+          arrivalTime: etaLowFloor.arrivalTimeStr,
           co2SavedGrams: Math.round(distanceKm * 50),
           safetyScore: 99,
         },
@@ -202,11 +212,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: `Ama Bus AC Express ${altBus.route}`,
           routeNumber: `Ama Bus ${altBus.route} AC`,
           lineTitle: `Ama Bus ${altBus.route} • ${altBus.path.split('–')[1] || altBus.path}`,
-          durationMins: Math.max(12, Math.round(distanceKm * 2.4)),
+          durationMins: etaAc.totalDurationMins,
           transfersCount: 0,
           fareInr: Math.max(5, Math.round(acFare * 0.5)),
           fareNote: '50% Concession with Senior ID',
-          arrivalTime: getArrivalTime(Math.max(12, Math.round(distanceKm * 2.4))),
+          arrivalTime: etaAc.arrivalTimeStr,
           co2SavedGrams: Math.round(distanceKm * 55),
           safetyScore: 97,
         },
@@ -218,11 +228,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: 'Ama E-Ride Assisted Auto Feeder',
           routeNumber: 'Ama E-Ride Assisted',
           lineTitle: 'Ama E-Ride Assisted Electric Auto',
-          durationMins: Math.max(13, Math.round(distanceKm * 2.2)),
+          durationMins: etaDoorstep.totalDurationMins,
           transfersCount: 0,
           fareInr: Math.max(20, Math.min(35, Math.round(15 + distanceKm * 1.5))),
           fareNote: 'Direct Pickup & Drop',
-          arrivalTime: getArrivalTime(Math.max(13, Math.round(distanceKm * 2.2))),
+          arrivalTime: etaDoorstep.arrivalTimeStr,
           co2SavedGrams: Math.round(distanceKm * 60),
           safetyScore: 98,
         },
@@ -230,6 +240,10 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
     }
 
     if (activeFilterMode === 'weather') {
+      const etaMonsoonBus = calculateDynamicETA({ distanceKm, mode: 'bus', weather: 'rain', hasPriorityLane: true });
+      const etaHighClear = calculateDynamicETA({ distanceKm, mode: 'bus', weather: 'rain' });
+      const etaCoveredFeeder = calculateDynamicETA({ distanceKm, mode: 'auto', weather: 'rain', transfersCount: 1 });
+
       return [
         {
           id: 'route-weather-1',
@@ -240,11 +254,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: `Monsoon Resilient Ama Bus ${primaryBus.route} AC`,
           routeNumber: `Route ${primaryBus.route} Rain Shield`,
           lineTitle: `Ama Bus ${primaryBus.route} AC • ${primaryBus.path.split('–')[1] || primaryBus.path}`,
-          durationMins: Math.max(13, Math.round(distanceKm * 2.5)),
+          durationMins: etaMonsoonBus.totalDurationMins,
           transfersCount: 0,
           fareInr: acFare,
           fareNote: '100% Covered Walkways & Stops',
-          arrivalTime: getArrivalTime(Math.max(13, Math.round(distanceKm * 2.5))),
+          arrivalTime: etaMonsoonBus.arrivalTimeStr,
           co2SavedGrams: Math.round(distanceKm * 52),
           safetyScore: 98,
         },
@@ -256,11 +270,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: `All-Weather Ama Bus ${altBus.route} Express`,
           routeNumber: `Route ${altBus.route} Weather Trunk`,
           lineTitle: `Ama Bus ${altBus.route} • High-Clearance Fleet`,
-          durationMins: Math.max(15, Math.round(distanceKm * 2.7)),
+          durationMins: etaHighClear.totalDurationMins,
           transfersCount: 0,
           fareInr: nonAcFare,
           fareNote: 'Bypasses Waterlogged Areas',
-          arrivalTime: getArrivalTime(Math.max(15, Math.round(distanceKm * 2.7))),
+          arrivalTime: etaHighClear.arrivalTimeStr,
           co2SavedGrams: Math.round(distanceKm * 48),
           safetyScore: 96,
         },
@@ -272,11 +286,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: 'Weather-Protected Ama E-Ride Feeder',
           routeNumber: 'Ama E-Ride Raincover',
           lineTitle: 'Ama E-Ride Auto with Rain Shield Canopy',
-          durationMins: Math.max(16, Math.round(distanceKm * 2.3)),
+          durationMins: etaCoveredFeeder.totalDurationMins,
           transfersCount: 1,
           fareInr: Math.max(25, Math.min(40, Math.round(15 + distanceKm * 1.8))),
           fareNote: 'Full Rain Shield Protection',
-          arrivalTime: getArrivalTime(Math.max(16, Math.round(distanceKm * 2.3))),
+          arrivalTime: etaCoveredFeeder.arrivalTimeStr,
           co2SavedGrams: Math.round(distanceKm * 65),
           safetyScore: 95,
         },
@@ -284,6 +298,10 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
     }
 
     if (activeFilterMode === 'night') {
+      const etaNightBus = calculateDynamicETA({ distanceKm, mode: 'bus', trafficLevel: 'low', hasPriorityLane: true });
+      const etaPinkBus = calculateDynamicETA({ distanceKm, mode: 'bus', trafficLevel: 'low' });
+      const etaNightAuto = calculateDynamicETA({ distanceKm, mode: 'auto', trafficLevel: 'low' });
+
       return [
         {
           id: 'route-night-1',
@@ -294,11 +312,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: `Night Owl Ama Bus ${primaryBus.route}N (CRUT)`,
           routeNumber: `Route ${primaryBus.route}N Owl`,
           lineTitle: `Night Owl Ama Bus ${primaryBus.route}N • Well-Lit Corridor`,
-          durationMins: Math.max(12, Math.round(distanceKm * 2.3)),
+          durationMins: etaNightBus.totalDurationMins,
           transfersCount: 0,
           fareInr: acFare,
           fareNote: '24x7 GPS Tracked & Police Linked',
-          arrivalTime: getArrivalTime(Math.max(12, Math.round(distanceKm * 2.3))),
+          arrivalTime: etaNightBus.arrivalTimeStr,
           co2SavedGrams: Math.round(distanceKm * 50),
           safetyScore: 99,
         },
@@ -310,11 +328,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: 'Women Pink Ama Bus Night Shuttle',
           routeNumber: 'Pink Safe Night',
           lineTitle: 'Pink Ama Bus • On-Board Safety Marshal',
-          durationMins: Math.max(14, Math.round(distanceKm * 2.5)),
+          durationMins: etaPinkBus.totalDurationMins,
           transfersCount: 0,
           fareInr: nonAcFare,
           fareNote: 'Dedicated Female Safety Marshals',
-          arrivalTime: getArrivalTime(Math.max(14, Math.round(distanceKm * 2.5))),
+          arrivalTime: etaPinkBus.arrivalTimeStr,
           co2SavedGrams: Math.round(distanceKm * 60),
           safetyScore: 100,
         },
@@ -326,11 +344,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
           serviceType: 'Night Ama E-Ride Shared Feeder',
           routeNumber: 'Ama E-Ride Night',
           lineTitle: 'Night Ama E-Ride • Live Telemetry Active',
-          durationMins: Math.max(13, Math.round(distanceKm * 2.0)),
+          durationMins: etaNightAuto.totalDurationMins,
           transfersCount: 0,
           fareInr: Math.max(25, Math.min(45, Math.round(15 + distanceKm * 2.0))),
           fareNote: '1-Tap SOS Helpline 112 Linked',
-          arrivalTime: getArrivalTime(Math.max(13, Math.round(distanceKm * 2.0))),
+          arrivalTime: etaNightAuto.arrivalTimeStr,
           co2SavedGrams: Math.round(distanceKm * 70),
           safetyScore: 98,
         },
@@ -338,6 +356,10 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
     }
 
     // Default / Fastest / Cheapest / Eco
+    const etaFastestBus = calculateDynamicETA({ distanceKm, mode: 'bus', hasPriorityLane: true });
+    const etaCheapestBus = calculateDynamicETA({ distanceKm, mode: 'bus', hasPriorityLane: false });
+    const etaEcoRide = calculateDynamicETA({ distanceKm, mode: 'auto', transfersCount: 1 });
+
     return [
       {
         id: 'route-rec',
@@ -348,11 +370,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
         serviceType: `Ama Bus AC Electric (Route ${primaryBus.route})`,
         routeNumber: `Route ${primaryBus.route} AC`,
         lineTitle: `Ama Bus ${primaryBus.route}: ${primaryBus.path}`,
-        durationMins: Math.max(12, Math.round(distanceKm * 2.4)),
+        durationMins: etaFastestBus.totalDurationMins,
         transfersCount: 0,
         fareInr: acFare,
         fareNote: `Official AC Stage Fare (${distanceKm} km)`,
-        arrivalTime: getArrivalTime(Math.max(12, Math.round(distanceKm * 2.4))),
+        arrivalTime: etaFastestBus.arrivalTimeStr,
         co2SavedGrams: Math.round(distanceKm * 55),
         safetyScore: 98,
       },
@@ -364,11 +386,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
         serviceType: `Ama Bus Ordinary Non-AC (Route ${altBus.route})`,
         routeNumber: `Route ${altBus.route} Ordinary`,
         lineTitle: `Ama Bus ${altBus.route}: ${altBus.path}`,
-        durationMins: Math.max(18, Math.round(distanceKm * 3.2)),
+        durationMins: etaCheapestBus.totalDurationMins,
         transfersCount: 0,
         fareInr: nonAcFare,
         fareNote: 'Ordinary Fare (₹5 with Student Pass)',
-        arrivalTime: getArrivalTime(Math.max(18, Math.round(distanceKm * 3.2))),
+        arrivalTime: etaCheapestBus.arrivalTimeStr,
         co2SavedGrams: Math.round(distanceKm * 42),
         safetyScore: 90,
       },
@@ -380,11 +402,11 @@ export const BestRoutesCarousel: React.FC<BestRoutesCarouselProps> = ({
         serviceType: `Ama E-Ride EV Feeder + Ama Bus ${thirdBus.route}`,
         routeNumber: `Ama E-Ride + ${thirdBus.route}`,
         lineTitle: `Ama E-Ride Auto + Ama Bus ${thirdBus.route}`,
-        durationMins: Math.max(14, Math.round(distanceKm * 2.1)),
+        durationMins: etaEcoRide.totalDurationMins,
         transfersCount: 1,
         fareInr: nonAcFare + 10,
         fareNote: 'Shared EV Auto & Connected Bus',
-        arrivalTime: getArrivalTime(Math.max(14, Math.round(distanceKm * 2.1))),
+        arrivalTime: etaEcoRide.arrivalTimeStr,
         co2SavedGrams: Math.round(distanceKm * 78),
         safetyScore: 99,
       },

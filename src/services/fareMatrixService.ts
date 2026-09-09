@@ -2,6 +2,7 @@ import { BHUBANESWAR_LOCALITIES, BHUBANESWAR_STATIONS } from '../data/cities/bhu
 import { STOP_COORDINATES_MAP } from '../data/busRoutesData';
 import { POPULAR_INDIAN_LOCATIONS } from './indiaGeocodingService';
 import { findShortestRoute } from './shortestRouteService';
+import { calculateDynamicETA } from './etaService';
 
 export interface TransitModeFare {
   mode: 'bus' | 'metro' | 'train' | 'auto' | 'cab' | 'bike' | 'ferry';
@@ -364,6 +365,15 @@ export function calculateAreaFareMatrix(
   const acBusFare = isBbsr ? calculateAmaBusAcFare(distanceKm) : Math.round(distanceKm * 2.5);
   const nonAcBusFare = isBbsr ? calculateAmaBusNonAcFare(distanceKm) : Math.round(distanceKm * 1.5);
 
+  // Dynamic ETA & Travel Time Computations based on real road network speeds, dwell times, and signals
+  const etaBusAc = calculateDynamicETA({ distanceKm, mode: 'bus', hasPriorityLane: true, isIntercity: !isBbsr });
+  const etaBusOrd = calculateDynamicETA({ distanceKm, mode: 'bus', isIntercity: !isBbsr });
+  const etaAuto = calculateDynamicETA({ distanceKm, mode: 'auto', isIntercity: !isBbsr });
+  const etaCab = calculateDynamicETA({ distanceKm, mode: 'cab', isIntercity: !isBbsr });
+  const etaBike = calculateDynamicETA({ distanceKm, mode: 'bike', isIntercity: !isBbsr });
+  const etaTrain = calculateDynamicETA({ distanceKm, mode: 'train', isIntercity: true });
+  const etaIntercityBus = calculateDynamicETA({ distanceKm, mode: 'bus', isIntercity: true });
+
   const modes: TransitModeFare[] = isBbsr ? [
     {
       mode: 'bus',
@@ -371,7 +381,7 @@ export function calculateAreaFareMatrix(
       category: 'Public Transit',
       fareInr: acBusFare,
       concessionFareInr: Math.max(5, Math.round(acBusFare * 0.5)),
-      durationMins: Math.round(distanceKm * 2.4) + 4,
+      durationMins: etaBusAc.totalDurationMins,
       carbonGrams: 310,
       availability: 'High Frequency (Every 3-5 mins)',
       badge: '❄️ AC Stage Fare',
@@ -384,7 +394,7 @@ export function calculateAreaFareMatrix(
       category: 'Public Transit',
       fareInr: nonAcBusFare,
       concessionFareInr: 5,
-      durationMins: Math.round(distanceKm * 2.7),
+      durationMins: etaBusOrd.totalDurationMins,
       carbonGrams: 260,
       availability: 'Scheduled',
       badge: '🎟️ Official Tariff',
@@ -396,7 +406,7 @@ export function calculateAreaFareMatrix(
       title: 'Auto-Rickshaw / Smart E-Rickshaw',
       category: 'Shared Mobility',
       fareInr: Math.max(30, Math.round(distanceKm * 12) + 20),
-      durationMins: Math.round(distanceKm * 2.2),
+      durationMins: etaAuto.totalDurationMins,
       carbonGrams: 480,
       availability: 'Available on Stand',
       badge: '🚪 Doorstep Last-Mile',
@@ -408,7 +418,7 @@ export function calculateAreaFareMatrix(
       title: 'Shared Cab / Micro AC Taxi',
       category: 'On-Demand',
       fareInr: Math.max(80, Math.round(distanceKm * 18) + 40),
-      durationMins: Math.round(distanceKm * 2.4),
+      durationMins: etaCab.totalDurationMins,
       carbonGrams: 950,
       availability: 'Instant Booking',
       badge: '❄️ Maximum Comfort',
@@ -420,7 +430,7 @@ export function calculateAreaFareMatrix(
       title: 'Bike Taxi / E-Scooter Rental',
       category: 'On-Demand',
       fareInr: Math.max(25, Math.round(distanceKm * 7) + 15),
-      durationMins: Math.round(distanceKm * 1.9),
+      durationMins: etaBike.totalDurationMins,
       carbonGrams: 280,
       availability: 'Instant Booking',
       badge: '💨 Traffic Buster',
@@ -434,7 +444,7 @@ export function calculateAreaFareMatrix(
       category: 'Public Transit',
       fareInr: Math.max(120, Math.round(distanceKm * 0.95)),
       concessionFareInr: Math.max(60, Math.round(distanceKm * 0.5)),
-      durationMins: Math.round(distanceKm * 1.1) + 30,
+      durationMins: etaTrain.totalDurationMins,
       carbonGrams: 180,
       availability: 'Scheduled',
       badge: '🚆 Best Intercity',
@@ -447,7 +457,7 @@ export function calculateAreaFareMatrix(
       category: 'Public Transit',
       fareInr: Math.max(150, Math.round(distanceKm * 1.8)),
       concessionFareInr: Math.max(100, Math.round(distanceKm * 1.2)),
-      durationMins: Math.round(distanceKm * 1.3) + 20,
+      durationMins: etaIntercityBus.totalDurationMins,
       carbonGrams: 350,
       availability: 'Scheduled',
       badge: '🚌 Highway Express',
@@ -459,7 +469,7 @@ export function calculateAreaFareMatrix(
       title: 'Outstation Intercity Cab',
       category: 'On-Demand',
       fareInr: Math.max(500, Math.round(distanceKm * 14) + 150),
-      durationMins: Math.round(distanceKm * 1.0) + 15,
+      durationMins: etaCab.totalDurationMins,
       carbonGrams: 850,
       availability: 'Instant Booking',
       badge: '🚗 Direct Highway',
@@ -471,7 +481,7 @@ export function calculateAreaFareMatrix(
       title: 'Indian Railways Express / Intercity Superfast',
       category: 'Public Transit',
       fareInr: Math.max(140, Math.round(distanceKm * 1.4)),
-      durationMins: Math.max(75, Math.round(distanceKm * 0.9)),
+      durationMins: Math.max(35, Math.round(etaTrain.totalDurationMins * 0.88)),
       carbonGrams: 320,
       availability: 'Scheduled',
       badge: '🚆 Rail Superfast',

@@ -4,6 +4,7 @@ import { getNearbyLocationsAlongCorridor, findMatchingMoBusRoutes } from '../../
 import { TranslationDictionary } from '../../types/i18n';
 import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
 import { isBhubaneswarRegion, calculateAmaBusAcFare, calculateAmaBusNonAcFare } from '../../services/fareMatrixService';
+import { calculateDynamicETA } from '../../services/etaService';
 
 interface JourneyDetailPanelProps {
   originName?: string;
@@ -48,13 +49,14 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   const primaryBus = matchedBus.primarySuggestion || { route: '10', path: 'Bhubaneswar Airport – MANU University' };
   const altBus = matchedBus.directRoutes[1] || matchedBus.connectedRoutes[0] || { route: '11', path: 'Bhubaneswar Railway Station – Nandankanan' };
 
-  // Dynamic road/transit distance estimation
+  // Dynamic road/transit distance estimation with road network curvature
   const distanceKm = React.useMemo(() => {
     if (originCoords && destCoords) {
       const latDiff = originCoords[0] - destCoords[0];
       const lngDiff = (originCoords[1] - destCoords[1]) * Math.cos((originCoords[0] * Math.PI) / 180);
-      const d = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111.32;
-      return Math.max(1.5, Math.round(d * 10) / 10);
+      const direct = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111.32;
+      const roadFactor = direct < 3 ? 1.40 : direct > 15 ? 1.25 : 1.32;
+      return Math.max(1.0, Math.round(direct * roadFactor * 10) / 10);
     }
     return 8.5;
   }, [originCoords, destCoords]);
@@ -71,13 +73,22 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
   const isCheap = selectedRouteId === 'route-cheap';
   const isEco = selectedRouteId === 'route-eco';
 
-  const totalDurationMins = !isBbsr
-    ? (isCheap ? Math.max(110, Math.round(distanceKm * 1.3) + 30) : isEco ? Math.min(180, Math.round(distanceKm * 0.15) + 90) : Math.max(90, Math.round(distanceKm * 1.1) + 20))
-    : (isEco
-      ? Math.max(14, Math.round(distanceKm * 2.1))
-      : isCheap
-      ? Math.max(18, Math.round(distanceKm * 3.2))
-      : Math.max(12, Math.round(distanceKm * 2.4)));
+  const dynamicEta = React.useMemo(() => {
+    if (!isBbsr) {
+      if (isCheap) return calculateDynamicETA({ distanceKm, mode: 'bus', isIntercity: true });
+      if (isEco) return calculateDynamicETA({ distanceKm, mode: 'train', isIntercity: true, hasPriorityLane: true });
+      return calculateDynamicETA({ distanceKm, mode: 'train', isIntercity: true });
+    }
+    if (isEco) {
+      return calculateDynamicETA({ distanceKm, mode: 'auto', transfersCount: 1 });
+    }
+    if (isCheap) {
+      return calculateDynamicETA({ distanceKm, mode: 'bus', hasPriorityLane: false });
+    }
+    return calculateDynamicETA({ distanceKm, mode: 'bus', hasPriorityLane: true });
+  }, [distanceKm, isBbsr, isCheap, isEco]);
+
+  const totalDurationMins = dynamicEta.totalDurationMins;
 
   const totalFareInr = !isBbsr
     ? (isCheap ? Math.max(150, Math.round(distanceKm * 1.8)) : isEco ? Math.max(140, Math.round(distanceKm * 1.4)) : Math.max(120, Math.round(distanceKm * 0.95)))
@@ -183,9 +194,14 @@ export const JourneyDetailPanel: React.FC<JourneyDetailPanelProps> = ({
 
         {/* Top Summary Metrics Pill */}
         <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <span className="flex items-center gap-1 font-bold text-slate-900 dark:text-white">
-            <Clock className="w-3.5 h-3.5 text-blue-500" /> {totalDurationMins} min ({distanceKm} km)
-          </span>
+          <div className="flex flex-col">
+            <span className="flex items-center gap-1 font-bold text-slate-900 dark:text-white">
+              <Clock className="w-3.5 h-3.5 text-blue-500" /> {totalDurationMins} min ({distanceKm} km)
+            </span>
+            <span className="text-[10px] text-slate-400">
+              ETA: ~{dynamicEta.arrivalTimeStr} · ~{dynamicEta.averageSpeedKmH} km/h avg
+            </span>
+          </div>
           <span className="text-emerald-600 dark:text-emerald-400 font-bold">
             {isEco ? '⇄ Shared Feeder' : '🟢 Direct Ride'}
           </span>
