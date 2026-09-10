@@ -261,6 +261,9 @@ interface MusafirMapProps {
   originName?: string;
   isAnyModalOpen?: boolean;
   isGpsActive?: boolean;
+  selectedRideDuration?: number;
+  selectedRideDistance?: number;
+  selectedRideLabel?: string;
 }
 
 const createLeafletPinIcon = (pinColor: string, symbol: string) => {
@@ -436,6 +439,9 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   destinationName,
   isAnyModalOpen = false,
   isGpsActive = false,
+  selectedRideDuration,
+  selectedRideDistance,
+  selectedRideLabel,
 }) => {
   // Google Map Tile Layer Types
   const [mapLayerStyle, setMapLayerStyle] = useState<'google-traffic' | 'google-roadmap' | 'google-hybrid' | 'google-terrain' | 'osm'>('google-traffic');
@@ -453,6 +459,14 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
   const [isDownloadingMap, setIsDownloadingMap] = useState(false);
   const [downloadSuccessToast, setDownloadSuccessToast] = useState<string | null>(null);
 
+  const selectedRoute = routeOptions.find((r) => r.id === selectedRouteId) || routeOptions[0];
+  const routeCoordinates = selectedRoute ? selectedRoute.coordinates : [];
+
+  // Effective metrics synchronized with the actual selected ride
+  const effectiveDistanceKm = selectedRideDistance !== undefined ? selectedRideDistance : (selectedRoute ? selectedRoute.distanceKm : 0);
+  const effectiveDurationMinutes = selectedRideDuration !== undefined ? selectedRideDuration : (selectedRoute ? selectedRoute.durationMinutes : 0);
+  const effectiveLabel = selectedRideLabel !== undefined ? selectedRideLabel : (selectedRoute ? selectedRoute.label : null);
+
   // Download offline route map package
   const handleDownloadOfflineRoute = () => {
     if (!selectedRoute) return;
@@ -461,8 +475,8 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
       generateOfflineRoutePack(
         originName || 'Bhubaneswar Departure',
         destinationName || 'Destination Terminal',
-        selectedRoute.distanceKm,
-        selectedRoute.durationMinutes,
+        effectiveDistanceKm,
+        effectiveDurationMinutes,
         routeStops
       );
       setDownloadSuccessToast('Offline Route Map Downloaded Successfully! Saved as high-res PNG.');
@@ -486,9 +500,6 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
       setSelectedRouteId(null);
     }
   }, [originCoords, destCoords]);
-
-  const selectedRoute = routeOptions.find((r) => r.id === selectedRouteId) || routeOptions[0];
-  const routeCoordinates = selectedRoute ? selectedRoute.coordinates : [];
 
   // Calculate intermediate Ama Bus stops with coordinates strictly along the route corridor (< 100 meters)
   useEffect(() => {
@@ -738,6 +749,12 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
         {selectedRoute && (() => {
           const validCoords = (selectedRoute.coordinates || []).filter(isValidLatLng);
           const bubblePos = getRouteBubblePosition(selectedRoute, 0);
+          const displayRoute: RouteOption = {
+            ...selectedRoute,
+            distanceKm: effectiveDistanceKm,
+            durationMinutes: effectiveDurationMinutes,
+            label: (effectiveLabel as any) || selectedRoute.label,
+          };
           return (
             <React.Fragment key={selectedRoute.id}>
               {validCoords.length >= 2 && (
@@ -749,7 +766,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
               {isValidLatLng(bubblePos) && (
                 <Marker
                   position={bubblePos}
-                  icon={routeLabelIcon(selectedRoute, true)}
+                  icon={routeLabelIcon(displayRoute, true)}
                 />
               )}
             </React.Fragment>
@@ -875,11 +892,11 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
               <>
                 <span className="text-slate-600 font-bold">•</span>
                 <span className="text-[11px] font-bold text-sky-400">
-                  {selectedRoute.distanceKm} km (~{selectedRoute.durationMinutes}m)
+                  {effectiveDistanceKm} km (~{effectiveDurationMinutes}m)
                 </span>
-                {selectedRoute.label && (
+                {effectiveLabel && (
                   <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-blue-600/80 text-white rounded-md tracking-tight">
-                    {selectedRoute.label}
+                    {effectiveLabel}
                   </span>
                 )}
               </>

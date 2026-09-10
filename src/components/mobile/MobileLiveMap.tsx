@@ -17,6 +17,9 @@ interface MobileLiveMapProps {
   onBackToPlanner?: () => void;
   onOpenRideDetails?: () => void;
   isAnyModalOpen?: boolean;
+  selectedRideDuration?: number;
+  selectedRideDistance?: number;
+  selectedRideLabel?: string;
 }
 
 export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
@@ -31,6 +34,9 @@ export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
   onBackToPlanner,
   onOpenRideDetails,
   isAnyModalOpen = false,
+  selectedRideDuration,
+  selectedRideDistance,
+  selectedRideLabel,
 }) => {
   const nearbyStops = [
     { id: '1', name: 'Jayadev Vihar Square', walkMins: 2, distanceM: 150, routes: ['Route 16', 'Route 11'] },
@@ -78,6 +84,9 @@ export const MobileLiveMap: React.FC<MobileLiveMapProps> = ({
             originName={originQuery}
             destinationName={destQuery}
             isAnyModalOpen={isAnyModalOpen}
+            selectedRideDuration={selectedRideDuration}
+            selectedRideDistance={selectedRideDistance}
+            selectedRideLabel={selectedRideLabel}
           />
         </ErrorBoundary>
       </div>

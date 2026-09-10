@@ -15,6 +15,8 @@ import { LogisticsHubView } from '../logistics/LogisticsHubView';
 import { CommunityHubView } from '../community/CommunityHubView';
 import { translations } from '../../data/translations';
 import { DeliveryWaypoint } from '../../services/logisticsOptimizerService';
+import { calculateDynamicETA } from '../../services/etaService';
+import { isBhubaneswarRegion } from '../../services/fareMatrixService';
 
 interface MobileAppViewProps {
   originQuery: string;
@@ -99,6 +101,28 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
     }
   };
 
+  const isBbsrArea = isBhubaneswarRegion(originQuery, destQuery, originCoords, destCoords);
+  const dynamicDistanceKm = React.useMemo(() => {
+    if (originCoords && destCoords) {
+      const latDiff = originCoords[0] - destCoords[0];
+      const lngDiff = (originCoords[1] - destCoords[1]) * Math.cos((originCoords[0] * Math.PI) / 180);
+      const direct = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111.32;
+      const roadFactor = direct < 3 ? 1.40 : direct > 15 ? 1.25 : 1.32;
+      return Math.max(1.0, Math.round(direct * roadFactor * 10) / 10);
+    }
+    return 8.5;
+  }, [originCoords, destCoords]);
+
+  const selectedRideDuration = React.useMemo(() => {
+    if (!originCoords || !destCoords) return undefined;
+    if (!isBbsrArea) {
+      return calculateDynamicETA({ distanceKm: dynamicDistanceKm, mode: 'train', isIntercity: true }).totalDurationMins;
+    }
+    return calculateDynamicETA({ distanceKm: dynamicDistanceKm, mode: 'bus', hasPriorityLane: true }).totalDurationMins;
+  }, [dynamicDistanceKm, isBbsrArea, originCoords, destCoords]);
+
+  const selectedRideDistance = originCoords && destCoords ? dynamicDistanceKm : undefined;
+
   return (
     <div className="flex flex-col min-h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-x-hidden antialiased">
       {/* Fixed Mobile TopAppBar */}
@@ -144,6 +168,9 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
             onSelectLocationOnMap={onSelectLocationOnMap}
             onBackToPlanner={() => setActiveTab('home')}
             onOpenRideDetails={() => setIsRideDetailsOpen(true)}
+            selectedRideDuration={selectedRideDuration}
+            selectedRideDistance={selectedRideDistance}
+            selectedRideLabel="Fastest"
           />
         ) : activeTab === 'transportation' ? (
           <TransportationHubView

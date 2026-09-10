@@ -54,6 +54,8 @@ import { LogisticsHubView } from './components/logistics/LogisticsHubView';
 import { CommunityHubView } from './components/community/CommunityHubView';
 import { DeliveryWaypoint, SAMPLE_DELIVERY_STOPS } from './services/logisticsOptimizerService';
 import { isValidLatLng } from './utils/latLngValidator';
+import { calculateDynamicETA } from './services/etaService';
+import { isBhubaneswarRegion } from './services/fareMatrixService';
 
 
 export const App: React.FC = () => {
@@ -292,7 +294,40 @@ export const App: React.FC = () => {
     }
   };
 
+  // Dynamic road/transit distance estimation (synchronized across map, carousel, and journey detail)
+  const dynamicDistanceKm = React.useMemo(() => {
+    if (originCoords && destCoords) {
+      const latDiff = originCoords[0] - destCoords[0];
+      const lngDiff = (originCoords[1] - destCoords[1]) * Math.cos((originCoords[0] * Math.PI) / 180);
+      const direct = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111.32;
+      const roadFactor = direct < 3 ? 1.40 : direct > 15 ? 1.25 : 1.32;
+      return Math.max(1.0, Math.round(direct * roadFactor * 10) / 10);
+    }
+    return 8.5;
+  }, [originCoords, destCoords]);
 
+  const isBbsrArea = isBhubaneswarRegion(originQuery, destQuery, originCoords, destCoords);
+  const isSelectedCheap = selectedRouteId === 'route-cheap';
+  const isSelectedEco = selectedRouteId === 'route-eco';
+
+  const selectedRideDuration = React.useMemo(() => {
+    if (!originCoords || !destCoords) return undefined;
+    if (!isBbsrArea) {
+      if (isSelectedCheap) return calculateDynamicETA({ distanceKm: dynamicDistanceKm, mode: 'bus', isIntercity: true }).totalDurationMins;
+      if (isSelectedEco) return calculateDynamicETA({ distanceKm: dynamicDistanceKm, mode: 'train', isIntercity: true, hasPriorityLane: true }).totalDurationMins;
+      return calculateDynamicETA({ distanceKm: dynamicDistanceKm, mode: 'train', isIntercity: true }).totalDurationMins;
+    }
+    if (isSelectedEco) {
+      return calculateDynamicETA({ distanceKm: dynamicDistanceKm, mode: 'auto', transfersCount: 1 }).totalDurationMins;
+    }
+    if (isSelectedCheap) {
+      return calculateDynamicETA({ distanceKm: dynamicDistanceKm, mode: 'bus', hasPriorityLane: false }).totalDurationMins;
+    }
+    return calculateDynamicETA({ distanceKm: dynamicDistanceKm, mode: 'bus', hasPriorityLane: true }).totalDurationMins;
+  }, [dynamicDistanceKm, isBbsrArea, isSelectedCheap, isSelectedEco, originCoords, destCoords]);
+
+  const selectedRideDistance = originCoords && destCoords ? dynamicDistanceKm : undefined;
+  const selectedRideLabel = isSelectedEco ? 'Eco E-Ride' : isSelectedCheap ? 'Lowest Fare' : 'Fastest';
 
   const handleSidebarTabChange = (tab: any) => {
     setActiveTab(tab);
@@ -601,6 +636,9 @@ export const App: React.FC = () => {
                   destinationName={destQuery}
                   isAnyModalOpen={isAnyModalOpen}
                   isGpsActive={isGpsActive}
+                  selectedRideDuration={selectedRideDuration}
+                  selectedRideDistance={selectedRideDistance}
+                  selectedRideLabel={selectedRideLabel}
                 />
 
                 <BestRoutesCarousel
