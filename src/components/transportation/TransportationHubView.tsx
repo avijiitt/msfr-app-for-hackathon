@@ -70,6 +70,7 @@ import {
   Tier2SmartParkingHub
 } from '../../services/smartMobilitySuiteService';
 import { geminiTrafficService, LiveCorridorTelemetry } from '../../services/geminiTrafficService';
+import { SmartCameraVisionSection } from './SmartCameraVisionSection';
 
 interface TransportationHubProps {
   originName?: string;
@@ -80,6 +81,7 @@ interface TransportationHubProps {
 
 export type TransportationSubTab = 
   | 'smart_stops'
+  | 'smart_camera'
   | 'event_planner'
   | 'empty_trips'
   | 'waste_routes'
@@ -382,6 +384,7 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
         <div className="flex gap-2 mt-3 overflow-x-auto pb-1 hide-scrollbar">
           {[
             { id: 'smart_stops', label: '🚏 Smart Stop Selection', cat: 'transit' },
+            { id: 'smart_camera', label: '📹 Smart Camera AI Vision', cat: 'traffic' },
             { id: 'event_planner', label: '🏟️ Event Transport Planning', cat: 'events_logistics' },
             { id: 'empty_trips', label: '🚛 Empty-Trip Matching', cat: 'events_logistics' },
             { id: 'waste_routes', label: '🗑️ Solid Waste Optimization', cat: 'events_logistics' },
@@ -1829,6 +1832,11 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* ─── TAB: SMART CAMERA AI VISION (CONGESTION & POOR LIGHTING SCANNER) ─── */}
+        {activeTab === 'smart_camera' && (
+          <SmartCameraVisionSection onNavigateToMap={onNavigateToMap} />
         )}
 
       </div>

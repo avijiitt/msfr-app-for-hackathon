@@ -44,8 +44,9 @@
   - [5. Mid-Road Medical Emergency & Trauma SOS](#5-mid-road-medical-emergency--trauma-dispatch)
   - [6. Women Safety Hub & Night-Safe Corridor Routing](#6-women-safety-hub--night-safe-corridors)
   - [7. Multi-Drop Cargo Logistics & TSP Optimizer](#7-multi-drop-cargo-logistics--tsp-route-optimizer)
-  - [8. Civic Commuter Community & Incident Radar](#8-civic-commuter-community--live-incident-radar)
-  - [9. Offline-First Map Engine & Tile Fallback](#9-offline-first-map-engine--tile-caching)
+  - [8. Smart Camera AI Optical Vision](#8-smart-camera-ai-optical-vision-congestion--dark-spot-lighting-scanner)
+  - [9. Multi-Source Civic Intelligence & IoT Fusion](#9-multi-source-civic-intelligence--iot-sensor-fusion)
+  - [10. Offline-First Map Engine & Tile Fallback](#10-offline-first-map-engine--tile-caching)
 - [🏗️ System Architecture](#-system-architecture)
 - [📊 Comparative Advantage Matrix](#-comparative-advantage-matrix)
 - [🛠️ Tech Stack & Engineering Highlights](#-tech-stack--engineering-highlights)
@@ -183,12 +184,17 @@ flowchart TD
 - **Individual Parcel Weight Customization**: Select quick weights (`0.5 kg` to `50 kg`) or custom decimal values with instant pricing.
 - **Green Metrics**: Tracks estimated fuel savings, route length reduction, and CO2 emissions cut.
 
-### 8. Civic Commuter Community & Live Incident Radar
-- **Crowdsourced Incident Reporting**: Commuters can post and upvote real-time transit reports (delays, crowding, waterlogging, lost & found).
-- **Interactive Map Radar**: View active reports on an interactive map overlay to avoid congested bottlenecks.
-- **Live Commuter News Feed**: Real-time traffic alerts and municipal announcements with dynamic relative timestamps ("2m ago", "15m ago", "1h ago").
+### 8. Smart Camera AI Optical Vision (Congestion & Dark Spot Lighting Scanner)
+- **Computer Vision Traffic Analysis**: Scans live smart CCTV camera nodes across high-density junctions (Jayadev Vihar, Rasulgarh, KIIT Square, Master Canteen) calculating real-time vehicle density, corridor velocity, and gridlock alerts.
+- **Dark Spot Low-Lux Illumination Scanner**: Real-time ambient lux detection (<25 Lux) flags unlit road stretches and non-functional streetlights to the municipal electrical squad (BSCL) while guiding night commuters onto well-lit corridors.
+- **AI Anomaly Triggers**: Real-time detection of stalled carriers, curb bottlenecks, and pedestrian surges with 98.4% detection accuracy.
 
-### 9. Offline-First Map Engine & Tile Caching
+### 9. Multi-Source Civic Intelligence & IoT Sensor Fusion
+- **Unified Multi-Source Fusion**: Combines **IoT storm drainage and rainfall depth sensors (BMC)**, **municipal work orders (BSCL)**, **AI-based CCTV hazard detection**, and **environmental air quality nodes (AQI/PM2.5)** into one live civic dashboard.
+- **Automated Sump Pump & Flood Radar**: Monitors water accumulation at vulnerable highway underpasses (Iskcon, Vani Vihar, Acharya Vihar) with automated drainage pump triggers.
+- **Crowdsourced + Sensor Verified Incident Radar**: Commuters report and verify road hazards backed by real-time sensor confidence scoring.
+
+### 10. Offline-First Map Engine & Tile Caching
 - **Never a Blank Map**: Pre-cached station coordinates and intelligent tile fallback ensure the map remains functional during network drops.
 - **Offline Mode Indicator**: Visual status badge informing commuters when operating from local storage cache.
 

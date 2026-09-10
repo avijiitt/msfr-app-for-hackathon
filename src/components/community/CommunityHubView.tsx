@@ -15,6 +15,7 @@ import {
   Map as MapIcon,
   Layers,
   Crosshair,
+  Radio,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -23,12 +24,13 @@ import { ReportIncidentDrawer } from './ReportIncidentDrawer';
 import { IncidentDetailsModal } from './IncidentDetailsModal';
 import { CommunityPolls } from './CommunityPolls';
 import { LiveIncidentMap } from './LiveIncidentMap';
+import { CivicIntelligenceFusionView } from './CivicIntelligenceFusionView';
 
 interface CommunityHubProps {
   onNavigateToMap?: () => void;
 }
 
-type TabView = 'feed' | 'map' | 'polls' | 'my_reports' | 'leaderboard';
+type TabView = 'feed' | 'iot_fusion' | 'map' | 'polls' | 'my_reports' | 'leaderboard';
 
 // Custom Map Marker Icons
 const createPinIcon = (bgColor: string, emoji: string) => {
@@ -221,6 +223,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
       <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1 mb-4 shrink-0">
         {[
           { id: 'feed', icon: <List className="w-4 h-4" />, label: 'Live Feed' },
+          { id: 'iot_fusion', icon: <Radio className="w-4 h-4 text-sky-400" />, label: 'IoT & AI Fusion' },
           { id: 'map', icon: <MapIcon className="w-4 h-4" />, label: 'Incident Map' },
           { id: 'polls', icon: <BarChart3 className="w-4 h-4" />, label: 'Community Polls' },
           { id: 'my_reports', icon: <Clock className="w-4 h-4" />, label: 'My Reports' },
@@ -617,6 +620,13 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
             </div>
           </div>
         </div>
+      )}
+
+      {/* ─── TAB: MULTI-SOURCE IOT & AI FUSION GRID ─── */}
+      {activeTab === 'iot_fusion' && (
+        <CivicIntelligenceFusionView
+          onOpenReportDrawer={() => setIsReportDrawerOpen(true)}
+        />
       )}
 
       {/* ─── TAB 2: INCIDENT MAP VIEW ─── */}
