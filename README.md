@@ -87,7 +87,7 @@
 
 ---
 
-## 💎 **10 Unique Game-Changing USPs (SIH Winning Highlights)**
+## 💎 **10 Unique Game-Changing USPs **
 
 > What makes **Musafir** radically superior to existing apps like Google Maps, Chalo, and MoBus?
 
