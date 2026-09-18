@@ -16,6 +16,8 @@ import {
   Layers,
   Crosshair,
   Radio,
+  Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -174,6 +176,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
       const currentName = r.reporterName?.toLowerCase() || '';
       if (!currentName.includes('you') && !currentName.includes('avijeet')) return false;
     }
+    if (selectedFilter === 'pothole' && r.category !== 'pothole') return false;
     if (selectedFilter === 'overcrowding' && r.category !== 'overcrowding') return false;
     if (selectedFilter === 'poor_lighting' && r.category !== 'poor_lighting') return false;
     if (selectedFilter === 'waterlogging' && r.category !== 'waterlogging') return false;
@@ -286,6 +289,7 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
             <div className="flex items-center gap-2">
               {[
                 { id: 'all', label: 'All Incidents' },
+                { id: 'pothole', label: '🕳️ Potholes / Road Caving' },
                 { id: 'overcrowding', label: '🚨 Overcrowding' },
                 { id: 'poor_lighting', label: '💡 Poor Lighting' },
                 { id: 'waterlogging', label: '🌧️ Waterlogging' },
@@ -325,12 +329,15 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
             <div className="lg:col-span-7 space-y-3.5">
               {filteredReports.slice(0, visibleCount).map((report) => {
                 // Categorize severity and badge styling
+                const isPothole = report.category === 'pothole';
                 const isOvercrowd = report.category === 'overcrowding';
                 const isLighting = report.category === 'poor_lighting';
                 const isWaterlogging = report.category === 'waterlogging';
                 const isBusDelay = report.category === 'bus_delayed_cancelled';
 
-                const categoryLabel = isOvercrowd
+                const categoryLabel = isPothole
+                  ? 'POTHOLE / ROAD DAMAGE'
+                  : isOvercrowd
                   ? 'OVERCROWDING'
                   : isLighting
                   ? 'POOR LIGHTING'
@@ -340,7 +347,9 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
                   ? 'BUS DELAY'
                   : report.category.replace('_', ' ').toUpperCase();
 
-                const categoryBadgeClass = isOvercrowd
+                const categoryBadgeClass = isPothole
+                  ? 'bg-[#451A03] text-[#FB923C] border border-[#9A3412]'
+                  : isOvercrowd
                   ? 'bg-[#450A0A] text-[#F87171] border border-[#7F1D1D]'
                   : isLighting
                   ? 'bg-[#451A03] text-[#FBBF24] border border-[#78350F]'
@@ -367,13 +376,19 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
                     className="bg-[#0D1527] border border-slate-800/90 rounded-3xl p-4 sm:p-5 hover:border-purple-500/40 transition-all cursor-pointer group shadow-md"
                   >
                     {/* Top Badges */}
-                    <div className="flex items-center gap-2 mb-2.5">
+                    <div className="flex flex-wrap items-center gap-2 mb-2.5">
                       <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${categoryBadgeClass}`}>
                         {categoryLabel}
                       </span>
                       <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${statusBadgeClass}`}>
                         {statusLabel}
                       </span>
+                      {report.duplicateReportCount && report.duplicateReportCount > 1 && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-700/60 flex items-center gap-1 shadow-xs">
+                          <Sparkles className="w-3 h-3 text-purple-400" />
+                          <span>{report.duplicateReportCount} Citizens Unified (AI Guard) • {report.priorityLevel || 'P1'}</span>
+                        </span>
+                      )}
                     </div>
 
                     {/* Middle Content + Thumbnail */}
@@ -562,9 +577,13 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
               {/* Report Incident Action Card */}
               <div className="bg-[#0D1527] border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-lg space-y-3">
                 <div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-950/60 border border-purple-800/40 text-[10px] text-purple-300 font-bold mb-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+                    <span>AI Duplicate Guard Active: Prevents 20x complaint spam & escalates issue to P1</span>
+                  </div>
                   <h3 className="text-sm font-black text-white">Make a Report</h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Help your city. Report issues in your area.
+                    Help your city. Report issues in your area with smart AI verification.
                   </p>
                 </div>
 
@@ -652,7 +671,11 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
       {/* ─── TAB 3: COMMUNITY POLLS VIEW ─── */}
       {activeTab === 'polls' && (
         <div className="space-y-4">
-          <CommunityPolls polls={store.polls} onVote={store.voteOnPoll} />
+          <CommunityPolls 
+            polls={store.polls} 
+            onVote={store.voteOnPoll} 
+            onGenerateAiPoll={store.generateAiPoll}
+          />
         </div>
       )}
 
@@ -793,6 +816,8 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
         <ReportIncidentDrawer
           onClose={() => setIsReportDrawerOpen(false)}
           onSubmit={handleReportSubmit}
+          onCheckAiDuplicate={store.checkAiDuplicateReport}
+          onSupportExistingReport={store.supportExistingReport}
           onDuplicateWarning={store.checkDuplicateReport ? (cat, lat, lng) => store.checkDuplicateReport(cat, lat, lng) !== null : undefined}
         />
       )}

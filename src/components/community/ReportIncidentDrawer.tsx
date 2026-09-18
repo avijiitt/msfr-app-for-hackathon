@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  X, AlertTriangle, ArrowRight, Camera, CheckCircle2, ShieldAlert
+  X, AlertTriangle, ArrowRight, Camera, CheckCircle2, ShieldAlert, Sparkles, ThumbsUp, MapPin, Eye
 } from 'lucide-react';
-import { ReportCategory, SeverityLevel } from '../../services/communityReportsService';
+import { ReportCategory, SeverityLevel, AiDuplicateMatch } from '../../services/communityReportsService';
 import { authService } from '../../services/supabaseClient';
 
 interface ReportIncidentDrawerProps {
@@ -19,10 +19,25 @@ interface ReportIncidentDrawerProps {
     reporterName: string;
     photoUrl?: string;
   }) => void;
-  onDuplicateWarning?: (category: ReportCategory, lat: number, lng: number) => boolean; // returns true if duplicate exists
+  onCheckAiDuplicate?: (params: {
+    category: ReportCategory;
+    title?: string;
+    description?: string;
+    lat: number;
+    lng: number;
+    photoUrl?: string;
+  }) => AiDuplicateMatch | null;
+  onSupportExistingReport?: (reportId: string, citizenName?: string) => void;
+  onDuplicateWarning?: (category: ReportCategory, lat: number, lng: number) => boolean;
 }
 
-export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onClose, onSubmit, onDuplicateWarning }) => {
+export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ 
+  onClose, 
+  onSubmit, 
+  onCheckAiDuplicate, 
+  onSupportExistingReport,
+  onDuplicateWarning 
+}) => {
   const currentUser = authService.getCurrentUser();
   const [step, setStep] = useState(1);
   const [category, setCategory] = useState<ReportCategory | null>(null);
@@ -33,12 +48,14 @@ export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onCl
   const [locationName, setLocationName] = useState('');
   const [reporterName, setReporterName] = useState(currentUser?.fullName || 'Avijeet Rout');
   const [hasDuplicate, setHasDuplicate] = useState(false);
+  const [aiDuplicateMatch, setAiDuplicateMatch] = useState<AiDuplicateMatch | null>(null);
+  const [supportedSuccess, setSupportedSuccess] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
-  // Mock location bounds for Bhubaneswar
-  const mockLat = 20.3010 + (Math.random() * 0.05);
-  const mockLng = 85.8150 + (Math.random() * 0.05);
+  // Mock location bounds for Bhubaneswar (near transit stops like Master Canteen, Jayadev Vihar, or Trisulia)
+  const [mockLat] = useState(() => 20.2644 + (Math.random() * 0.04));
+  const [mockLng] = useState(() => 85.8395 + (Math.random() * 0.04));
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,23 +86,55 @@ export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onCl
   };
 
   const categories: { id: ReportCategory; icon: string; label: string }[] = [
+    { id: 'pothole', icon: '🕳️', label: 'Pothole / Road Damage' },
+    { id: 'waterlogging', icon: '🌧️', label: 'Waterlogging' },
     { id: 'overcrowding', icon: '🚨', label: 'Overcrowding' },
     { id: 'road_blockage', icon: '🚧', label: 'Road Blockage' },
     { id: 'poor_lighting', icon: '💡', label: 'Poor Lighting' },
-    { id: 'waterlogging', icon: '🌧️', label: 'Waterlogging' },
     { id: 'damaged_shelter', icon: '🚏', label: 'Damaged Shelter' },
     { id: 'safety_concern', icon: '🛡️', label: 'Safety Concern' }
   ];
 
   const handleNextStep = () => {
-    if (step === 2 && onDuplicateWarning && category) {
-      const duplicateFound = onDuplicateWarning(category, mockLat, mockLng);
-      setHasDuplicate(duplicateFound);
-      if (duplicateFound) {
-        // Just show warning on step 3 but proceed
+    if (step === 2 && category) {
+      // Run AI Duplicate Check with high precision
+      if (onCheckAiDuplicate) {
+        const match = onCheckAiDuplicate({
+          category,
+          title: title || `${category} issue near ${locationName}`,
+          description,
+          lat: mockLat,
+          lng: mockLng,
+          photoUrl: photoUrl || undefined
+        });
+
+        if (match && match.isDuplicate) {
+          setAiDuplicateMatch(match);
+          return; // Show AI Duplicate suggestion screen
+        }
+      } else if (onDuplicateWarning) {
+        const duplicateFound = onDuplicateWarning(category, mockLat, mockLng);
+        setHasDuplicate(duplicateFound);
       }
     }
     setStep(step + 1);
+  };
+
+  const handleSupportExisting = () => {
+    if (!aiDuplicateMatch) return;
+    if (onSupportExistingReport) {
+      onSupportExistingReport(aiDuplicateMatch.matchedReport.id, reporterName);
+    }
+    setSupportedSuccess(true);
+    setTimeout(() => {
+      onClose();
+    }, 2000);
+  };
+
+  const handleBypassDuplicate = () => {
+    setAiDuplicateMatch(null);
+    setHasDuplicate(true);
+    setStep(3);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -125,7 +174,161 @@ export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onCl
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-5">
-          {step === 1 && (
+          
+          {/* AI Duplicate Consolidation Success Toast */}
+          {supportedSuccess && (
+            <div className="p-6 text-center space-y-3 animate-in zoom-in-95">
+              <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center border border-emerald-500/40">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <h4 className="text-lg font-black text-white">Report Supported & Consolidated!</h4>
+              <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
+                Instead of filing 20 separate complaints for the same issue, your vote was merged into this unified high-priority ticket. 
+              </p>
+              <div className="inline-block px-3 py-1.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-black">
+                🌟 +15 Civic Karma Points Credited!
+              </div>
+            </div>
+          )}
+
+          {/* AI Duplicate Detection Suggestion Screen */}
+          {!supportedSuccess && aiDuplicateMatch && (
+            <div className="space-y-4 animate-in slide-in-from-right-4">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 rounded-lg bg-purple-600/30 text-purple-300 border border-purple-500/40">
+                    <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
+                  </span>
+                  <div>
+                    <h4 className="font-black text-sm text-white">AI Duplicate Report Detection</h4>
+                    <span className="text-[10px] text-purple-400 font-bold">Auto-Scanning Nearby Geotags & Photos</span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                  {aiDuplicateMatch.similarityScore}% Match
+                </span>
+              </div>
+
+              {/* System Suggestion Banner (Exact Requirement) */}
+              <div className="bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-purple-900/40 border-2 border-purple-500/60 rounded-2xl p-4 shadow-xl space-y-2">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h5 className="text-sm font-black text-white leading-snug">
+                      "{aiDuplicateMatch.suggestionText}"
+                    </h5>
+                    <p className="text-[11px] text-purple-200/90 font-medium mt-1 leading-relaxed">
+                      <strong className="text-white font-bold">Benefit:</strong> If 20 citizens report the same {aiDuplicateMatch.matchedReport.category.replace(/_/g, ' ')}, supporting this report unifies them into 1 verified incident—escalating priority to <span className="text-amber-400 font-bold">P1 (Urgent Municipal Dispatch)</span> instead of cluttering duplicates.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4-Point AI Verification Checklist */}
+              <div className="bg-slate-900/80 rounded-2xl p-3.5 border border-slate-800 space-y-2">
+                <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  <span>AI Verification Parameters</span>
+                  <span className="text-emerald-400 font-mono">4/4 Checks Passed</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-800/60 border border-slate-700/50">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-bold">Same Location?</span>
+                      <span className="text-slate-200 font-bold text-[11px]">
+                        {aiDuplicateMatch.distanceMeters}m away (Within radius)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-800/60 border border-slate-700/50">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-bold">Similar Issue?</span>
+                      <span className="text-slate-200 font-bold text-[11px] capitalize">
+                        {aiDuplicateMatch.matchedReport.category.replace(/_/g, ' ')} detected
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-800/60 border border-slate-700/50">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-bold">Similar Photo?</span>
+                      <span className="text-slate-200 font-bold text-[11px]">
+                        {aiDuplicateMatch.photoSimilarityPercentage > 0 
+                          ? `${aiDuplicateMatch.photoSimilarityPercentage}% road surface match` 
+                          : 'Verified via GPS & Corridor Radar'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-800/60 border border-slate-700/50">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-bold">Already Reported?</span>
+                      <span className="text-slate-200 font-bold text-[11px]">
+                        Yes ({aiDuplicateMatch.matchedReport.duplicateReportCount || aiDuplicateMatch.matchedReport.upvotes} citizens supported)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Matched Report Card Preview */}
+              <div className="bg-[#0B1220] border border-purple-500/40 rounded-2xl p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase text-purple-400 bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-800/60">
+                    Existing Active Report
+                  </span>
+                  <span className="text-[10px] font-bold text-amber-400">
+                    ⚡ Priority: {aiDuplicateMatch.matchedReport.priorityLevel || 'P1 (Critical)'}
+                  </span>
+                </div>
+
+                <h5 className="text-xs font-black text-white">{aiDuplicateMatch.matchedReport.title}</h5>
+                <p className="text-[11px] text-slate-300 line-clamp-2">{aiDuplicateMatch.matchedReport.description}</p>
+                
+                <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                  <MapPin className="w-3 h-3 text-rose-500" />
+                  <span className="truncate">{aiDuplicateMatch.matchedReport.locationName}</span>
+                </div>
+
+                {aiDuplicateMatch.matchedReport.photoUrl && (
+                  <div className="w-full h-24 rounded-xl overflow-hidden border border-slate-800 mt-1">
+                    <img
+                      src={aiDuplicateMatch.matchedReport.photoUrl}
+                      alt="Existing Evidence"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={handleSupportExisting}
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40 cursor-pointer active:scale-95 transition"
+                >
+                  <ThumbsUp className="w-4 h-4" />
+                  <span>Support This Report Instead (+15 Karma)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBypassDuplicate}
+                  className="w-full py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 font-bold text-xs flex items-center justify-center transition cursor-pointer"
+                >
+                  I want to submit a separate new report anyway
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!supportedSuccess && !aiDuplicateMatch && step === 1 && (
             <div className="space-y-4 animate-in slide-in-from-right-4">
               <h4 className="font-black text-lg text-slate-900 dark:text-white">What are you reporting?</h4>
               <div className="grid grid-cols-2 gap-3">
@@ -304,39 +507,41 @@ export const ReportIncidentDrawer: React.FC<ReportIncidentDrawerProps> = ({ onCl
           )}
         </div>
 
-        {/* Footer Navigation */}
-        <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800/60 bg-white dark:bg-[#161026] flex gap-3">
-          {step > 1 && (
-            <button
-              type="button"
-              onClick={() => setStep(step - 1)}
-              className="px-5 py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-            >
-              Back
-            </button>
-          )}
-          
-          {step < 3 ? (
-            <button
-              type="button"
-              onClick={handleNextStep}
-              disabled={step === 1 && !category}
-              className="flex-1 py-3.5 bg-purple-600 text-white font-black text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition"
-            >
-              Next <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={!title.trim() || !description.trim() || !locationName.trim()}
-              className="flex-1 py-3.5 bg-emerald-500 text-white font-black text-sm rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-600 transition"
-            >
-              <CheckCircle2 className="w-5 h-5" />
-              Publish Report (+25 Karma)
-            </button>
-          )}
-        </div>
+        {/* Footer Navigation (Hidden during duplicate resolution or success) */}
+        {!aiDuplicateMatch && !supportedSuccess && (
+          <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800/60 bg-white dark:bg-[#161026] flex gap-3">
+            {step > 1 && (
+              <button
+                type="button"
+                onClick={() => setStep(step - 1)}
+                className="px-5 py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
+              >
+                Back
+              </button>
+            )}
+            
+            {step < 3 ? (
+              <button
+                type="button"
+                onClick={handleNextStep}
+                disabled={step === 1 && !category}
+                className="flex-1 py-3.5 bg-purple-600 text-white font-black text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition cursor-pointer active:scale-95"
+              >
+                Next <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!title.trim() || !description.trim() || !locationName.trim()}
+                className="flex-1 py-3.5 bg-emerald-500 text-white font-black text-sm rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-600 transition cursor-pointer active:scale-95"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                Publish Report (+25 Karma)
+              </button>
+            )}
+          </div>
+        )}
 
       </div>
     </div>

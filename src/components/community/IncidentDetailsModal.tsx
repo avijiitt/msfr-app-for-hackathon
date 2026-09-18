@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { 
   X, MapPin, ThumbsUp, Clock, AlertTriangle, Building, CheckCircle2, Share2, MessageSquareWarning,
-  Camera, Upload, Check, Loader2, ImagePlus
+  Camera, Upload, Check, Loader2, ImagePlus, Sparkles
 } from 'lucide-react';
 import { CommunityReport } from '../../services/communityReportsService';
 
@@ -84,6 +84,20 @@ export const IncidentDetailsModal: React.FC<IncidentDetailsModalProps> = ({ repo
             <p className="text-sm text-slate-600 dark:text-slate-300 mt-3 leading-relaxed bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
               {report.description}
             </p>
+
+            {report.duplicateReportCount && report.duplicateReportCount > 1 && (
+              <div className="mt-3 p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 flex items-start gap-3 text-xs text-purple-900 dark:text-purple-200">
+                <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-extrabold block text-purple-950 dark:text-white">
+                    {report.duplicateReportCount} Citizens Reported / Supported This Issue
+                  </span>
+                  <p className="text-[11px] text-purple-800 dark:text-purple-300 mt-0.5 leading-relaxed">
+                    AI Duplicate Guard unified multiple complaints into this single incident—preventing duplicate spam and escalating response priority to <strong className="font-bold text-amber-600 dark:text-amber-400">{report.priorityLevel || 'P1 (Critical)'}</strong>.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Evidence Gallery */}
