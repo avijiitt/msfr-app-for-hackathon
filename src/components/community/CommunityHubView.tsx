@@ -674,7 +674,6 @@ export const CommunityHubView: React.FC<CommunityHubProps> = ({ onNavigateToMap 
           <CommunityPolls 
             polls={store.polls} 
             onVote={store.voteOnPoll} 
-            onGenerateAiPoll={store.generateAiPoll}
           />
         </div>
       )}
