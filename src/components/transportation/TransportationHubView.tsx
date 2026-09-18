@@ -109,7 +109,7 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
   onNavigateToMap,
 }) => {
   const [activeTab, setActiveTab] = useState<TransportationSubTab>('smart_stops');
-  const [activeCategory, setActiveCategory] = useState<'all' | 'transit' | 'events_logistics' | 'traffic'>('all');
+  const [activeCategory, setActiveCategory] = useState<'transit' | 'events_logistics' | 'traffic'>('transit');
   const [selectedEvent, setSelectedEvent] = useState<EventTransportPlan>(ACTIVE_EVENT_PLANS[0]);
   const [selectedRoute, setSelectedRoute] = useState<RouteCrowdStatus>(CRUCIAL_CORRIDOR_CROWDS[0]);
   const [appliedIncentive, setAppliedIncentive] = useState(false);
@@ -229,7 +229,7 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
     setNewHazardDesc('');
   };
 
-  const handleCategorySelect = (catId: 'all' | 'transit' | 'events_logistics' | 'traffic') => {
+  const handleCategorySelect = (catId: 'transit' | 'events_logistics' | 'traffic') => {
     setActiveCategory(catId);
     if (catId === 'transit') {
       setActiveTab('smart_stops');
@@ -358,30 +358,64 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
           </button>
         </div>
 
-        {/* Category Filters */}
-        <div className="flex gap-2 mt-4 overflow-x-auto pb-1 hide-scrollbar">
+        {/* Category Filters: 3 Left-Aligned Sections with Vertical Bar Style */}
+        <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 hide-scrollbar justify-start">
           {[
-            { id: 'all', label: '🌟 All Tools' },
-            { id: 'transit', label: '🚏 Smart Transit & Savings' },
-            { id: 'events_logistics', label: '🏟️ Events & City Freight' },
-            { id: 'traffic', label: '🚦 Traffic & Emergency' },
-          ].map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => handleCategorySelect(cat.id as any)}
-              className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition ${
-                activeCategory === cat.id
-                  ? 'bg-amber-400 text-slate-950 shadow-sm'
-                  : 'bg-white/20 text-white hover:bg-white/30'
-              }`}
-            >
-              {cat.label}
-            </button>
+            {
+              id: 'transit' as const,
+              label: 'Smart Transit & Savings',
+              icon: '🚏',
+              accentBorder: 'border-l-4 border-l-cyan-400',
+              activeStyle: 'bg-white text-slate-950 shadow-md ring-1 ring-white/50',
+              inactiveStyle: 'bg-white/10 text-white/90 hover:bg-white/20 border-r border-t border-b border-white/10',
+              toolCount: '8 Tools',
+            },
+            {
+              id: 'events_logistics' as const,
+              label: 'Events & City Freight',
+              icon: '🏟️',
+              accentBorder: 'border-l-4 border-l-amber-400',
+              activeStyle: 'bg-white text-slate-950 shadow-md ring-1 ring-white/50',
+              inactiveStyle: 'bg-white/10 text-white/90 hover:bg-white/20 border-r border-t border-b border-white/10',
+              toolCount: '6 Tools',
+            },
+            {
+              id: 'traffic' as const,
+              label: 'Traffic & Emergency',
+              icon: '🚦',
+              accentBorder: 'border-l-4 border-l-rose-400',
+              activeStyle: 'bg-white text-slate-950 shadow-md ring-1 ring-white/50',
+              inactiveStyle: 'bg-white/10 text-white/90 hover:bg-white/20 border-r border-t border-b border-white/10',
+              toolCount: '7 Tools',
+            },
+          ].map((cat, idx) => (
+            <React.Fragment key={cat.id}>
+              {idx > 0 && <div className="h-6 w-[2px] bg-white/25 shrink-0 mx-0.5" />}
+              <button
+                key={cat.id}
+                onClick={() => handleCategorySelect(cat.id)}
+                className={`flex items-center gap-2 pl-3.5 pr-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 active:scale-95 ${cat.accentBorder} ${
+                  activeCategory === cat.id ? cat.activeStyle : cat.inactiveStyle
+                }`}
+              >
+                <span className="text-sm">{cat.icon}</span>
+                <span>{cat.label}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
+                    activeCategory === cat.id
+                      ? 'bg-slate-200 text-slate-800'
+                      : 'bg-white/15 text-white/80'
+                  }`}
+                >
+                  {cat.toolCount}
+                </span>
+              </button>
+            </React.Fragment>
           ))}
         </div>
 
         {/* Navigation Sub-Tabs */}
-        <div className="flex gap-2 mt-3 overflow-x-auto pb-1 hide-scrollbar">
+        <div className="flex gap-2 mt-3 overflow-x-auto pb-1 hide-scrollbar justify-start">
           {[
             { id: 'smart_stops', label: '🚏 Smart Stop Selection', cat: 'transit' },
             { id: 'smart_camera', label: '📹 Smart Camera AI Vision', cat: 'traffic' },
@@ -405,7 +439,7 @@ export const TransportationHubView: React.FC<TransportationHubProps> = ({
             { id: 'disruptions', label: '🚨 Disruption Manager', cat: 'traffic' },
             { id: 'heatmap', label: '🔥 Mobility Heatmap', cat: 'traffic' },
           ]
-            .filter((tab) => activeCategory === 'all' || tab.cat === activeCategory)
+            .filter((tab) => tab.cat === activeCategory)
             .map((tab) => {
               const isActive = activeTab === tab.id;
               return (
