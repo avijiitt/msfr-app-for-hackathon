@@ -311,21 +311,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
       {/* ── TOP NAVBAR ── */}
       <header className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-4 sm:py-6 flex items-center justify-between flex-shrink-0 z-20">
-        <div className="flex items-center gap-3 bg-white/70 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/60 shadow-xs">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white p-1 shadow-xs border border-blue-100 flex items-center justify-center flex-shrink-0">
+        <div className="flex items-center gap-3 bg-white/25 hover:bg-white/35 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-white/45 shadow-lg shadow-black/5 transition">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/80 p-1 shadow-xs border border-white/60 flex items-center justify-center flex-shrink-0">
             <img
               src="/musafir-logo.png"
               alt="Musafir Logo"
               className="w-full h-full object-contain rounded-lg"
             />
           </div>
-          <span className="text-xl sm:text-2xl font-black tracking-tight text-[#0F265C] font-sans">
+          <span className="text-xl sm:text-2xl font-black tracking-tight text-[#0F265C] font-sans drop-shadow-xs">
             Musafir
           </span>
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="text-xs sm:text-sm font-bold text-slate-800 bg-white/75 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/60 shadow-xs">
+          <span className="text-xs sm:text-sm font-bold text-slate-800 bg-white/25 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-white/45 shadow-lg shadow-black/5">
             Your Journey, Our Intelligence
           </span>
         </div>
@@ -335,12 +335,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
       <main className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-4 sm:py-8 flex-1 flex items-center">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center w-full">
           
-          {/* ── LEFT HERO: BRANDING & INTELLIGENT TRANSIT OVERVIEW ── */}
+          {/* ── LEFT HERO: BRANDING & 3 CORE PILLARS ── */}
           <div className="lg:col-span-7 flex flex-col justify-center space-y-6">
             
-            <div className="bg-white/75 backdrop-blur-xl border border-white/70 rounded-3xl p-6 sm:p-9 shadow-xl shadow-slate-900/10 space-y-5">
+            <div className="bg-white/25 backdrop-blur-2xl border border-white/45 rounded-3xl p-6 sm:p-9 shadow-2xl shadow-slate-950/10 space-y-5 transition-all">
               <div className="flex items-center gap-3.5 sm:gap-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white p-1.5 shadow-md border border-blue-100 flex items-center justify-center flex-shrink-0">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/85 p-1.5 shadow-md border border-white/60 flex items-center justify-center flex-shrink-0">
                   <img
                     src="/musafir-logo.png"
                     alt="Musafir Original Brand Logo"
@@ -348,37 +348,41 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                   />
                 </div>
                 <div>
-                  <h1 className="text-3xl sm:text-5xl font-black text-[#0F265C] tracking-tight">
+                  <h1 className="text-3xl sm:text-5xl font-black text-[#0F265C] tracking-tight drop-shadow-xs">
                     Musafir
                   </h1>
-                  <p className="text-sm sm:text-base text-blue-700 font-bold">
+                  <p className="text-sm sm:text-base text-blue-900 font-bold">
                     Your Journey, Our Intelligence
                   </p>
                 </div>
               </div>
 
-              <p className="text-sm sm:text-base text-slate-700 font-medium leading-relaxed">
-                Unified Multi-Modal Transit Grid for seamless travel, smart ticketing, and live route intelligence.
+              <p className="text-sm sm:text-base text-slate-800 font-medium leading-relaxed">
+                Unified Multi-Modal Transit Grid for seamless travel, real-time dispatch optimization, and civic infrastructure feedback.
               </p>
 
-              {/* Transit Modes Strip (Metro and Cabs & Autos removed as circled in red) */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm font-bold text-slate-800 pt-1">
-                <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/90 border border-white/80 shadow-xs">
-                  🚌 Buses
+              {/* 3 Core Pillars: Transportation, Logistics Optimizer & Civic Community */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs sm:text-sm font-bold text-slate-800 pt-1">
+                <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/35 hover:bg-white/50 backdrop-blur-md border border-white/50 shadow-xs transition">
+                  🚆 Transportation
                 </span>
                 <span className="text-slate-400 hidden sm:inline">•</span>
-                <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/90 border border-white/80 shadow-xs">
-                  🚆 Trains
+                <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/35 hover:bg-white/50 backdrop-blur-md border border-white/50 shadow-xs transition">
+                  📦 Logistics Optimizer
+                </span>
+                <span className="text-slate-400 hidden sm:inline">•</span>
+                <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/35 hover:bg-white/50 backdrop-blur-md border border-white/50 shadow-xs transition">
+                  👥 Civic Community
                 </span>
               </div>
 
               {/* Live Transit Stats Badges */}
-              <div className="pt-2 flex flex-wrap items-center gap-2.5 text-xs font-semibold text-slate-700">
-                <div className="flex items-center gap-2 bg-emerald-50/90 text-emerald-900 border border-emerald-200/90 px-3.5 py-2 rounded-full shadow-xs">
+              <div className="pt-2 flex flex-wrap items-center gap-2.5 text-xs font-semibold text-slate-800">
+                <div className="flex items-center gap-2 bg-emerald-500/15 backdrop-blur-md text-emerald-950 border border-emerald-400/40 px-3.5 py-2 rounded-full shadow-xs">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                   <span>Bhubaneswar Multi-Modal Transit Grid Live</span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-blue-50/90 text-blue-900 border border-blue-200/90 px-3.5 py-2 rounded-full font-bold shadow-xs">
+                <div className="flex items-center gap-1.5 bg-blue-500/15 backdrop-blur-md text-blue-950 border border-blue-400/40 px-3.5 py-2 rounded-full font-bold shadow-xs">
                   <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   <span>₹100 Welcome Joining Bonus</span>
                 </div>
@@ -387,16 +391,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
           </div>
 
-          {/* ── RIGHT COLUMN: GLASSMORPHISM LOGIN CARD ── */}
+          {/* ── RIGHT COLUMN: TRANSPARENT GLASSMORPHISM LOGIN CARD ── */}
           <div className="lg:col-span-5 flex justify-center w-full">
-            <div className="bg-white/80 backdrop-blur-2xl border border-white/80 rounded-3xl p-6 sm:p-9 shadow-2xl shadow-slate-900/15 w-full max-w-md space-y-5 transition-all">
+            <div className="bg-white/25 backdrop-blur-2xl border border-white/45 rounded-3xl p-6 sm:p-9 shadow-2xl shadow-slate-950/15 w-full max-w-md space-y-5 transition-all">
               
               {/* Card Header */}
               <div className="space-y-1">
-                <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight drop-shadow-xs">
                   Welcome back!
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                <p className="text-xs sm:text-sm text-slate-700 font-medium">
                   {emailStep === 'EMAIL_INPUT' && 'Log in to continue your journey'}
                   {emailStep === 'OTP_INPUT' && 'Enter 6-digit OTP code sent to your email'}
                   {emailStep === 'NAME_INPUT' && 'Complete your commuter profile details'}
@@ -405,14 +409,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
               {/* Toast & Error Alerts */}
               {toastMessage && (
-                <div className="p-3.5 rounded-2xl bg-blue-50/90 border border-blue-200 text-blue-900 text-xs font-bold flex items-center gap-2 shadow-xs animate-in slide-in-from-top-2">
+                <div className="p-3.5 rounded-2xl bg-blue-500/20 backdrop-blur-md border border-blue-400/40 text-blue-950 text-xs font-bold flex items-center gap-2 shadow-xs animate-in slide-in-from-top-2">
                   <span className="text-base">📩</span>
                   <span>{toastMessage}</span>
                 </div>
               )}
 
               {error && (
-                <div className="p-3.5 rounded-2xl bg-rose-50/90 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                <div className="p-3.5 rounded-2xl bg-rose-500/20 backdrop-blur-md border border-rose-400/40 text-rose-950 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>{error}</span>
                 </div>
@@ -422,11 +426,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
               {emailStep === 'EMAIL_INPUT' && (
                 <form onSubmit={handleSendEmailOTP} className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">
+                    <label className="text-xs font-bold text-slate-800">
                       Email Address
                     </label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                      <Mail className="w-4 h-4 text-slate-600 absolute left-4 top-1/2 -translate-y-1/2" />
                       <input
                         type="email"
                         required
@@ -434,14 +438,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                         placeholder="yourname@gmail.com"
                         value={googleEmailInput}
                         onChange={(e) => setGoogleEmailInput(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3.5 bg-white/90 hover:bg-white focus:bg-white border border-slate-200/90 focus:border-blue-600 rounded-2xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none transition shadow-xs"
+                        className="w-full pl-11 pr-4 py-3.5 bg-white/40 hover:bg-white/55 focus:bg-white/75 backdrop-blur-md border border-white/50 focus:border-blue-600 rounded-2xl text-sm font-semibold text-slate-950 placeholder:text-slate-500 focus:outline-none transition shadow-inner"
                       />
                     </div>
                   </div>
 
                   {/* Remember Me & Help */}
                   <div className="flex items-center justify-between text-xs pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-600">
+                    <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
                       <input
                         type="checkbox"
                         defaultChecked
@@ -449,7 +453,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                       />
                       <span>Remember me</span>
                     </label>
-                    <span className="text-emerald-700 font-bold flex items-center gap-1">
+                    <span className="text-emerald-900 font-bold flex items-center gap-1 bg-emerald-500/15 backdrop-blur-sm px-2.5 py-1 rounded-full border border-emerald-400/30">
                       <Sparkles className="w-3 h-3 text-emerald-600" /> ₹100 Bonus Included
                     </span>
                   </div>
@@ -458,7 +462,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 px-4 bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold rounded-2xl shadow-lg shadow-blue-600/25 transition active:scale-[0.99] flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-60"
+                    className="w-full py-3.5 px-4 bg-[#1D4ED8]/90 hover:bg-[#1D4ED8] backdrop-blur-md text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 border border-blue-400/30 transition active:scale-[0.99] flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-60"
                   >
                     {loading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -471,8 +475,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                   </button>
 
                   <div className="text-center pt-2">
-                    <p className="text-xs text-slate-500 font-medium">
-                      Don't have an account? <span className="font-bold text-blue-600 hover:underline cursor-pointer">Sign Up</span>
+                    <p className="text-xs text-slate-700 font-medium">
+                      Don't have an account? <span className="font-bold text-blue-800 hover:underline cursor-pointer">Sign Up</span>
                     </p>
                   </div>
                 </form>
@@ -481,15 +485,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
               {/* ── STEP 2: OTP ENTRY (AS CURRENTLY IMPLEMENTED) ── */}
               {emailStep === 'OTP_INPUT' && (
                 <form onSubmit={handleVerifyEmailOTP} className="space-y-4 animate-in slide-in-from-right-4">
-                  <div className="p-3 bg-blue-50/90 rounded-2xl border border-blue-100 flex items-center justify-between text-xs">
+                  <div className="p-3 bg-blue-500/15 backdrop-blur-md rounded-2xl border border-blue-400/30 flex items-center justify-between text-xs">
                     <div className="truncate">
-                      <span className="text-slate-500 block text-[10px]">OTP sent to:</span>
-                      <strong className="text-blue-900 font-bold truncate">{googleEmailInput}</strong>
+                      <span className="text-slate-600 block text-[10px]">OTP sent to:</span>
+                      <strong className="text-blue-950 font-bold truncate">{googleEmailInput}</strong>
                     </div>
                     <button
                       type="button"
                       onClick={() => setEmailStep('EMAIL_INPUT')}
-                      className="text-blue-600 font-bold text-xs hover:underline shrink-0 ml-2 cursor-pointer"
+                      className="text-blue-800 font-bold text-xs hover:underline shrink-0 ml-2 cursor-pointer"
                     >
                       Change
                     </button>
@@ -524,7 +528,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                             document.getElementById(`otp-email-${idx - 1}`)?.focus();
                           }
                         }}
-                        className="w-10 h-12 sm:w-11 sm:h-13 text-center text-lg sm:text-xl font-black bg-white/90 border-2 border-slate-200/90 focus:border-blue-600 focus:bg-white rounded-xl focus:outline-none text-slate-900 transition shadow-xs"
+                        className="w-10 h-12 sm:w-11 sm:h-13 text-center text-lg sm:text-xl font-black bg-white/40 backdrop-blur-md border-2 border-white/60 focus:border-blue-600 focus:bg-white/80 rounded-xl focus:outline-none text-slate-950 transition shadow-inner"
                       />
                     ))}
                   </div>
@@ -532,7 +536,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                   <button
                     type="submit"
                     disabled={loading || userEnteredOtp.length !== 6}
-                    className="w-full py-3.5 px-4 bg-[#1D4ED8] hover:bg-[#1E40AF] disabled:bg-slate-300 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/25 transition active:scale-[0.99] flex items-center justify-center gap-2 text-sm cursor-pointer"
+                    className="w-full py-3.5 px-4 bg-[#1D4ED8]/90 hover:bg-[#1D4ED8] backdrop-blur-md disabled:bg-slate-400 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 border border-blue-400/30 transition active:scale-[0.99] flex items-center justify-center gap-2 text-sm cursor-pointer"
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><span>Verify OTP & Continue</span><ArrowRight className="w-4 h-4" /></>}
                   </button>
@@ -542,7 +546,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                       type="button"
                       disabled={resendTimer > 0 || loading}
                       onClick={handleSendEmailOTP}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-700 disabled:text-slate-400 flex items-center justify-center gap-1.5 w-full transition cursor-pointer"
+                      className="text-xs font-bold text-blue-900 hover:text-blue-950 disabled:text-slate-500 flex items-center justify-center gap-1.5 w-full transition cursor-pointer"
                     >
                       <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
                       {resendTimer > 0 ? `Resend code in 00:${resendTimer.toString().padStart(2, '0')}` : 'Resend OTP Code'}
@@ -555,8 +559,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
               {emailStep === 'NAME_INPUT' && (
                 <form onSubmit={handleSaveEmailProfile} className="space-y-4 animate-in slide-in-from-right-4">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                      <User className="w-3.5 h-3.5 text-blue-600" /> Full Name
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-blue-700" /> Full Name
                     </label>
                     <input
                       type="text"
@@ -564,12 +568,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                       placeholder="e.g. Abhijit Rout"
                       value={googleNameInput}
                       onChange={(e) => setGoogleNameInput(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/90 border border-slate-200/90 rounded-2xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+                      className="w-full px-4 py-3 bg-white/40 hover:bg-white/55 focus:bg-white/75 backdrop-blur-md border border-white/50 rounded-2xl text-sm font-semibold text-slate-950 focus:outline-none focus:border-blue-600 shadow-inner"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                    <label className="text-xs font-bold text-slate-800 mb-1.5 block">
                       Passenger Category
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -583,10 +587,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                           key={cat.id}
                           type="button"
                           onClick={() => setGoogleCategory(cat.id as any)}
-                          className={`p-2.5 rounded-xl text-center font-bold border transition flex flex-col items-center gap-1 cursor-pointer ${
+                          className={`p-2.5 rounded-xl text-center font-bold border transition flex flex-col items-center gap-1 cursor-pointer backdrop-blur-sm ${
                             googleCategory === cat.id
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                              : 'bg-white/80 text-slate-700 border-slate-200 hover:border-blue-400'
+                              ? 'bg-blue-600/90 text-white border-blue-500 shadow-sm'
+                              : 'bg-white/30 text-slate-800 border-white/45 hover:bg-white/50'
                           }`}
                         >
                           <span className="text-base">{cat.icon}</span>
@@ -599,7 +603,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 px-4 bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold rounded-2xl shadow-lg shadow-blue-600/25 transition active:scale-[0.99] flex items-center justify-center gap-2 text-sm cursor-pointer"
+                    className="w-full py-3.5 px-4 bg-[#1D4ED8]/90 hover:bg-[#1D4ED8] backdrop-blur-md text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 border border-blue-400/30 transition active:scale-[0.99] flex items-center justify-center gap-2 text-sm cursor-pointer"
                   >
                     {loading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -614,8 +618,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
               )}
 
               {/* Card Footer Privacy Note */}
-              <div className="pt-3 border-t border-slate-100/80 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-medium">
-                <Shield className="w-3.5 h-3.5 text-emerald-500" />
+              <div className="pt-3 border-t border-white/30 flex items-center justify-center gap-1.5 text-[11px] text-slate-700 font-medium">
+                <Shield className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Protected by Verified Government Transit Registry</span>
               </div>
 
@@ -627,7 +631,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 
       {/* ── FOOTER BAR ── */}
       <footer className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-4 text-center text-xs text-slate-800 font-semibold flex-shrink-0 z-20">
-        <div className="inline-block bg-white/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/50 shadow-xs">
+        <div className="inline-block bg-white/25 backdrop-blur-md px-5 py-2 rounded-full border border-white/40 shadow-xs">
           © 2026 Musafir. Multi-Modal Unified Transit & Mobility Grid. All rights reserved.
         </div>
       </footer>
