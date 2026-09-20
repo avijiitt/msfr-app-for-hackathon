@@ -667,6 +667,78 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isLiveSimulating, setIsLiveSimulating] = useState(true);
 
+  // Driver Incident & Parcel Damage Reporting State
+  const [driverReports, setDriverReports] = useState<Array<{
+    id: string;
+    incidentType: 'parcel_damage' | 'road_accident' | 'road_blocked' | 'vehicle_breakdown' | 'weather_damage' | 'delay';
+    title: string;
+    description: string;
+    affectedStopName: string;
+    location: string;
+    severity: 'minor' | 'moderate' | 'critical';
+    reportedAt: string;
+    status: 'investigating' | 'acknowledged' | 'replacement_dispatched';
+    hasPhoto: boolean;
+  }>>([
+    {
+      id: 'rep-01',
+      incidentType: 'parcel_damage',
+      title: '📦 Carton Corner Tear from Severe Pothole Jolt',
+      description: 'Deep unpaved pothole near Vani Vihar underpass caused sudden chassis vibration. Outer carton box tear, internal bubble packaging and goods verified intact.',
+      affectedStopName: 'Patia (Stop 1)',
+      location: 'Vani Vihar Flyover approach, Janpath, Bhubaneswar',
+      severity: 'moderate',
+      reportedAt: '15 mins ago',
+      status: 'acknowledged',
+      hasPhoto: true,
+    },
+  ]);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [newRepType, setNewRepType] = useState<'parcel_damage' | 'road_accident' | 'road_blocked' | 'vehicle_breakdown' | 'weather_damage' | 'delay'>('parcel_damage');
+  const [newRepStop, setNewRepStop] = useState<string>('All Stops / On Route');
+  const [newRepLocation, setNewRepLocation] = useState<string>('');
+  const [newRepDescription, setNewRepDescription] = useState<string>('');
+  const [newRepSeverity, setNewRepSeverity] = useState<'minor' | 'moderate' | 'critical'>('moderate');
+  const [newRepPhotoAttached, setNewRepPhotoAttached] = useState<boolean>(true);
+
+  const handleCreateDriverReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRepDescription.trim()) {
+      setToastMessage('⚠️ Please provide a description of why the harm/incident occurred.');
+      setTimeout(() => setToastMessage(null), 3500);
+      return;
+    }
+
+    const titleMap: Record<string, string> = {
+      parcel_damage: '📦 Parcel Harm / Packaging Damaged',
+      road_accident: '💥 Road Collision / Minor Accident',
+      road_blocked: '🚧 Road Blocked / Severe Waterlogging',
+      vehicle_breakdown: '🔧 Vehicle Breakdown / Puncture',
+      weather_damage: '🌧️ Weather / Rain Water Ingress',
+      delay: '⏳ Heavy Congestion / Delivery Window Delay',
+    };
+
+    const newReport = {
+      id: `rep-${Date.now()}`,
+      incidentType: newRepType,
+      title: titleMap[newRepType] || '⚠️ Route Incident Report',
+      description: newRepDescription.trim(),
+      affectedStopName: newRepStop || 'In Transit',
+      location: newRepLocation.trim() || 'Bhubaneswar Route Corridor',
+      severity: newRepSeverity,
+      reportedAt: 'Just now',
+      status: 'acknowledged' as const,
+      hasPhoto: newRepPhotoAttached,
+    };
+
+    setDriverReports([newReport, ...driverReports]);
+    setIsReportModalOpen(false);
+    setNewRepDescription('');
+    setNewRepLocation('');
+    setToastMessage('🚨 Driver Incident & Damage Report submitted to Central Dispatch & Insurance!');
+    setTimeout(() => setToastMessage(null), 4500);
+  };
+
   // Real road polyline state & live routing metrics
   const [roadPolyline, setRoadPolyline] = useState<[number, number][]>([]);
   const [isRoutingLoading, setIsRoutingLoading] = useState(false);
@@ -1031,47 +1103,81 @@ Status: Verified & Dispatched via Musafir Logistics Network
 
         </div>
 
-        {/* ── REQUIREMENT 7: DELIVERY TRACKING DASHBOARD KPI RIBBON ── */}
-        <div className="max-w-[1600px] mx-auto mt-3 pt-3 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <div className="bg-[#10182E] border border-slate-800/90 rounded-2xl p-2.5 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Delivered</div>
-              <div className="text-xl font-black text-emerald-400">24</div>
+        {/* ── DRIVER ON-ROAD INCIDENT & PARCEL DAMAGE REPORT RIBBON (Replaces KPI Ribbon) ── */}
+        <div className="max-w-[1600px] mx-auto mt-3 pt-3 border-t border-slate-800/80">
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-rose-950/30 to-slate-900 border border-rose-500/40 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-rose-400 flex items-center justify-center font-bold shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-400" />
+              </div>
+              <div>
+                <div className="text-xs font-black text-white flex items-center gap-2">
+                  <span>Driver On-Road Incident & Parcel Damage Reporter</span>
+                  {driverReports.length > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-extrabold border border-rose-500/30">
+                      {driverReports.length} {driverReports.length === 1 ? 'Incident Logged' : 'Incidents Logged'}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  Raste mein agar koi accident, road blockage ya parcel ko koi harm/damage hua, toh driver turant yahan reason aur description ke sath report kar sakte hain.
+                </p>
+              </div>
             </div>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-              <CheckCircle2 className="w-4 h-4" />
+
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setIsReportModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-rose-600/30 transition cursor-pointer active:scale-95"
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>⚠️ Report Incident / Parcel Damage</span>
+              </button>
             </div>
           </div>
 
-          <div className="bg-[#10182E] border border-slate-800/90 rounded-2xl p-2.5 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">In Transit</div>
-              <div className="text-xl font-black text-blue-400">8</div>
-            </div>
-            <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
-              <Truck className="w-4 h-4" />
-            </div>
-          </div>
+          {/* Active Logged Driver Reports List */}
+          {driverReports.length > 0 && (
+            <div className="mt-2.5 space-y-2">
+              {driverReports.map((rep) => (
+                <div
+                  key={rep.id}
+                  className="p-3 rounded-2xl bg-[#0e1628] border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs shadow-md"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-lg shrink-0">🚨</span>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-black text-white text-xs">{rep.title}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
+                          Stop: {rep.affectedStopName}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">({rep.reportedAt})</span>
+                      </div>
+                      <div className="text-[11px] text-rose-200/90 mt-1 font-medium bg-rose-950/20 p-2 rounded-xl border border-rose-900/30">
+                        <span className="text-amber-400 font-bold">Kiu harm hua / Reason: </span>
+                        {rep.description}
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-2">
+                        <span>📍 Location: <strong className="text-slate-200">{rep.location}</strong></span>
+                        <span>•</span>
+                        <span>Severity: <strong className="uppercase text-rose-400">{rep.severity}</strong></span>
+                        {rep.hasPhoto && <span>• 📸 Photo Attached</span>}
+                      </div>
+                    </div>
+                  </div>
 
-          <div className="bg-[#10182E] border border-slate-800/90 rounded-2xl p-2.5 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Delayed / At Risk</div>
-              <div className="text-xl font-black text-rose-400">3</div>
+                  <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Logged with Dispatch & Insurance</span>
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div className="bg-[#10182E] border border-slate-800/90 rounded-2xl p-2.5 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Routes</div>
-              <div className="text-xl font-black text-amber-400">12</div>
-            </div>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-              <Navigation className="w-4 h-4" />
-            </div>
-          </div>
+          )}
         </div>
 
         {/* ── REQUIREMENT 5: LIVE TRAFFIC & CIVIC COMMUNITY ALERT BAR ── */}
@@ -2459,6 +2565,182 @@ Status: Verified & Dispatched via Musafir Logistics Network
                 />
               ))}
             </MapContainer>
+          </div>
+        </div>
+      )}
+
+      {/* ── DRIVER INCIDENT & PARCEL DAMAGE REPORT MODAL ── */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 z-[999999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in">
+          <div className="bg-[#0c1322] border border-rose-500/40 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative my-8 space-y-4 max-h-[90vh] overflow-y-auto">
+            
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center text-xl shrink-0">
+                  🚨
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Driver On-Road Incident & Damage Report</h3>
+                  <p className="text-[11px] text-slate-400">Log damage reasons, road obstacles, or delivery risks to Dispatch</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsReportModalOpen(false)}
+                className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateDriverReport} className="space-y-4 text-xs">
+              
+              {/* 1. Incident Type */}
+              <div>
+                <label className="block text-slate-300 font-bold mb-1.5">
+                  1. Raste mein kya incident ya harm hua? (Select Incident Type)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'parcel_damage', label: '📦 Parcel Harm / Damaged', desc: 'Crushed box, tear, liquid spill' },
+                    { id: 'road_accident', label: '💥 Road Accident / Collision', desc: 'Vehicle impact, minor scratch' },
+                    { id: 'road_blocked', label: '🚧 Road Blockage / Flooding', desc: 'Severe waterlogging, closure' },
+                    { id: 'vehicle_breakdown', label: '🔧 Vehicle Breakdown', desc: 'Flat tire, engine/battery failure' },
+                    { id: 'weather_damage', label: '🌧️ Heavy Rain / Leakage', desc: 'Water ingress, wet packing' },
+                    { id: 'delay', label: '⏳ Severe Traffic Jam', desc: 'Choke point, 30+ min delay' },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setNewRepType(t.id as any)}
+                      className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
+                        newRepType === t.id
+                          ? 'bg-rose-500/20 border-rose-500 text-white shadow-md'
+                          : 'bg-[#10182E] border-slate-800 text-slate-300 hover:border-slate-700'
+                      }`}
+                    >
+                      <span className="font-bold text-xs">{t.label}</span>
+                      <span className="text-[10px] text-slate-400 mt-0.5">{t.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Affected Stop / Parcel */}
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">
+                  2. Kaunsa parcel / stop affect hua?
+                </label>
+                <select
+                  value={newRepStop}
+                  onChange={(e) => setNewRepStop(e.target.value)}
+                  className="w-full bg-[#10182E] border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-rose-500"
+                >
+                  <option value="All Stops / En-Route Fleet">All Stops / In-Transit Van</option>
+                  {waypoints.map((w, idx) => (
+                    <option key={w.id} value={`Stop ${idx + 1}: ${w.recipientName}`}>
+                      Stop {idx + 1}: {w.recipientName} ({w.address})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 3. Location in Bhubaneswar */}
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">
+                  3. Incident kahan hua? (Location in Bhubaneswar)
+                </label>
+                <div className="relative">
+                  <MapPin className="w-3.5 h-3.5 absolute left-3 top-3 text-rose-400" />
+                  <input
+                    type="text"
+                    value={newRepLocation}
+                    onChange={(e) => setNewRepLocation(e.target.value)}
+                    placeholder="e.g. Rasulgarh Flyover underpass, Janpath near Ram Mandir..."
+                    className="w-full bg-[#10182E] border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+              </div>
+
+              {/* 4. Description of Harm ("Kiu harm hua uske lie description") */}
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">
+                  4. Kiu harm hua? Detail description batayein <span className="text-rose-400">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={newRepDescription}
+                  onChange={(e) => setNewRepDescription(e.target.value)}
+                  placeholder="Kiu harm hua detail me likhein (e.g. 'Road pe sudden water puddle & pothole ki wajah se box gir gaya aur corner seal phat gayi, but inside electronics safe hai...')"
+                  className="w-full bg-[#10182E] border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-rose-500 resize-none leading-relaxed"
+                  required
+                />
+              </div>
+
+              {/* 5. Severity Level */}
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">
+                  5. Damage / Risk Severity
+                </label>
+                <div className="flex gap-2">
+                  {[
+                    { id: 'minor', label: '🟢 Minor', desc: 'Packaging scratch, no item damage' },
+                    { id: 'moderate', label: '🟠 Moderate', desc: 'Box dented, needs inspection' },
+                    { id: 'critical', label: '🔴 Critical', desc: 'Severe damage / van stopped' },
+                  ].map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setNewRepSeverity(s.id as any)}
+                      className={`flex-1 py-2 px-2 rounded-xl text-center border font-bold text-[11px] transition ${
+                        newRepSeverity === s.id
+                          ? 'bg-rose-500/20 border-rose-500 text-rose-300 font-black'
+                          : 'bg-[#10182E] border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 6. Photo Proof Toggle */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-[#10182E] border border-slate-800">
+                <div className="flex items-center gap-2 text-slate-300">
+                  <span>📸</span>
+                  <span>Photo / Damage Proof Attached</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setNewRepPhotoAttached(!newRepPhotoAttached)}
+                  className={`w-10 h-5 rounded-full transition flex items-center px-0.5 ${
+                    newRepPhotoAttached ? 'bg-rose-600 justify-end' : 'bg-slate-700 justify-start'
+                  }`}
+                >
+                  <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                </button>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-rose-600/30 transition cursor-pointer active:scale-95"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Submit Driver Incident Report</span>
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       )}
