@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Package,
   Truck,
@@ -57,7 +57,7 @@ import {
   computeAntiGravityRoute,
 } from '../../services/logisticsOptimizerService';
 import { POPULAR_INDIAN_LOCATIONS } from '../../services/indiaGeocodingService';
-import { BHUBANESWAR_LOCALITIES } from '../../data/cities/bhubaneswar';
+import { BHUBANESWAR_LOCALITIES, BHUBANESWAR_STATIONS } from '../../data/cities/bhubaneswar';
 import { STOP_COORDINATES_MAP } from '../../data/busRoutesData';
 import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
 import { isValidLatLng, filterValidLatLngs } from '../../utils/latLngValidator';
@@ -391,32 +391,190 @@ function MapBoundsUpdater({ coords }: { coords: [number, number][] }) {
   return null;
 }
 
+/**
+ * Haversine Distance Calculation (Distance Algorithm)
+ */
+export function calculateHaversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 100) / 100;
+}
+
+/**
+ * Distance Algorithm (TSP Nearest Neighbor):
+ * Optimizes the sequence of delivery stops starting from originHub to minimize travel distance.
+ */
+export function optimizeStopsByDistance(
+  origin: { lat: number; lng: number },
+  stops: DeliveryWaypoint[]
+): DeliveryWaypoint[] {
+  if (stops.length <= 1) return [...stops];
+  const unvisited = [...stops];
+  const ordered: DeliveryWaypoint[] = [];
+  let current = { lat: origin.lat, lng: origin.lng };
+
+  while (unvisited.length > 0) {
+    let nearestIdx = 0;
+    let nearestDist = Infinity;
+
+    for (let i = 0; i < unvisited.length; i++) {
+      const d = calculateHaversineKm(current.lat, current.lng, unvisited[i].lat, unvisited[i].lng);
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearestIdx = i;
+      }
+    }
+
+    const nextStop = unvisited.splice(nearestIdx, 1)[0];
+    ordered.push(nextStop);
+    current = { lat: nextStop.lat, lng: nextStop.lng };
+  }
+
+  return ordered;
+}
+
+/**
+ * Bhubaneswar Arterial Road Corridor Nodes
+ * Used for realistic road routing interpolation (no straight lines!)
+ */
+const BBSR_ROAD_CORRIDOR_NODES: Array<{ name: string; lat: number; lng: number }> = [
+  { name: 'Khandagiri Overbridge', lat: 20.2588, lng: 85.7865 },
+  { name: 'Baramunda ISBT Hub', lat: 20.2818, lng: 85.7938 },
+  { name: 'Fire Station Square', lat: 20.2770, lng: 85.8060 },
+  { name: 'Nayapalli ISKCON', lat: 20.2982, lng: 85.8105 },
+  { name: 'Jayadev Vihar Flyover', lat: 20.3039, lng: 85.8188 },
+  { name: 'Acharya Vihar Square', lat: 20.3055, lng: 85.8285 },
+  { name: 'Vani Vihar Square', lat: 20.3015, lng: 85.8365 },
+  { name: 'Saheed Nagar Janpath', lat: 20.2895, lng: 85.8445 },
+  { name: 'Master Canteen Station', lat: 20.2668, lng: 85.8436 },
+  { name: 'Rajmahal Square', lat: 20.2640, lng: 85.8340 },
+  { name: 'Old Town Lingaraj Link', lat: 20.2385, lng: 85.8335 },
+  { name: 'Rasulgarh Square NH-16', lat: 20.2977, lng: 85.8643 },
+  { name: 'Palasuni Flyover', lat: 20.3115, lng: 85.8620 },
+  { name: 'Mancheswar Link', lat: 20.3165, lng: 85.8560 },
+  { name: 'Kalinga Hospital Square', lat: 20.3225, lng: 85.8218 },
+  { name: 'Damana Square', lat: 20.3340, lng: 85.8205 },
+  { name: 'Sailashree Vihar', lat: 20.3420, lng: 85.8110 },
+  { name: 'Patia Big Bazaar Square', lat: 20.3541, lng: 85.8175 },
+  { name: 'KIIT Square Patia', lat: 20.3533, lng: 85.8164 },
+  { name: 'Infocity Tech Park', lat: 20.3602, lng: 85.8035 },
+  { name: 'Mani Tribhuban Raghunathpur', lat: 20.3688, lng: 85.8242 },
+  { name: 'ITER Jagamara', lat: 20.2515, lng: 85.7985 },
+  { name: 'AIIMS Sijua', lat: 20.2312, lng: 85.7761 },
+  { name: 'Airport Gate BBI', lat: 20.2524, lng: 85.8178 },
+  { name: 'SUM Hospital Kalinga Nagar', lat: 20.2760, lng: 85.7580 },
+];
+
+export function generateBhubaneswarRoadInterpolation(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number }
+): [number, number][] {
+  let bestFrom = BBSR_ROAD_CORRIDOR_NODES[0];
+  let minFrom = Infinity;
+  let bestTo = BBSR_ROAD_CORRIDOR_NODES[0];
+  let minTo = Infinity;
+
+  for (const node of BBSR_ROAD_CORRIDOR_NODES) {
+    const d1 = calculateHaversineKm(from.lat, from.lng, node.lat, node.lng);
+    if (d1 < minFrom) {
+      minFrom = d1;
+      bestFrom = node;
+    }
+    const d2 = calculateHaversineKm(to.lat, to.lng, node.lat, node.lng);
+    if (d2 < minTo) {
+      minTo = d2;
+      bestTo = node;
+    }
+  }
+
+  const segment: [number, number][] = [[from.lat, from.lng]];
+  if (minFrom > 0.3 && minFrom < 4.5) {
+    segment.push([bestFrom.lat, bestFrom.lng]);
+  }
+  if (bestTo.name !== bestFrom.name && minTo > 0.3 && minTo < 4.5) {
+    const midLat = (bestFrom.lat + bestTo.lat) / 2;
+    const midLng = (bestFrom.lng + bestTo.lng) / 2;
+    segment.push([midLat, midLng]);
+    segment.push([bestTo.lat, bestTo.lng]);
+  }
+  segment.push([to.lat, to.lng]);
+  return segment;
+}
+
 export function resolveLogisticsCoordinates(inputAddress: string): { lat: number; lng: number; formatted: string } {
   const clean = (inputAddress || '').toLowerCase().trim();
 
+  // 1. Direct landmark / institution overrides
   if (clean.includes('trident') || clean.includes('tat')) {
     return { lat: 20.3542, lng: 85.8078, formatted: 'Trident Academy of Technology, Patia, Bhubaneswar' };
   }
   if (clean.includes('mani tribhuban') || clean.includes('tribhuban')) {
     return { lat: 20.3688, lng: 85.8242, formatted: 'Mani Tribhuban, Nandankanan Road, Patia' };
   }
+  if (clean.includes('esplanade')) {
+    return { lat: 20.2977, lng: 85.8643, formatted: 'Esplanade One Mall, Rasulgarh, Bhubaneswar' };
+  }
+  if (clean.includes('pal heights')) {
+    return { lat: 20.3039, lng: 85.8188, formatted: 'Pal Heights Mall, Jayadev Vihar, Bhubaneswar' };
+  }
+  if (clean.includes('kims')) {
+    return { lat: 20.3541, lng: 85.8175, formatted: 'KIMS Hospital, Patia, Bhubaneswar' };
+  }
+  if (clean.includes('dn regalia')) {
+    return { lat: 20.2480, lng: 85.7680, formatted: 'DN Regalia Mall, Patrapada, Bhubaneswar' };
+  }
+  if (clean.includes('apollo')) {
+    return { lat: 20.3080, lng: 85.8320, formatted: 'Apollo Hospitals, Sainik School Road, Bhubaneswar' };
+  }
+
+  // 2. Popular Indian & Bhubaneswar pre-defined locations
   const popMatch = POPULAR_INDIAN_LOCATIONS.find(
     (loc) => clean.includes(loc.name.toLowerCase()) || loc.name.toLowerCase().includes(clean)
   );
   if (popMatch && popMatch.lat && popMatch.lng) {
     return { lat: popMatch.lat, lng: popMatch.lng, formatted: popMatch.formattedAddress || popMatch.name };
   }
-  const locMatch = BHUBANESWAR_LOCALITIES.find(
-    (loc) => clean.includes(loc.name.toLowerCase()) || loc.name.toLowerCase().includes(clean)
-  );
+
+  // 3. Search across all BHUBANESWAR_LOCALITIES (30+ key localities)
+  const locMatch = BHUBANESWAR_LOCALITIES.find((loc) => {
+    const lName = loc.name.toLowerCase();
+    const lLandmark = (loc.popularLandmark || '').toLowerCase();
+    const lId = loc.id.toLowerCase();
+    if (lName.includes(clean) || clean.includes(lName)) return true;
+    if (lLandmark.includes(clean) || clean.includes(lLandmark)) return true;
+    if (clean.includes(lId) || lId.includes(clean)) return true;
+
+    // Word token check
+    const words = clean.split(/[\s,/-]+/).filter((w) => w.length > 2 && !['bhubaneswar', 'road', 'square', 'chhak', 'near', 'lane'].includes(w));
+    return words.some((w) => lName.includes(w) || lLandmark.includes(w) || lId.includes(w));
+  });
   if (locMatch) {
-    return { lat: locMatch.lat, lng: locMatch.lng, formatted: `${locMatch.name}, Bhubaneswar` };
+    return { lat: locMatch.lat, lng: locMatch.lng, formatted: locMatch.popularLandmark || `${locMatch.name}, Bhubaneswar` };
   }
+
+  // 4. Search across BHUBANESWAR_STATIONS
+  const stnMatch = BHUBANESWAR_STATIONS.find((stn) => {
+    const sName = stn.name.toLowerCase();
+    return sName.includes(clean) || clean.includes(sName);
+  });
+  if (stnMatch) {
+    return { lat: stnMatch.lat, lng: stnMatch.lng, formatted: `${stnMatch.name}, Bhubaneswar` };
+  }
+
+  // 5. STOP_COORDINATES_MAP
   for (const [key, coords] of Object.entries(STOP_COORDINATES_MAP)) {
     if (clean.includes(key) || key.includes(clean)) {
       return { lat: coords[0], lng: coords[1], formatted: `${key.toUpperCase()}, Bhubaneswar` };
     }
   }
+
+  // 6. Common BBSR Landmark shortcuts
   if (clean.includes('kiit')) return { lat: 20.3541, lng: 85.8175, formatted: 'KIIT Square, Patia, Bhubaneswar' };
   if (clean.includes('patia')) return { lat: 20.3588, lng: 85.8142, formatted: 'Patia Main Road, Bhubaneswar' };
   if (clean.includes('unit 2') || clean.includes('unit-2')) return { lat: 20.2721, lng: 85.8341, formatted: 'Unit 2, Market Building, Bhubaneswar' };
@@ -426,11 +584,31 @@ export function resolveLogisticsCoordinates(inputAddress: string): { lat: number
   if (clean.includes('master canteen')) return { lat: 20.2667, lng: 85.8436, formatted: 'Master Canteen Square, Railway Station' };
   if (clean.includes('baramunda')) return { lat: 20.2818, lng: 85.7938, formatted: 'Baramunda ISBT Hub, Bhubaneswar' };
   if (clean.includes('khandagiri')) return { lat: 20.2612, lng: 85.7891, formatted: 'Khandagiri Caves Square, Bhubaneswar' };
+  if (clean.includes('jayadev vihar') || clean.includes('jaydev vihar')) return { lat: 20.3039, lng: 85.8188, formatted: 'Jayadev Vihar Square, Bhubaneswar' };
+  if (clean.includes('acharya vihar')) return { lat: 20.3055, lng: 85.8285, formatted: 'Acharya Vihar Square, Bhubaneswar' };
+  if (clean.includes('damana')) return { lat: 20.3340, lng: 85.8205, formatted: 'Damana Square, Chandrasekharpur, Bhubaneswar' };
+  if (clean.includes('saheed nagar')) return { lat: 20.2895, lng: 85.8445, formatted: 'Saheed Nagar, Bhubaneswar' };
+  if (clean.includes('nayapalli')) return { lat: 20.2982, lng: 85.8105, formatted: 'Nayapalli, Bhubaneswar' };
+  if (clean.includes('aiims')) return { lat: 20.2312, lng: 85.7761, formatted: 'AIIMS Bhubaneswar, Sijua' };
+  if (clean.includes('airport')) return { lat: 20.2524, lng: 85.8178, formatted: 'Biju Patnaik Airport, Bhubaneswar' };
+  if (clean.includes('sum')) return { lat: 20.2760, lng: 85.7580, formatted: 'SUM Hospital, Kalinga Nagar, Bhubaneswar' };
+  if (clean.includes('iter') || clean.includes('soa')) return { lat: 20.2515, lng: 85.7985, formatted: 'ITER / SOA University, Jagamara, Bhubaneswar' };
+  if (clean.includes('infocity') || clean.includes('cybercity')) return { lat: 20.3602, lng: 85.8035, formatted: 'InfoCity Tech Park, Bhubaneswar' };
+  if (clean.includes('pokhariput')) return { lat: 20.2440, lng: 85.8040, formatted: 'Pokhariput, Bhubaneswar' };
+  if (clean.includes('mancheswar')) return { lat: 20.3165, lng: 85.8560, formatted: 'Mancheswar Industrial Estate, Bhubaneswar' };
+  if (clean.includes('palasuni')) return { lat: 20.3115, lng: 85.8620, formatted: 'Palasuni Square, NH-16, Bhubaneswar' };
+  if (clean.includes('fire station')) return { lat: 20.2770, lng: 85.8060, formatted: 'Fire Station Square, Baramunda, Bhubaneswar' };
+  if (clean.includes('tamando')) return { lat: 20.2195, lng: 85.7480, formatted: 'Tamando / Info Valley, Bhubaneswar' };
+  if (clean.includes('old town')) return { lat: 20.2385, lng: 85.8335, formatted: 'Old Town, Bhubaneswar' };
+  if (clean.includes('kalinga hospital')) return { lat: 20.3225, lng: 85.8218, formatted: 'Kalinga Hospital Square, Bhubaneswar' };
+  if (clean.includes('sailashree vihar')) return { lat: 20.3420, lng: 85.8110, formatted: 'Sailashree Vihar, Bhubaneswar' };
+  if (clean.includes('niladri vihar')) return { lat: 20.3370, lng: 85.8055, formatted: 'Niladri Vihar, Bhubaneswar' };
 
+  // 7. Bounding box hash within Bhubaneswar metropolitan boundaries
   const hash = clean.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const latOffset = ((hash % 100) / 100 - 0.5) * 0.05;
-  const lngOffset = (((hash >> 2) % 100) / 100 - 0.5) * 0.05;
-  return { lat: 20.315 + latOffset, lng: 85.82 + lngOffset, formatted: inputAddress };
+  const latOffset = ((hash % 140) / 1000) - 0.07;
+  const lngOffset = (((hash >> 2) % 120) / 1000) - 0.06;
+  return { lat: 20.298 + latOffset, lng: 85.82 + lngOffset, formatted: `${inputAddress}, Bhubaneswar` };
 }
 
 interface LogisticsHubProps {
@@ -489,19 +667,30 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isLiveSimulating, setIsLiveSimulating] = useState(true);
 
+  // Real road polyline state & live routing metrics
+  const [roadPolyline, setRoadPolyline] = useState<[number, number][]>([]);
+  const [isRoutingLoading, setIsRoutingLoading] = useState(false);
+  const [realRoadDistanceKm, setRealRoadDistanceKm] = useState<number | null>(null);
+  const [realRoadDurationMin, setRealRoadDurationMin] = useState<number | null>(null);
+
+  // TSP Nearest Neighbor Distance Algorithm: Sequence delivery stops to minimize distance
+  const tspOrderedWaypoints = useMemo(() => {
+    return optimizeStopsByDistance(originHub, waypoints);
+  }, [originHub.lat, originHub.lng, waypoints]);
+
   // Compute TSP / Multi-Objective Route Plan
   const plan: AntiGravityRoutePlan = useMemo(() => {
-    return computeAntiGravityRoute(originHub, waypoints, 45, 'e_van');
-  }, [waypoints]);
+    return computeAntiGravityRoute(originHub, tspOrderedWaypoints, 45, 'e_van');
+  }, [tspOrderedWaypoints]);
 
   // Derived Values
   const totalWeightKg = waypoints.reduce((acc, w) => acc + (w.packageWeightKg || 5), 0);
   const totalParcelsCount = waypoints.length;
   
-  // Total Distance with Civic Bypass consideration
+  // Total Distance with Civic Bypass consideration & Distance Algorithm
   const rawDistanceKm = (18 + waypoints.length * 2.6);
-  const effectiveDistanceKm = avoidRasulgarhWaterlogging ? parseFloat((rawDistanceKm + 1.8).toFixed(1)) : parseFloat(rawDistanceKm.toFixed(1));
-  const effectiveMinutes = avoidRasulgarhWaterlogging ? Math.max(30, Math.round(waypoints.length * 13)) : Math.round(waypoints.length * 17 + 18);
+  const effectiveDistanceKm = realRoadDistanceKm ?? (avoidRasulgarhWaterlogging ? parseFloat((rawDistanceKm + 1.8).toFixed(1)) : parseFloat(rawDistanceKm.toFixed(1)));
+  const effectiveMinutes = realRoadDurationMin ?? (avoidRasulgarhWaterlogging ? Math.max(30, Math.round(waypoints.length * 13)) : Math.round(waypoints.length * 17 + 18));
 
   // Sync Fuel Estimator with current route distance when route changes
   React.useEffect(() => {
@@ -645,36 +834,143 @@ Status: Verified & Dispatched via Musafir Logistics Network
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Autocomplete Suggestions
-  const SUGGESTIONS = [
-    { name: 'Patia', address: 'Patia Main Road, Near Big Bazaar, Bhubaneswar' },
-    { name: 'KIIT Square', address: 'KIIT University Campus, Patia, Bhubaneswar' },
-    { name: 'Rasulgarh', address: 'NH-16 Junction & Commercial Flyover, Bhubaneswar' },
-    { name: 'Customer Residence (Khandagiri)', address: 'Khandagiri Enclave, Bhubaneswar' },
-    { name: 'Trident Academy of Technology', address: 'Chandaka Industrial Estate, Patia, Bhubaneswar' },
-    { name: 'Unit 2 Market Building', address: 'Ashok Nagar, Bhubaneswar' },
-    { name: 'Vani Vihar Square', address: 'Utkal University, Janpath, Bhubaneswar' },
-    { name: 'Master Canteen', address: 'Railway Station Square, Bhubaneswar' },
-  ];
-
-  const filteredSuggestions = SUGGESTIONS.filter(
-    (s) => !searchAddress.trim() || s.name.toLowerCase().includes(searchAddress.toLowerCase()) || s.address.toLowerCase().includes(searchAddress.toLowerCase())
-  );
-
-  // Active Map Route Coordinates (with dynamic Civic Community Rasulgarh Bypass)
-  const mapPolylinePoints = useMemo(() => {
-    const baseCoords: [number, number][] = [
-      [originHub.lat, originHub.lng],
-      ...waypoints.map((w) => [w.lat, w.lng] as [number, number]),
-    ];
-
-    if (avoidRasulgarhWaterlogging && waypoints.some((w) => w.recipientName.toLowerCase().includes('rasulgarh'))) {
-      const bypassCoord: [number, number] = [20.3120, 85.8820];
-      return filterValidLatLngs([...baseCoords.slice(0, -1), bypassCoord, baseCoords[baseCoords.length - 1]]);
+  // Fetch Actual Road Route using OSRM & Distance Algorithm (No straight lines!)
+  useEffect(() => {
+    if (waypoints.length === 0) {
+      setRoadPolyline([]);
+      setRealRoadDistanceKm(0);
+      setRealRoadDurationMin(0);
+      return;
     }
 
-    return filterValidLatLngs(baseCoords);
-  }, [waypoints, avoidRasulgarhWaterlogging]);
+    let isMounted = true;
+    setIsRoutingLoading(true);
+
+    const ordered = optimizeStopsByDistance(originHub, waypoints);
+    const routePoints: Array<{ lat: number; lng: number }> = [originHub, ...ordered];
+
+    if (avoidRasulgarhWaterlogging && ordered.some((w) => w.recipientName.toLowerCase().includes('rasulgarh') || w.address.toLowerCase().includes('rasulgarh'))) {
+      const bypassNode = { lat: 20.3120, lng: 85.8820 };
+      routePoints.splice(routePoints.length - 1, 0, bypassNode);
+    }
+
+    const coordStr = routePoints.map((p) => `${p.lng},${p.lat}`).join(';');
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`;
+
+    fetch(osrmUrl, { signal: AbortSignal.timeout(4500) })
+      .then((res) => {
+        if (!res.ok) throw new Error(`OSRM status: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          const coords = route.geometry.coordinates as [number, number][];
+          const leafletPoints: [number, number][] = coords.map(([lng, lat]) => [lat, lng]);
+          setRoadPolyline(leafletPoints);
+          setRealRoadDistanceKm(Math.round((route.distance / 1000) * 10) / 10);
+          setRealRoadDurationMin(Math.round(route.duration / 60));
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.warn('OSRM route fallback to road network nodes:', err);
+        const fallbackPts: [number, number][] = [];
+        for (let i = 0; i < routePoints.length - 1; i++) {
+          const seg = generateBhubaneswarRoadInterpolation(routePoints[i], routePoints[i + 1]);
+          if (i > 0) seg.shift();
+          fallbackPts.push(...seg);
+        }
+        setRoadPolyline(fallbackPts);
+      })
+      .finally(() => {
+        if (isMounted) setIsRoutingLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [originHub.lat, originHub.lng, waypoints, avoidRasulgarhWaterlogging]);
+
+  // Comprehensive Autocomplete for ALL locations in Bhubaneswar
+  const ALL_BBSR_SUGGESTIONS = useMemo(() => {
+    const list: Array<{ name: string; address: string; lat: number; lng: number }> = [];
+
+    // All BBSR localities
+    BHUBANESWAR_LOCALITIES.forEach((loc) => {
+      list.push({
+        name: loc.name.split('/')[0].trim(),
+        address: loc.popularLandmark || `${loc.name}, Bhubaneswar`,
+        lat: loc.lat,
+        lng: loc.lng,
+      });
+    });
+
+    // Key transit stations
+    BHUBANESWAR_STATIONS.forEach((stn) => {
+      if (!list.some((item) => item.name.toLowerCase() === stn.name.toLowerCase())) {
+        list.push({
+          name: stn.name,
+          address: `${stn.name}, Bhubaneswar Transit Network`,
+          lat: stn.lat,
+          lng: stn.lng,
+        });
+      }
+    });
+
+    // Additional prominent malls, tech parks, institutions
+    const extraSpots = [
+      { name: 'Trident Academy of Technology', address: 'Chandaka Industrial Estate, Patia, Bhubaneswar', lat: 20.3542, lng: 85.8078 },
+      { name: 'Mani Tribhuban', address: 'Nandankanan Road, Patia, Bhubaneswar', lat: 20.3688, lng: 85.8242 },
+      { name: 'Esplanade One Mall', address: 'Rasulgarh, Bhubaneswar', lat: 20.2977, lng: 85.8643 },
+      { name: 'Pal Heights Mall', address: 'Jayadev Vihar, Bhubaneswar', lat: 20.3039, lng: 85.8188 },
+      { name: 'KIMS Hospital', address: 'KIIT Campus, Patia, Bhubaneswar', lat: 20.3541, lng: 85.8175 },
+      { name: 'Apollo Hospitals', address: 'Sainik School Road, Bhubaneswar', lat: 20.3080, lng: 85.8320 },
+      { name: 'DN Regalia Mall', address: 'Patrapada, Bhubaneswar', lat: 20.2480, lng: 85.7680 },
+      { name: 'Utkal Kanika Galleria Mall', address: 'Gautam Nagar, Bhubaneswar', lat: 20.2580, lng: 85.8380 },
+      { name: 'Dr. B.R. Ambedkar ISBT', address: 'Baramunda Bus Terminal, Bhubaneswar', lat: 20.2798, lng: 85.7958 },
+    ];
+
+    extraSpots.forEach((spot) => {
+      if (!list.some((item) => item.name.toLowerCase() === spot.name.toLowerCase())) {
+        list.push(spot);
+      }
+    });
+
+    return list;
+  }, []);
+
+  const filteredSuggestions = useMemo(() => {
+    const q = searchAddress.toLowerCase().trim();
+    if (!q) {
+      return ALL_BBSR_SUGGESTIONS.slice(0, 8);
+    }
+    const matches = ALL_BBSR_SUGGESTIONS.filter((s) => {
+      const sName = s.name.toLowerCase();
+      const sAddr = s.address.toLowerCase();
+      if (sName.includes(q) || sAddr.includes(q)) return true;
+      const terms = q.split(/[\s,/-]+/).filter((t) => t.length > 2);
+      return terms.some((t) => sName.includes(t) || sAddr.includes(t));
+    });
+    return matches.slice(0, 10);
+  }, [ALL_BBSR_SUGGESTIONS, searchAddress]);
+
+  // Active Map Route Coordinates (Actual Road Network with curves, NO straight lines!)
+  const mapPolylinePoints = useMemo(() => {
+    if (roadPolyline.length > 0) {
+      return filterValidLatLngs(roadPolyline);
+    }
+    // Realistic road corridor fallback
+    const routePoints: Array<{ lat: number; lng: number }> = [originHub, ...tspOrderedWaypoints];
+    const fallbackPts: [number, number][] = [];
+    for (let i = 0; i < routePoints.length - 1; i++) {
+      const seg = generateBhubaneswarRoadInterpolation(routePoints[i], routePoints[i + 1]);
+      if (i > 0) seg.shift();
+      fallbackPts.push(...seg);
+    }
+    return filterValidLatLngs(fallbackPts);
+  }, [roadPolyline, originHub, tspOrderedWaypoints]);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#070B14] text-slate-100 overflow-y-auto pb-24 font-sans relative">
@@ -718,24 +1014,19 @@ Status: Verified & Dispatched via Musafir Logistics Network
             </div>
           </div>
 
-          {/* Quick Demo Preset Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={handleLoadIllustrativePlan}
-              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5 fill-slate-950" />
-              <span>Load 4-Stop Delivery Plan</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleLoadMega10Stops}
-              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer"
-            >
-              <Truck className="w-3.5 h-3.5" />
-              <span>Load 10-Stop Mega Run</span>
-            </button>
+          {/* Active Road Route Indicator */}
+          <div className="flex items-center gap-2">
+            {isRoutingLoading ? (
+              <div className="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-bold flex items-center gap-1.5 animate-pulse">
+                <RotateCcw className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                <span>Computing Real Road Route...</span>
+              </div>
+            ) : (
+              <div className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Road Network Route Active ({effectiveDistanceKm} km)</span>
+              </div>
+            )}
           </div>
 
         </div>
@@ -892,7 +1183,7 @@ Status: Verified & Dispatched via Musafir Logistics Network
                   )}
                 </div>
 
-                {/* Add Stop Address Input with Autocomplete */}
+                {/* Add Stop Address Input with Autocomplete for ALL BBSR Locations */}
                 <div className="relative space-y-2">
                   <div className="relative flex items-center">
                     <span className="absolute left-3 text-slate-500">
@@ -902,6 +1193,7 @@ Status: Verified & Dispatched via Musafir Logistics Network
                       type="text"
                       value={searchAddress}
                       onFocus={() => setIsSearchFocused(true)}
+                      onBlur={() => setTimeout(() => setIsSearchFocused(false), 250)}
                       onChange={(e) => {
                         setSearchAddress(e.target.value);
                         setIsSearchFocused(true);
@@ -912,7 +1204,7 @@ Status: Verified & Dispatched via Musafir Logistics Network
                           handleAddStop();
                         }
                       }}
-                      placeholder="Add delivery stop (e.g. Patia, KIIT, Rasulgarh)"
+                      placeholder="Add any delivery location in BBSR (e.g. Patia, Nayapalli, AIIMS, Damana...)"
                       className="w-full bg-[#10182E] border border-slate-800 rounded-xl pl-9 pr-16 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-amber-500 transition placeholder:text-slate-500"
                     />
                     <button
@@ -924,13 +1216,35 @@ Status: Verified & Dispatched via Musafir Logistics Network
                     </button>
                   </div>
 
-                  {/* Autocomplete Dropdown */}
+                  {/* Autocomplete Dropdown: All Bhubaneswar Locations */}
                   {isSearchFocused && (
-                    <div className="absolute left-0 right-0 top-[42px] z-50 bg-[#0B1220] border border-slate-700 rounded-2xl shadow-2xl p-2 space-y-1 max-h-56 overflow-y-auto">
-                      <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">
-                        Bhubaneswar Key Hubs
+                    <div className="absolute left-0 right-0 top-[42px] z-50 bg-[#0B1220] border border-slate-700 rounded-2xl shadow-2xl p-2 space-y-1 max-h-64 overflow-y-auto">
+                      <div className="flex items-center justify-between px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        <span>All Bhubaneswar Locations ({ALL_BBSR_SUGGESTIONS.length}+ Localities)</span>
+                        <span className="text-[9px] text-amber-400">Click to add</span>
                       </div>
-                      {filteredSuggestions.slice(0, 5).map((item) => (
+
+                      {/* Custom Location Option if user typed text */}
+                      {searchAddress.trim().length > 1 && (
+                        <div
+                          onMouseDown={() => handleAddStop(searchAddress)}
+                          className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/40 cursor-pointer transition flex items-center justify-between text-left hover:bg-amber-500/25 mb-1"
+                        >
+                          <div>
+                            <div className="text-xs font-black text-amber-300 flex items-center gap-1.5">
+                              <MapPin className="w-3 h-3 text-amber-400" />
+                              <span>Add custom location:</span>
+                              <span className="text-white">"{searchAddress}"</span>
+                            </div>
+                            <div className="text-[10px] text-slate-400">Bhubaneswar, Odisha</div>
+                          </div>
+                          <span className="text-[10px] font-black text-slate-950 bg-amber-400 px-2 py-0.5 rounded-lg">
+                            + Add
+                          </span>
+                        </div>
+                      )}
+
+                      {filteredSuggestions.map((item) => (
                         <div
                           key={item.name}
                           onMouseDown={() => handleAddStop(`${item.name}, ${item.address}`)}
@@ -938,12 +1252,12 @@ Status: Verified & Dispatched via Musafir Logistics Network
                         >
                           <div>
                             <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                              <MapPin className="w-3 h-3 text-amber-400" />
+                              <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
                               <span>{item.name}</span>
                             </div>
-                            <div className="text-[10px] text-slate-400 truncate max-w-[200px]">{item.address}</div>
+                            <div className="text-[10px] text-slate-400 truncate max-w-[220px]">{item.address}</div>
                           </div>
-                          <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-lg">
+                          <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-lg shrink-0">
                             + Add
                           </span>
                         </div>
@@ -999,51 +1313,61 @@ Status: Verified & Dispatched via Musafir Logistics Network
                     <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">0.0 km</span>
                   </div>
 
-                  {/* Waypoints */}
-                  {waypoints.map((wp, idx) => {
-                    const pinColor = STOP_PIN_COLORS[idx % STOP_PIN_COLORS.length];
-                    const legKm = (2.4 + idx * 1.8).toFixed(1);
-                    const legMin = Math.round(7 + idx * 4);
-
-                    return (
-                      <div
-                        key={wp.id}
-                        className="flex items-center justify-between p-3 rounded-2xl bg-[#10182E] border border-slate-800/80 hover:border-slate-700 transition space-x-2"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div
-                            className="w-6 h-6 rounded-full shrink-0 text-white font-black text-[11px] flex items-center justify-center shadow-md"
-                            style={{ backgroundColor: pinColor }}
-                          >
-                            {idx + 1}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-xs font-black text-white truncate flex items-center gap-1.5">
-                              <span>Delivery {idx + 1}: {wp.recipientName.replace(/Delivery \d+:/, '')}</span>
-                            </div>
-                            <div className="text-[10px] text-slate-400 truncate">{wp.address}</div>
-                            
-                            <div className="flex items-center gap-2 mt-1 text-[10px]">
-                              <span className="font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
-                                ⏰ {wp.timeWindow || '10 AM–12 PM'}
-                              </span>
-                              <span className="text-slate-400 font-mono">+{legKm} km</span>
-                              <span className="text-slate-400 font-mono">+{legMin} min</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveStop(wp.id)}
-                          className="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition cursor-pointer shrink-0"
-                          title="Remove Stop"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                  {/* Waypoints Sequenced via Distance Algorithm */}
+                  {tspOrderedWaypoints.length === 0 ? (
+                    <div className="p-5 rounded-2xl bg-[#10182E]/60 border border-dashed border-slate-800 text-center space-y-1.5 my-2">
+                      <MapPin className="w-6 h-6 text-amber-400/80 mx-auto" />
+                      <div className="text-xs font-bold text-slate-200">No delivery stops added yet</div>
+                      <div className="text-[10px] text-slate-400 max-w-xs mx-auto">
+                        Search and add any Bhubaneswar location above (e.g. Patia, Nayapalli, AIIMS, Damana, Rasulgarh) to generate your optimal delivery route.
                       </div>
-                    );
-                  })}
+                    </div>
+                  ) : (
+                    tspOrderedWaypoints.map((wp, idx) => {
+                      const pinColor = STOP_PIN_COLORS[idx % STOP_PIN_COLORS.length];
+                      const legKm = (2.4 + idx * 1.8).toFixed(1);
+                      const legMin = Math.round(7 + idx * 4);
+
+                      return (
+                        <div
+                          key={wp.id}
+                          className="flex items-center justify-between p-3 rounded-2xl bg-[#10182E] border border-slate-800/80 hover:border-slate-700 transition space-x-2"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div
+                              className="w-6 h-6 rounded-full shrink-0 text-white font-black text-[11px] flex items-center justify-center shadow-md"
+                              style={{ backgroundColor: pinColor }}
+                            >
+                              {idx + 1}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs font-black text-white truncate flex items-center gap-1.5">
+                                <span>Delivery {idx + 1}: {wp.recipientName.replace(/Delivery \d+:/, '')}</span>
+                              </div>
+                              <div className="text-[10px] text-slate-400 truncate">{wp.address}</div>
+                              
+                              <div className="flex items-center gap-2 mt-1 text-[10px]">
+                                <span className="font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                                  ⏰ {wp.timeWindow || '10 AM–12 PM'}
+                                </span>
+                                <span className="text-slate-400 font-mono">+{legKm} km</span>
+                                <span className="text-slate-400 font-mono">+{legMin} min</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveStop(wp.id)}
+                            className="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition cursor-pointer shrink-0"
+                            title="Remove Stop"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
 
                 {/* Download Dispatch Slip */}
@@ -1111,8 +1435,8 @@ Status: Verified & Dispatched via Musafir Logistics Network
                       />
                     )}
 
-                    {/* Waypoint Numbered Markers */}
-                    {waypoints.filter((wp) => isValidLatLng([wp.lat, wp.lng])).map((wp, idx) => (
+                    {/* Waypoint Numbered Markers (TSP Ordered Sequence) */}
+                    {tspOrderedWaypoints.filter((wp) => isValidLatLng([wp.lat, wp.lng])).map((wp, idx) => (
                       <Marker
                         key={wp.id}
                         position={[wp.lat, wp.lng]}
@@ -2127,7 +2451,7 @@ Status: Verified & Dispatched via Musafir Logistics Network
                 />
               )}
 
-              {waypoints.filter((wp) => isValidLatLng([wp.lat, wp.lng])).map((wp, idx) => (
+              {tspOrderedWaypoints.filter((wp) => isValidLatLng([wp.lat, wp.lng])).map((wp, idx) => (
                 <Marker
                   key={wp.id}
                   position={[wp.lat, wp.lng]}
