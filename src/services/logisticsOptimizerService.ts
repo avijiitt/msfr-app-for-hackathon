@@ -17,7 +17,7 @@ export interface DeliveryWaypoint {
   parcelCount?: number; // Number of items/parcels at this stop
   volumetricWeightKg?: number; // Calculated via (L * W * H) / 5000
   dimensionsCm?: { length: number; width: number; height: number };
-  parcelType?: 'Documents' | 'Electronics' | 'Clothing' | 'Food' | 'Other' | string;
+  parcelType?: 'Medical' | 'Food' | 'Electronics' | 'Documents' | 'Perishable' | 'General' | string;
   parcelTypes?: string[]; // Multiple parcel categories per drop
   priority?: 'Standard' | 'Express' | 'Urgent';
   preferredTimeSlot?: 'Morning (09:00 - 12:00)' | 'Afternoon (12:00 - 16:00)' | 'Evening (16:00 - 20:00)' | 'Express (Within 2h)';

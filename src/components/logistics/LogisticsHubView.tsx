@@ -63,6 +63,30 @@ import { STOP_COORDINATES_MAP } from '../../data/busRoutesData';
 import { PaymentGatewayModal } from '../payment/PaymentGatewayModal';
 import { isValidLatLng, filterValidLatLngs } from '../../utils/latLngValidator';
 
+// Package Categories Supported in Musafir Logistics (Medical, Food, Electronics, Documents, Perishable, General)
+export type PackageCategory = 'Medical' | 'Food' | 'Electronics' | 'Documents' | 'Perishable' | 'General';
+
+export const PACKAGE_CATEGORIES: {
+  id: PackageCategory;
+  label: string;
+  icon: string;
+  badgeClass: string;
+  dotClass: string;
+  desc: string;
+}[] = [
+  { id: 'Medical', label: 'Medical', icon: '💊', badgeClass: 'bg-rose-500/15 text-rose-300 border-rose-500/40', dotClass: 'bg-rose-500', desc: 'Medicines, pharmaceuticals & emergency healthcare' },
+  { id: 'Food', label: 'Food', icon: '🍱', badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/40', dotClass: 'bg-amber-500', desc: 'Prepared meals, cooked food deliveries & fresh meal boxes' },
+  { id: 'Electronics', label: 'Electronics', icon: '⚡', badgeClass: 'bg-blue-500/15 text-blue-300 border-blue-500/40', dotClass: 'bg-blue-500', desc: 'Gadgets, appliances, hardware & tech devices' },
+  { id: 'Documents', label: 'Documents', icon: '📄', badgeClass: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40', dotClass: 'bg-cyan-500', desc: 'Official documents, legal papers, envelopes & confidential files' },
+  { id: 'Perishable', label: 'Perishable', icon: '❄️', badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40', dotClass: 'bg-emerald-500', desc: 'Dairy, fresh produce, vegetables & cold-chain goods' },
+  { id: 'General', label: 'General', icon: '📦', badgeClass: 'bg-purple-500/15 text-purple-300 border-purple-500/40', dotClass: 'bg-purple-500', desc: 'Retail merchandise, dry cargo & standard packages' },
+];
+
+export const getPackageMeta = (type?: string) => {
+  const match = PACKAGE_CATEGORIES.find((c) => c.id.toLowerCase() === (type || '').toLowerCase());
+  return match || PACKAGE_CATEGORIES[5]; // fallback to General
+};
+
 // Live Corridor Traffic & Civic Road Condition Data
 const LIVE_CORRIDOR_TRAFFIC = [
   {
@@ -178,7 +202,7 @@ const ILLUSTRATIVE_4_STOPS: DeliveryWaypoint[] = [
     lat: 20.2974,
     lng: 85.8647,
     packageWeightKg: 32,
-    parcelType: 'Clothing',
+    parcelType: 'Medical',
     priority: 'Standard',
     timeWindow: '2 PM–4 PM',
     estimatedArrival: '01:30 PM',
@@ -213,7 +237,7 @@ const MEGA_10_STOPS: DeliveryWaypoint[] = [
     lat: 20.2667,
     lng: 85.8436,
     packageWeightKg: 18,
-    parcelType: 'Electronics',
+    parcelType: 'Medical',
     priority: 'Standard',
     timeWindow: '10 AM–12 PM',
     status: 'pending',
@@ -226,7 +250,7 @@ const MEGA_10_STOPS: DeliveryWaypoint[] = [
     lat: 20.2721,
     lng: 85.8341,
     packageWeightKg: 25,
-    parcelType: 'Clothing',
+    parcelType: 'General',
     priority: 'Standard',
     timeWindow: '12 PM–2 PM',
     status: 'pending',
@@ -252,7 +276,7 @@ const MEGA_10_STOPS: DeliveryWaypoint[] = [
     lat: 20.3245,
     lng: 85.8198,
     packageWeightKg: 40,
-    parcelType: 'Other',
+    parcelType: 'Perishable',
     priority: 'Standard',
     timeWindow: '2 PM–4 PM',
     status: 'pending',
@@ -278,7 +302,7 @@ const MEGA_10_STOPS: DeliveryWaypoint[] = [
     lat: 20.3582,
     lng: 85.8055,
     packageWeightKg: 28,
-    parcelType: 'Documents',
+    parcelType: 'General',
     priority: 'Standard',
     timeWindow: '4 PM–6 PM',
     status: 'pending',
@@ -657,7 +681,9 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
   // Search & Autocomplete
   const [searchAddress, setSearchAddress] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [parcelType, setParcelType] = useState<'Documents' | 'Electronics' | 'Clothing' | 'Food' | 'Other'>('Documents');
+  const [parcelType, setParcelType] = useState<PackageCategory>('Medical');
+  const [packageTypeFilter, setPackageTypeFilter] = useState<'All' | PackageCategory>('All');
+  const [selectedVehiclePackageType, setSelectedVehiclePackageType] = useState<PackageCategory>('Medical');
   const [parcelWeight, setParcelWeight] = useState('4.5');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<'10 AM–12 PM' | '12 PM–2 PM' | '2 PM–4 PM' | '4 PM–6 PM'>('10 AM–12 PM');
 
@@ -765,6 +791,14 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
     return optimizeStopsByDistance(originHub, waypoints);
   }, [originHub.lat, originHub.lng, waypoints]);
 
+  // Filtered stops based on selected package type ('Medical' | 'Food' | 'Electronics' | 'Documents' | 'Perishable' | 'General')
+  const displayedWaypoints = useMemo(() => {
+    if (packageTypeFilter === 'All') return tspOrderedWaypoints;
+    return tspOrderedWaypoints.filter(
+      (w) => (w.parcelType || 'General').toLowerCase() === packageTypeFilter.toLowerCase()
+    );
+  }, [tspOrderedWaypoints, packageTypeFilter]);
+
   // Compute TSP / Multi-Objective Route Plan
   const plan: AntiGravityRoutePlan = useMemo(() => {
     return computeAntiGravityRoute(originHub, tspOrderedWaypoints, 45, 'e_van');
@@ -793,12 +827,13 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
 
   // Vehicle Suitability Determination (Feature 4)
   const recommendedVehicle = useMemo(() => {
+    const typeLabel = selectedVehiclePackageType;
     if (selectedVehiclePackageWeight <= 15 && selectedVehiclePackageSize === 'Small') {
       return {
         type: 'Bike / 2-Wheeler EV',
-        badge: '🛵 Optimal for Small Packages',
+        badge: `🛵 Optimal for ${typeLabel} Deliveries`,
         color: 'text-sky-400 bg-sky-950/60 border-sky-500/40',
-        suitability: 'Small packages, documents, food delivery & rapid traffic filtering',
+        suitability: `Fast agile routing for ${typeLabel.toLowerCase()} packages, rapid traffic filtering & express city dispatch`,
         capacityKg: 25,
         mileage: '35 km/L (or ₹0.40/km EV)',
         costPerKm: '₹3.2/km',
@@ -808,9 +843,9 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
     if (selectedVehicleDistanceKm <= 40 && selectedVehiclePackageWeight <= 350) {
       return {
         type: 'Electric Vehicle (EV 3-Wheeler Loader)',
-        badge: '⚡ Ideal for Short-Distance Eco Routes',
+        badge: `⚡ Ideal for Urban ${typeLabel} Eco Routes`,
         color: 'text-emerald-400 bg-emerald-950/60 border-emerald-500/40',
-        suitability: 'Suitable for short-distance green routes (<40 km) with zero tailpipe emissions',
+        suitability: `Short-distance green routes (<40 km) for ${typeLabel.toLowerCase()} cargo with zero tailpipe emissions`,
         capacityKg: 350,
         mileage: 'Electric Battery (120 km range)',
         costPerKm: '₹2.8/km',
@@ -820,9 +855,9 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
     if (selectedVehiclePackageWeight <= 800) {
       return {
         type: 'Mini Truck (Tata Ace / E-Supro)',
-        badge: '🚚 Best for Medium Deliveries',
+        badge: `🚚 Best for Medium ${typeLabel} Deliveries`,
         color: 'text-amber-400 bg-amber-950/60 border-amber-500/40',
-        suitability: 'Medium retail batches, multiple crates, appliances & multi-stop deliveries (15–800 kg)',
+        suitability: `Medium batches, multiple ${typeLabel.toLowerCase()} crates & multi-stop routes (15–800 kg)`,
         capacityKg: 800,
         mileage: '15 km/L',
         costPerKm: '₹6.5/km',
@@ -831,15 +866,15 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
     }
     return {
       type: 'Heavy Freight Truck (14ft Commercial)',
-      badge: '🚛 Best for Heavy Goods',
+      badge: `🚛 Best for Heavy Bulk ${typeLabel}`,
       color: 'text-purple-400 bg-purple-950/60 border-purple-500/40',
-      suitability: 'Heavy cargo (>800 kg), industrial pallets & warehouse-to-warehouse bulk distribution',
+      suitability: `Heavy ${typeLabel.toLowerCase()} cargo (>800 kg), industrial pallets & warehouse-to-warehouse bulk distribution`,
       capacityKg: 2500,
       mileage: '7.5 km/L',
       costPerKm: '₹12.0/km',
       savingVsTruck: 'Maximum payload consolidation for heavy wholesale goods',
     };
-  }, [selectedVehiclePackageWeight, selectedVehiclePackageSize, selectedVehicleDistanceKm]);
+  }, [selectedVehiclePackageWeight, selectedVehiclePackageSize, selectedVehicleDistanceKm, selectedVehiclePackageType]);
 
   // Handlers
   const handleAddStop = (addressToAdd?: string) => {
@@ -865,7 +900,7 @@ export const LogisticsHubView: React.FC<LogisticsHubProps> = ({
     setWaypoints([...waypoints, newStop]);
     setSearchAddress('');
     setIsSearchFocused(false);
-    setToastMessage(`✅ Stop "${newStop.recipientName}" added to delivery planner!`);
+    setToastMessage(`✅ Added stop "${newStop.recipientName}" [${parcelType} · ${newStop.packageWeightKg}kg] to delivery planner!`);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
@@ -906,7 +941,7 @@ Estimated Fuel Cost: ₹${((effectiveDistanceKm / 15) * 100).toFixed(0)}
 Civic Community Bypass: ${avoidRasulgarhWaterlogging ? 'ACTIVE (Rasulgarh Waterlogging Avoided via Bypass)' : 'DIRECT ROUTE'}
 ====================================================
 Sequence of Drops:
-${waypoints.map((w, i) => `${i + 1}. ${w.recipientName} (${w.address}) | Window: ${w.timeWindow || 'Standard'} | ${w.packageWeightKg}kg`).join('\n')}
+${waypoints.map((w, i) => `${i + 1}. ${w.recipientName} (${w.address}) | Category: ${w.parcelType || 'General'} | Window: ${w.timeWindow || 'Standard'} | ${w.packageWeightKg}kg`).join('\n')}
 ====================================================
 Status: Verified & Dispatched via Musafir Logistics Network
 ====================================================`;
@@ -1309,14 +1344,29 @@ Status: Verified & Dispatched via Musafir Logistics Network
                     </div>
                   )}
 
-                  {/* Quick Options for Stop: Time Slot & Weight */}
-                  <div className="flex items-center justify-between gap-2 pt-1 text-xs">
-                    <div className="flex-1">
+                  {/* Quick Options for Stop: Package Type, Time Slot & Weight */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
+                    <div>
+                      <label className="text-[10px] text-slate-400 font-bold block mb-1">Package Type:</label>
+                      <select
+                        value={parcelType}
+                        onChange={(e) => setParcelType(e.target.value as PackageCategory)}
+                        className="w-full bg-[#10182E] border border-slate-800 rounded-xl px-2 py-1.5 text-[11px] font-bold text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer"
+                      >
+                        {PACKAGE_CATEGORIES.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.icon} {cat.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
                       <label className="text-[10px] text-slate-400 font-bold block mb-1">Time Window:</label>
                       <select
                         value={selectedTimeSlot}
                         onChange={(e) => setSelectedTimeSlot(e.target.value as any)}
-                        className="w-full bg-[#10182E] border border-slate-800 rounded-xl px-2 py-1.5 text-[11px] font-bold text-slate-200 focus:outline-none focus:border-amber-500"
+                        className="w-full bg-[#10182E] border border-slate-800 rounded-xl px-2 py-1.5 text-[11px] font-bold text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer"
                       >
                         <option value="10 AM–12 PM">10 AM–12 PM (Morning)</option>
                         <option value="12 PM–2 PM">12 PM–2 PM (Mid-day)</option>
@@ -1325,7 +1375,7 @@ Status: Verified & Dispatched via Musafir Logistics Network
                       </select>
                     </div>
 
-                    <div className="w-24">
+                    <div>
                       <label className="text-[10px] text-slate-400 font-bold block mb-1">Weight (kg):</label>
                       <input
                         type="number"
@@ -1334,6 +1384,34 @@ Status: Verified & Dispatched via Musafir Logistics Network
                         className="w-full bg-[#10182E] border border-slate-800 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-slate-200 focus:outline-none focus:border-amber-500"
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Header & Filter: All Package Types (Matches User Screenshot) */}
+                <div className="flex items-center justify-between gap-2 pt-2.5 pb-1 border-t border-slate-800/80">
+                  <div className="text-[11px] font-black text-slate-300 flex items-center gap-1.5">
+                    <span>Stops Queue ({displayedWaypoints.length})</span>
+                    {packageTypeFilter !== 'All' && (
+                      <span className="text-[10px] text-amber-400 font-normal">
+                        ({packageTypeFilter})
+                      </span>
+                    )}
+                  </div>
+
+                  {/* All Package Types Dropdown Filter */}
+                  <div className="relative">
+                    <select
+                      value={packageTypeFilter}
+                      onChange={(e) => setPackageTypeFilter(e.target.value as any)}
+                      className="bg-[#10182E] hover:bg-[#152140] border border-slate-700/80 rounded-xl px-2.5 py-1 text-[11px] font-bold text-slate-200 focus:outline-none focus:border-amber-500 cursor-pointer transition shadow-sm"
+                    >
+                      <option value="All">All Package Types</option>
+                      {PACKAGE_CATEGORIES.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -1357,20 +1435,34 @@ Status: Verified & Dispatched via Musafir Logistics Network
                     <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">0.0 km</span>
                   </div>
 
-                  {/* Waypoints Sequenced via Distance Algorithm */}
-                  {tspOrderedWaypoints.length === 0 ? (
+                  {/* Waypoints Sequenced via Distance Algorithm & Filtered */}
+                  {displayedWaypoints.length === 0 ? (
                     <div className="p-5 rounded-2xl bg-[#10182E]/60 border border-dashed border-slate-800 text-center space-y-1.5 my-2">
                       <MapPin className="w-6 h-6 text-amber-400/80 mx-auto" />
-                      <div className="text-xs font-bold text-slate-200">No delivery stops added yet</div>
-                      <div className="text-[10px] text-slate-400 max-w-xs mx-auto">
-                        Search and add any Bhubaneswar location above (e.g. Patia, Nayapalli, AIIMS, Damana, Rasulgarh) to generate your optimal delivery route.
+                      <div className="text-xs font-bold text-slate-200">
+                        {packageTypeFilter === 'All' ? 'No delivery stops added yet' : `No ${packageTypeFilter} packages found`}
                       </div>
+                      <div className="text-[10px] text-slate-400 max-w-xs mx-auto">
+                        {packageTypeFilter === 'All'
+                          ? 'Search and add any Bhubaneswar location above to generate your optimal delivery route.'
+                          : `Currently no stops in this route are marked as ${packageTypeFilter}.`}
+                      </div>
+                      {packageTypeFilter !== 'All' && (
+                        <button
+                          type="button"
+                          onClick={() => setPackageTypeFilter('All')}
+                          className="mt-2 px-3 py-1 rounded-lg bg-amber-500/20 text-amber-300 text-[10px] font-bold hover:bg-amber-500/30 transition cursor-pointer"
+                        >
+                          Show All Package Types
+                        </button>
+                      )}
                     </div>
                   ) : (
-                    tspOrderedWaypoints.map((wp, idx) => {
+                    displayedWaypoints.map((wp, idx) => {
                       const pinColor = STOP_PIN_COLORS[idx % STOP_PIN_COLORS.length];
                       const legKm = (2.4 + idx * 1.8).toFixed(1);
                       const legMin = Math.round(7 + idx * 4);
+                      const meta = getPackageMeta(wp.parcelType);
 
                       return (
                         <div
@@ -1390,10 +1482,15 @@ Status: Verified & Dispatched via Musafir Logistics Network
                               </div>
                               <div className="text-[10px] text-slate-400 truncate">{wp.address}</div>
                               
-                              <div className="flex items-center gap-2 mt-1 text-[10px]">
+                              <div className="flex items-center gap-1.5 mt-1 text-[10px] flex-wrap">
+                                <span className={`font-bold px-2 py-0.5 rounded-lg border text-[10px] flex items-center gap-1 ${meta.badgeClass}`}>
+                                  <span>{meta.icon}</span>
+                                  <span>{meta.label}</span>
+                                </span>
                                 <span className="font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
                                   ⏰ {wp.timeWindow || '10 AM–12 PM'}
                                 </span>
+                                <span className="text-slate-400 font-mono">⚖️ {wp.packageWeightKg} kg</span>
                                 <span className="text-slate-400 font-mono">+{legKm} km</span>
                                 <span className="text-slate-400 font-mono">+{legMin} min</span>
                               </div>
@@ -1864,14 +1961,29 @@ Status: Verified & Dispatched via Musafir Logistics Network
               </div>
 
               {/* Interactive Inputs for Package & Route */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#10182E] p-4 rounded-2xl border border-slate-800">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#10182E] p-4 rounded-2xl border border-slate-800">
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">Package Type:</label>
+                  <select
+                    value={selectedVehiclePackageType}
+                    onChange={(e) => setSelectedVehiclePackageType(e.target.value as PackageCategory)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-amber-500 cursor-pointer"
+                  >
+                    {PACKAGE_CATEGORIES.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.icon} {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div>
                   <label className="text-xs font-bold text-slate-300 block mb-1">Package Weight (kg):</label>
                   <input
                     type="number"
                     value={selectedVehiclePackageWeight}
                     onChange={(e) => setSelectedVehiclePackageWeight(parseFloat(e.target.value) || 1)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-amber-500"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
@@ -1880,11 +1992,11 @@ Status: Verified & Dispatched via Musafir Logistics Network
                   <select
                     value={selectedVehiclePackageSize}
                     onChange={(e) => setSelectedVehiclePackageSize(e.target.value as any)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-amber-500"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-amber-500"
                   >
-                    <option value="Small">Small (Courier, documents, lunchbox)</option>
-                    <option value="Medium">Medium (Cartons, appliances, retail crates)</option>
-                    <option value="Heavy">Heavy (Machinery, bulk pallets, furniture)</option>
+                    <option value="Small">Small (Courier, documents, food)</option>
+                    <option value="Medium">Medium (Cartons, appliances, crates)</option>
+                    <option value="Heavy">Heavy (Machinery, bulk pallets)</option>
                     <option value="Bulk">Bulk Warehouse Freight</option>
                   </select>
                 </div>
@@ -1895,7 +2007,7 @@ Status: Verified & Dispatched via Musafir Logistics Network
                     type="number"
                     value={selectedVehicleDistanceKm}
                     onChange={(e) => setSelectedVehicleDistanceKm(parseFloat(e.target.value) || 5)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-amber-500"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
@@ -1932,7 +2044,7 @@ Status: Verified & Dispatched via Musafir Logistics Network
                         </span>
                       </div>
                       <h4 className="text-sm font-black text-white">Bike / 2-Wheeler</h4>
-                      <p className="text-xs text-slate-400">Suitable for small packages (&lt;15 kg), envelopes, medicines & food delivery.</p>
+                      <p className="text-xs text-slate-400">Suitable for Documents, Food, emergency Medical & small parcels (&lt;15 kg).</p>
                     </div>
                     <div className="space-y-1 pt-2 border-t border-slate-800/60 text-xs">
                       <div className="flex justify-between text-slate-300">
@@ -1956,7 +2068,7 @@ Status: Verified & Dispatched via Musafir Logistics Network
                         </span>
                       </div>
                       <h4 className="text-sm font-black text-white">Mini Truck (Tata Ace)</h4>
-                      <p className="text-xs text-slate-400">Suitable for medium deliveries (15–800 kg), crates, retail goods & appliances.</p>
+                      <p className="text-xs text-slate-400">Suitable for Electronics, Perishable crates, retail goods & multi-stop parcels (15–800 kg).</p>
                     </div>
                     <div className="space-y-1 pt-2 border-t border-slate-800/60 text-xs">
                       <div className="flex justify-between text-slate-300">
@@ -1980,7 +2092,7 @@ Status: Verified & Dispatched via Musafir Logistics Network
                         </span>
                       </div>
                       <h4 className="text-sm font-black text-white">Heavy Truck (14ft)</h4>
-                      <p className="text-xs text-slate-400">Suitable for heavy goods (&gt;800 kg), warehouse transfers & bulky industrial freight.</p>
+                      <p className="text-xs text-slate-400">Suitable for bulk General cargo (&gt;800 kg), industrial pallets & warehouse transfers.</p>
                     </div>
                     <div className="space-y-1 pt-2 border-t border-slate-800/60 text-xs">
                       <div className="flex justify-between text-slate-300">
@@ -2004,7 +2116,7 @@ Status: Verified & Dispatched via Musafir Logistics Network
                         </span>
                       </div>
                       <h4 className="text-sm font-black text-white">Electric Vehicle (EV)</h4>
-                      <p className="text-xs text-slate-400">Suitable for short-distance routes (&lt;40 km) with lowest per-km expense and zero emissions.</p>
+                      <p className="text-xs text-slate-400">Suitable for eco-friendly Medical, Food & urban Perishable deliveries (&lt;40 km) with zero emissions.</p>
                     </div>
                     <div className="space-y-1 pt-2 border-t border-slate-800/60 text-xs">
                       <div className="flex justify-between text-slate-300">
@@ -2588,7 +2700,7 @@ Status: Verified & Dispatched via Musafir Logistics Network
                   <option value="All Stops / En-Route Fleet">All Stops / In-Transit Van</option>
                   {waypoints.map((w, idx) => (
                     <option key={w.id} value={`Stop ${idx + 1}: ${w.recipientName}`}>
-                      Stop {idx + 1}: {w.recipientName} ({w.address})
+                      Stop {idx + 1}: {w.recipientName} [{w.parcelType || 'General'}] ({w.address})
                     </option>
                   ))}
                 </select>
