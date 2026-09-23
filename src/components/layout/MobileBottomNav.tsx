@@ -56,10 +56,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         className="flex flex-col items-center -mt-5 group"
         title="Voice & AI Assistant"
       >
-        <div className="w-13 h-13 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-700 text-white p-3 shadow-lg shadow-blue-600/40 border-3 border-white dark:border-slate-900 flex items-center justify-center group-active:scale-95 transition">
+        <div className="w-13 h-13 rounded-full bg-gradient-to-tr from-[#0F766E] to-[#115E59] text-white p-3 shadow-lg shadow-teal-700/40 border-3 border-white dark:border-slate-900 flex items-center justify-center group-active:scale-95 transition">
           <Mic className="w-5 h-5 animate-pulse" />
         </div>
-        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mt-0.5">
+        <span className="text-[10px] font-bold text-[#0F766E] dark:text-[#2DD4BF] mt-0.5">
           {t?.aiAssistantName ? t.aiAssistantName.split(' ')[0] + ' AI' : 'Musafir AI'}
         </span>
       </button>

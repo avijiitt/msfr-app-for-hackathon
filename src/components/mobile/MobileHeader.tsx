@@ -35,11 +35,11 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   const initial = userName ? userName.charAt(0).toUpperCase() : 'A';
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/90 dark:bg-[#0E091C]/90 backdrop-blur-glass border-b border-slate-200/80 dark:border-[#2B1D47] px-2.5 sm:px-4 py-2 flex items-center justify-between shadow-xs transition-colors">
+    <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-[#0A1514]/95 backdrop-blur-glass border-b border-[#E5E7EB] dark:border-[#1E3836] px-2.5 sm:px-4 py-2 flex items-center justify-between shadow-xs transition-colors">
       <div className="flex items-center gap-1.5 min-w-0">
         <button
           onClick={onOpenMenu}
-          className="p-1.5 -ml-1 rounded-full text-slate-700 dark:text-violet-200 hover:bg-slate-100 dark:hover:bg-[#1E1438] active:scale-95 transition-all flex-shrink-0"
+          className="p-1.5 -ml-1 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#132827] active:scale-95 transition-all flex-shrink-0"
           aria-label="Open Menu"
         >
           <span className="material-symbols-outlined text-[22px] block">menu</span>
@@ -49,12 +49,17 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           onClick={onOpenMenu}
           className="flex items-center gap-1.5 cursor-pointer select-none truncate"
         >
-          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-violet-600/30 flex-shrink-0">
+          <div className="w-7 h-7 rounded-xl bg-[#0F766E] text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-teal-700/30 flex-shrink-0">
             M
           </div>
-          <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-300 bg-clip-text text-transparent">
-            MUSAFIR
-          </span>
+          <div className="flex flex-col min-w-0">
+            <span className="font-black text-sm sm:text-base tracking-tight text-[#0F766E] dark:text-[#2DD4BF] leading-none">
+              MUSAFIR
+            </span>
+            <span className="text-[8px] font-bold text-[#64748B] dark:text-slate-400 leading-none mt-0.5 truncate">
+              Smart Travel
+            </span>
+          </div>
         </div>
       </div>
 
@@ -63,7 +68,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         {onOpenAI && (
           <button
             onClick={onOpenAI}
-            className="p-1.5 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 hover:bg-violet-500/20 active:scale-95 transition flex-shrink-0"
+            className="p-1.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 active:scale-95 transition flex-shrink-0"
             title="Musafir AI Assistant"
           >
             <span className="material-symbols-outlined text-[19px] animate-pulse">auto_awesome</span>
@@ -73,7 +78,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         {/* SOS Emergency Button */}
         <button
           onClick={onTriggerSOS}
-          className="px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-[10px] font-black flex items-center gap-0.5 active:scale-95 shadow-2xs animate-pulse flex-shrink-0"
+          className="px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/60 text-[#DC2626] dark:text-red-400 border border-red-200 dark:border-red-800 text-[10px] font-black flex items-center gap-0.5 active:scale-95 shadow-2xs animate-pulse flex-shrink-0"
           title="Emergency SOS"
         >
           <span className="material-symbols-outlined text-[14px]">emergency</span>

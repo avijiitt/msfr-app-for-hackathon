@@ -81,9 +81,9 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-sm flex justify-start animate-in fade-in lg:hidden">
-      <div className="w-[85%] max-w-[340px] h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-200">
+      <div className="w-[85%] max-w-[340px] h-full bg-white dark:bg-slate-900 border-r border-[#E5E7EB] dark:border-slate-800 flex flex-col shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-200">
         {/* Drawer Top Header */}
-        <div className="p-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white flex items-center justify-between shadow-sm">
+        <div className="p-4 bg-gradient-to-r from-[#0F766E] to-[#115E59] text-white flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white p-0.5 shadow-sm flex items-center justify-center flex-shrink-0">
               <img
@@ -93,8 +93,8 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
               />
             </div>
             <div>
-              <h3 className="font-extrabold text-base tracking-tight uppercase font-sans">musafir</h3>
-              <p className="text-[11px] text-blue-100 font-medium">Multi-Modal Transit</p>
+              <h3 className="font-black text-base tracking-tight uppercase font-sans">musafir</h3>
+              <p className="text-[11px] text-teal-100 font-medium">Smart Travel, Synced for You</p>
             </div>
           </div>
           <button

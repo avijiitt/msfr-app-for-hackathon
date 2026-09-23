@@ -257,7 +257,7 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-[1000] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-2.5 transition-colors shadow-xs">
+    <header className="sticky top-0 z-[1000] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-[#E5E7EB] dark:border-slate-800 px-4 sm:px-6 py-2.5 transition-colors shadow-xs">
       <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-3 sm:gap-6">
 
         {/* Brand Name + Mobile Hamburger */}
@@ -276,16 +276,21 @@ export const MusafirHeader: React.FC<MusafirHeaderProps> = ({
             className="flex items-center gap-2 sm:gap-2.5 cursor-pointer"
             onClick={() => onSearch('Current Location', 'KIIT Square, Bhubaneswar')}
           >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm overflow-hidden flex-shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-slate-800 p-0.5 border border-[#E5E7EB] dark:border-slate-700 flex items-center justify-center shadow-sm overflow-hidden flex-shrink-0">
               <img
                 src="/musafir-logo.png"
                 alt="Musafir"
                 className="w-full h-full object-contain rounded-lg"
               />
             </div>
-            <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-slate-900 dark:text-white uppercase font-sans">
-              musafir
-            </span>
+            <div className="flex flex-col">
+              <span className="font-black text-xl sm:text-2xl tracking-tight text-[#0F766E] dark:text-[#2DD4BF] uppercase font-sans leading-none">
+                musafir
+              </span>
+              <span className="hidden sm:block text-[9.5px] font-bold text-[#64748B] dark:text-slate-400 tracking-normal mt-0.5">
+                Smart Travel, Synced for You
+              </span>
+            </div>
           </div>
         </div>
 

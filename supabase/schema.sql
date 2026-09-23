@@ -1,6 +1,5 @@
--- ============================================================================
 -- MUSAFIR — PAN-INDIA MULTI-MODAL SMART TRANSIT DATABASE SCHEMA (SUPABASE)
--- ============================================================================
+
 
 -- 1. Enable PostGIS and UUID Extensions if available
 create extension if not exists "uuid-ossp";

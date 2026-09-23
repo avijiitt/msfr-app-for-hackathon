@@ -491,7 +491,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
+    <div className="min-h-screen bg-[#F8FAF9] dark:bg-[#0A1514] text-[#1F2937] dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       {/* ─── Dedicated Mobile User View (Folder: src/components/mobile/) ─── */}
       <div className="block md:hidden">
         <MobileAppView
@@ -680,6 +680,13 @@ export const App: React.FC = () => {
               />
             </>
           )}
+        </div>
+        {/* Brand Slogan Footer from reference palette specification */}
+        <div className="w-full max-w-[1600px] mx-auto px-4 py-4 border-t border-[#E5E7EB] dark:border-slate-800 flex items-center justify-center gap-2.5 text-xs font-bold text-[#64748B] dark:text-slate-400">
+          <span className="text-[#16A34A] text-base leading-none">🌱</span>
+          <span className="tracking-widest uppercase text-[11px] font-extrabold text-[#0F766E] dark:text-[#2DD4BF]">
+            SMART TRAVEL &bull; BETTER CITIES &bull; A GREENER TOMORROW
+          </span>
         </div>
       </div>
 

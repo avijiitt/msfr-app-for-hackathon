@@ -81,11 +81,14 @@ export function cleanStopName(rawName: string): string {
 }
 
 /**
- * Reusable purplish dark card styles helper
+ * Reusable Musafir card styles helper
  */
-export const purplishCardStyles = {
-  card: 'bg-white dark:bg-[#161026] border border-slate-200 dark:border-[#2B1D47] shadow-sm dark:shadow-[0_8px_30px_rgba(7,4,15,0.4)] transition-all duration-200',
-  cardHover: 'hover:border-violet-400 dark:hover:border-violet-500 hover:shadow-md dark:hover:shadow-[0_12px_36px_rgba(124,58,237,0.15)]',
-  accentPill: 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800',
-  primaryButton: 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 active:scale-95 text-white font-extrabold shadow-md shadow-violet-600/25',
+export const musafirCardStyles = {
+  card: 'bg-white dark:bg-[#132827] border border-[#E5E7EB] dark:border-[#1E3836] shadow-sm dark:shadow-[0_8px_30px_rgba(4,15,14,0.4)] transition-all duration-200',
+  cardHover: 'hover:border-[#0F766E] dark:hover:border-[#2DD4BF] hover:shadow-md dark:hover:shadow-[0_12px_36px_rgba(15,118,110,0.15)]',
+  accentPill: 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
+  primaryButton: 'bg-[#0F766E] hover:bg-[#115E59] active:scale-95 text-white font-extrabold shadow-md shadow-teal-700/25',
 };
+
+export const purplishCardStyles = musafirCardStyles;
+

@@ -124,7 +124,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   const selectedRideDistance = originCoords && destCoords ? dynamicDistanceKm : undefined;
 
   return (
-    <div className="flex flex-col min-h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-x-hidden antialiased">
+    <div className="flex flex-col min-h-screen w-full bg-[#F8FAF9] dark:bg-[#0A1514] text-[#1F2937] dark:text-slate-100 overflow-x-hidden antialiased">
       {/* Fixed Mobile TopAppBar */}
       <MobileHeader
         onOpenMenu={onOpenMenu}

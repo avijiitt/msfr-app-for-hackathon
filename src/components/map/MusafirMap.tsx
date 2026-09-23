@@ -334,7 +334,7 @@ const routeLabelIcon = (route: RouteOption, isSelected: boolean) => {
         width: ${width}px;
         height: ${height}px;
         box-sizing: border-box;
-        background: ${isSelected ? '#1d4ed8' : '#0f172a'};
+        background: ${isSelected ? '#0F766E' : '#1F2937'};
         color: #ffffff;
         padding: 4px 6px;
         border-radius: 20px;
@@ -344,13 +344,13 @@ const routeLabelIcon = (route: RouteOption, isSelected: boolean) => {
         align-items: center;
         justify-content: center;
         box-shadow: 0 4px 14px rgba(0,0,0,0.5);
-        border: 2px solid ${isSelected ? '#93c5fd' : 'rgba(255,255,255,0.25)'};
+        border: 2px solid ${isSelected ? '#F59E0B' : 'rgba(255,255,255,0.25)'};
         cursor: pointer;
         pointer-events: auto;
         user-select: none;
       ">
         <div style="font-weight: 800; font-size: 13px; line-height: 1.1; color: #ffffff; white-space: nowrap;">${route.durationMinutes} min</div>
-        ${route.label ? `<div style="font-size: 9.5px; font-weight: 700; color: ${isSelected ? '#dbeafe' : '#93c5fd'}; line-height: 1.1; white-space: nowrap;">${route.label}</div>` : ''}
+        ${route.label ? `<div style="font-size: 9.5px; font-weight: 700; color: ${isSelected ? '#FDE68A' : '#94A3B8'}; line-height: 1.1; white-space: nowrap;">${route.label}</div>` : ''}
       </div>
     `,
     iconSize: [width, height],
@@ -760,7 +760,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
               {validCoords.length >= 2 && (
                 <Polyline
                   positions={validCoords}
-                  pathOptions={{ color: '#2563eb', weight: 7, opacity: 0.95 }}
+                  pathOptions={{ color: '#0F766E', weight: 7, opacity: 0.95 }}
                 />
               )}
               {isValidLatLng(bubblePos) && (
@@ -775,10 +775,10 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
 
         {/* ─── Origin Pin ─── */}
         {validOrigin && (
-          <Marker position={validOrigin} icon={createLeafletPinIcon('#2563eb', '🛫')}>
+          <Marker position={validOrigin} icon={createLeafletPinIcon('#0F766E', '🛫')}>
             <Popup>
               <div className="text-xs font-bold text-slate-900 p-1">
-                <span className="text-blue-600 font-extrabold block">Origin Departure</span>
+                <span className="text-[#0F766E] font-extrabold block">Origin Departure</span>
                 <span>{originName || 'Journey Start'}</span>
               </div>
             </Popup>
@@ -787,10 +787,10 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
 
         {/* ─── Destination Pin ─── */}
         {validDest && (
-          <Marker position={validDest} icon={createLeafletPinIcon('#e11d48', '🏁')}>
+          <Marker position={validDest} icon={createLeafletPinIcon('#F59E0B', '🏁')}>
             <Popup>
               <div className="text-xs font-bold text-slate-900 p-1">
-                <span className="text-rose-600 font-extrabold block">Destination</span>
+                <span className="text-[#F59E0B] font-extrabold block">Destination</span>
                 <span>{destinationName || 'Journey Destination'}</span>
               </div>
             </Popup>
@@ -806,7 +806,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
             center={stop.coords}
             radius={5.5}
             pathOptions={{
-              color: '#0284c7', // Sky-600 outer border
+              color: '#0F766E', // Musafir Primary Teal outer border
               fillColor: '#ffffff', // Clean white inner point
               fillOpacity: 1,
               weight: 2.5,
@@ -820,7 +820,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
             </Tooltip>
             <Popup>
               <div className="text-xs font-bold text-slate-900 p-1 min-w-[170px]">
-                <div className="flex items-center gap-1 text-sky-600 font-extrabold uppercase text-[10px] mb-0.5">
+                <div className="flex items-center gap-1 text-[#0F766E] font-extrabold uppercase text-[10px] mb-0.5">
                   <span>🚏 Ama Bus Stoppage #{stop.idx}</span>
                 </div>
                 <div className="text-xs font-black text-slate-900">{stop.name}</div>
@@ -834,9 +834,9 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
                   </button>
                   <button
                     onClick={() => onSelectLocationOnMap(stop.coords[0], stop.coords[1], stop.name, 'dest')}
-                    className="flex-1 px-2 py-1 rounded-md bg-rose-600 text-white text-[10px] font-bold hover:bg-rose-700 transition"
+                    className="flex-1 px-2 py-1 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold hover:bg-slate-200 transition"
                   >
-                    Drop Here
+                    Go Here
                   </button>
                 </div>
               </div>
@@ -858,15 +858,15 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
           </Marker>
         )}
 
-        {/* ─── User Real-Time GPS Pin ─── */}
-        {isGpsActive && validUser && (
+        {/* ─── Real-Time GPS User Marker (Accuracy Pulse Circle) ─── */}
+        {validUser && (
           <>
-            <Marker position={validUser} icon={createLeafletPinIcon('#3b82f6', '📍')}>
+            <Marker position={validUser} icon={createLeafletPinIcon('#0F766E', '📍')}>
               <Popup>
                 <div className="text-xs font-bold text-slate-900 p-1">
-                  <strong className="text-blue-600 block">Your Current GPS Location</strong>
-                  <span className="text-[10px] text-slate-500">
-                    Accuracy: ±{Math.round(Number.isFinite(userLocation?.accuracy) ? (userLocation?.accuracy || 10) : 10)}m
+                  <span className="text-[#0F766E] font-black block">My Live GPS Location</span>
+                  <span className="text-[11px] text-slate-600 font-semibold block">
+                    {userLocation?.speed ? `Speed: ${Math.round(userLocation.speed * 3.6)} km/h` : 'Real-time GPS Connected'}
                   </span>
                 </div>
               </Popup>
@@ -874,7 +874,7 @@ export const MusafirMap: React.FC<MusafirMapProps> = ({
             <Circle
               center={validUser}
               radius={Math.max(30, Number.isFinite(userLocation?.accuracy) ? (userLocation?.accuracy || 30) : 30)}
-              pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.15 }}
+              pathOptions={{ color: '#0F766E', fillColor: '#0F766E', fillOpacity: 0.15 }}
             />
           </>
         )}
