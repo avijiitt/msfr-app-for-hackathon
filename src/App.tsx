@@ -68,7 +68,7 @@ export const App: React.FC = () => {
 
   // Auth State — show login on first load if profile registration not completed
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(authService.getCurrentUser());
-  const [isLoginOpen, setIsLoginOpen] = useState(() => !localStorage.getItem('musafir_profile_completed'));
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isPermissionsOpen, setIsPermissionsOpen] = useState(false);
 
   // Sidebar & Navigation (Default to Interactive Map & Plan)
@@ -371,7 +371,7 @@ export const App: React.FC = () => {
     setUserProfile(sosService.getProfile());
     setIsProfileOpen(false);
     setIsMobileMenuOpen(false);
-    setIsLoginOpen(true);
+    setIsLoginOpen(false);
   };
 
   const handleExecuteAIAction = (actionType: AIActionType, payload?: string) => {

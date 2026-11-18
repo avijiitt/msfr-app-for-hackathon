@@ -90,6 +90,13 @@ class AuthService {
           this.currentUser = JSON.parse(stored);
         } catch {}
       }
+      if (!this.currentUser) {
+        this.currentUser = {
+          id: 'usr-musafir-01',
+          email: 'traveller@musafir.in',
+          fullName: 'Traveller',
+        };
+      }
     }
     return this.currentUser;
   }
